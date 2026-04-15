@@ -1,82 +1,38 @@
 import { useState } from "react";
-import { Plus, Trash2, Eye, Pencil } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useNotes, Note } from "@/hooks/useNotes";
 
-const NoteCard = ({
-  note,
-  onUpdate,
-  onDelete,
-}: {
-  note: Note;
-  onUpdate: (id: string, updates: { content?: string; title?: string }) => void;
-  onDelete: (id: string) => void;
-}) => {
-  const [title, setTitle] = useState(note.title);
+const NoteCard = ({ note, onUpdate, onDelete }: { note: Note; onUpdate: (id: string, content: string) => void; onDelete: (id: string) => void }) => {
   const [content, setContent] = useState(note.content);
-  const [preview, setPreview] = useState(false);
   const [timer, setTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
-  const autosave = (updates: { content?: string; title?: string }) => {
-    if (timer) clearTimeout(timer);
-    setTimer(setTimeout(() => onUpdate(note.id, updates), 800));
-  };
-
-  const handleTitleChange = (value: string) => {
-    setTitle(value);
-    autosave({ title: value });
-  };
-
-  const handleContentChange = (value: string) => {
+  const handleChange = (value: string) => {
     setContent(value);
-    autosave({ content: value });
+    if (timer) clearTimeout(timer);
+    setTimer(setTimeout(() => onUpdate(note.id, value), 800));
   };
 
   return (
     <div className="group border border-border/60 rounded-sm p-4 space-y-2 bg-card/50 hover:bg-card transition-colors">
-      <div className="flex justify-between items-start gap-2">
-        <Input
-          value={title}
-          onChange={(e) => handleTitleChange(e.target.value)}
-          placeholder="Başlık..."
-          className="border-none bg-transparent p-0 h-auto text-sm font-medium tracking-wide focus-visible:ring-0 placeholder:text-muted-foreground/50"
-        />
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            onClick={() => setPreview(!preview)}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            title={preview ? "Düzenle" : "Önizleme"}
-          >
-            {preview ? <Pencil className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          </button>
-          <button
-            onClick={() => onDelete(note.id)}
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
+      <div className="flex justify-between items-start">
+        <span className="text-xs text-muted-foreground">
+          {new Date(note.created_at).toLocaleDateString("tr-TR")}
+        </span>
+        <button
+          onClick={() => onDelete(note.id)}
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
       </div>
-
-      <span className="text-[10px] text-muted-foreground/60">
-        {new Date(note.created_at).toLocaleDateString("tr-TR")}
-      </span>
-
-      {preview ? (
-        <div className="prose prose-sm prose-stone dark:prose-invert max-w-none min-h-[120px] text-sm font-light leading-relaxed">
-          <ReactMarkdown>{content || "*Boş not*"}</ReactMarkdown>
-        </div>
-      ) : (
-        <Textarea
-          value={content}
-          onChange={(e) => handleContentChange(e.target.value)}
-          placeholder="Markdown destekli not yazın..."
-          className="min-h-[120px] bg-transparent border-none resize-none p-0 focus-visible:ring-0 text-sm font-light"
-        />
-      )}
+      <Textarea
+        value={content}
+        onChange={(e) => handleChange(e.target.value)}
+        placeholder="Notunuzu yazın..."
+        className="min-h-[120px] bg-transparent border-none resize-none p-0 focus-visible:ring-0 text-sm font-light"
+      />
     </div>
   );
 };

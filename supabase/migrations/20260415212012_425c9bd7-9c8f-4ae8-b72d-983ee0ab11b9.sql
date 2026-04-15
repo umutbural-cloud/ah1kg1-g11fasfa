@@ -1,1 +1,0 @@
-ALTER TABLE public.notes ADD COLUMN title text NOT NULL DEFAULT '';

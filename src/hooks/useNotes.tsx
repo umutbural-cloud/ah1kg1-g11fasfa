@@ -6,7 +6,6 @@ export type Note = {
   id: string;
   project_id: string;
   user_id: string;
-  title: string;
   content: string;
   created_at: string;
   updated_at: string;
@@ -30,19 +29,19 @@ export const useNotes = (projectId: string | null) => {
 
   useEffect(() => { fetchNotes(); }, [user, projectId]);
 
-  const createNote = async (content: string = "", title: string = "") => {
+  const createNote = async (content: string = "") => {
     if (!user || !projectId) return null;
     const { data, error } = await supabase
       .from("notes")
-      .insert({ title, content, project_id: projectId, user_id: user.id })
+      .insert({ content, project_id: projectId, user_id: user.id })
       .select()
       .single();
     if (!error && data) setNotes((prev) => [data, ...prev]);
     return data;
   };
 
-  const updateNote = async (id: string, updates: { content?: string; title?: string }) => {
-    const { data, error } = await supabase.from("notes").update(updates).eq("id", id).select().single();
+  const updateNote = async (id: string, content: string) => {
+    const { data, error } = await supabase.from("notes").update({ content }).eq("id", id).select().single();
     if (!error && data) setNotes((prev) => prev.map((n) => (n.id === id ? data : n)));
     return data;
   };
