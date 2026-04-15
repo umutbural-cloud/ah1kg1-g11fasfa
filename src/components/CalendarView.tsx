@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTasks } from "@/hooks/useTasks";
 import {
@@ -25,10 +25,12 @@ import {
 import { Input } from "@/components/ui/input";
 
 const CalendarView = ({ projectId }: { projectId: string }) => {
-  const { tasks, loading, createTask } = useTasks(projectId);
+  const { tasks, loading, createTask, updateTask, deleteTask } = useTasks(projectId);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [newTitle, setNewTitle] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
 
   const days = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
@@ -53,7 +55,22 @@ const CalendarView = ({ projectId }: { projectId: string }) => {
     const dateStr = format(selectedDate, "yyyy-MM-dd");
     await createTask({ title: newTitle.trim(), start_date: dateStr, end_date: dateStr });
     setNewTitle("");
-    setSelectedDate(null);
+  };
+
+  const handleEdit = (id: string, title: string) => {
+    setEditingId(id);
+    setEditTitle(title);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId || !editTitle.trim()) return;
+    await updateTask(editingId, { title: editTitle.trim() });
+    setEditingId(null);
+    setEditTitle("");
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteTask(id);
   };
 
   const today = new Date();
@@ -79,7 +96,6 @@ const CalendarView = ({ projectId }: { projectId: string }) => {
       </div>
 
       <div className="border border-border/60 rounded-sm">
-        {/* Week header */}
         <div className="grid grid-cols-7 border-b border-border/60">
           {weekDays.map((d) => (
             <div key={d} className="text-center text-[10px] text-muted-foreground p-2 tracking-wide">
@@ -88,7 +104,6 @@ const CalendarView = ({ projectId }: { projectId: string }) => {
           ))}
         </div>
 
-        {/* Days grid */}
         <div className="grid grid-cols-7">
           {days.map((day, i) => {
             const dayTasks = getTasksForDay(day);
@@ -123,20 +138,48 @@ const CalendarView = ({ projectId }: { projectId: string }) => {
         </div>
       </div>
 
-      <Dialog open={!!selectedDate} onOpenChange={(open) => !open && setSelectedDate(null)}>
+      <Dialog open={!!selectedDate} onOpenChange={(open) => { if (!open) { setSelectedDate(null); setEditingId(null); } }}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-base font-light tracking-wide">
               {selectedDate && format(selectedDate, "d MMMM yyyy", { locale: tr })}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {selectedDate && getTasksForDay(selectedDate).map((t) => (
-              <div key={t.id} className="text-sm font-light px-2 py-1.5 border border-border/60 rounded-sm">
-                {t.title}
+              <div key={t.id} className="flex items-center gap-2 group">
+                {editingId === t.id ? (
+                  <div className="flex items-center gap-1 flex-1">
+                    <Input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
+                      className="bg-transparent h-7 text-sm flex-1"
+                      autoFocus
+                    />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={handleSaveEdit}>
+                      <Check className="h-3 w-3" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setEditingId(null)}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-sm font-light px-2 py-1.5 border border-border/60 rounded-sm flex-1 truncate">
+                      {t.title}
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEdit(t.id, t.title)}>
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive" onClick={() => handleDelete(t.id)}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </>
+                )}
               </div>
             ))}
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-1">
               <Input
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
