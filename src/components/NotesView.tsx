@@ -1,17 +1,36 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useNotes, Note } from "@/hooks/useNotes";
 
-const NoteCard = ({ note, onUpdate, onDelete }: { note: Note; onUpdate: (id: string, content: string) => void; onDelete: (id: string) => void }) => {
+const NoteCard = ({
+  note,
+  onUpdate,
+  onDelete,
+}: {
+  note: Note;
+  onUpdate: (id: string, updates: { content?: string; title?: string }) => void;
+  onDelete: (id: string) => void;
+}) => {
+  const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
   const [timer, setTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleChange = (value: string) => {
-    setContent(value);
+  const debounceUpdate = (updates: { content?: string; title?: string }) => {
     if (timer) clearTimeout(timer);
-    setTimer(setTimeout(() => onUpdate(note.id, value), 800));
+    setTimer(setTimeout(() => onUpdate(note.id, updates), 800));
+  };
+
+  const handleTitleChange = (value: string) => {
+    setTitle(value);
+    debounceUpdate({ title: value });
+  };
+
+  const handleContentChange = (value: string) => {
+    setContent(value);
+    debounceUpdate({ content: value });
   };
 
   return (
@@ -27,9 +46,15 @@ const NoteCard = ({ note, onUpdate, onDelete }: { note: Note; onUpdate: (id: str
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
+      <Input
+        value={title}
+        onChange={(e) => handleTitleChange(e.target.value)}
+        placeholder="Başlık..."
+        className="bg-transparent border-none p-0 h-auto text-sm font-medium focus-visible:ring-0 tracking-wide"
+      />
       <Textarea
         value={content}
-        onChange={(e) => handleChange(e.target.value)}
+        onChange={(e) => handleContentChange(e.target.value)}
         placeholder="Notunuzu yazın..."
         className="min-h-[120px] bg-transparent border-none resize-none p-0 focus-visible:ring-0 text-sm font-light"
       />
