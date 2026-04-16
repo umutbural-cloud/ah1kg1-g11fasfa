@@ -6,6 +6,7 @@ export type Note = {
   id: string;
   project_id: string;
   user_id: string;
+  title: string;
   content: string;
   created_at: string;
   updated_at: string;
@@ -40,8 +41,8 @@ export const useNotes = (projectId: string | null) => {
     return data;
   };
 
-  const updateNote = async (id: string, content: string) => {
-    const { data, error } = await supabase.from("notes").update({ content }).eq("id", id).select().single();
+  const updateNote = async (id: string, updates: { content?: string; title?: string }) => {
+    const { data, error } = await supabase.from("notes").update(updates).eq("id", id).select().single();
     if (!error && data) setNotes((prev) => prev.map((n) => (n.id === id ? data : n)));
     return data;
   };
