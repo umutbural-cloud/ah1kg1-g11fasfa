@@ -6,6 +6,7 @@ import NotesView from "@/components/NotesView";
 import TableView from "@/components/TableView";
 import GanttView from "@/components/GanttView";
 import CalendarView from "@/components/CalendarView";
+import KanbanView from "@/components/KanbanView";
 import { useProjects } from "@/hooks/useProjects";
 
 const Index = () => {
@@ -70,6 +71,9 @@ const Index = () => {
                   <TabsTrigger value="gantt" className="text-xs tracking-wide data-[state=active]:bg-accent">
                     ガント Gantt
                   </TabsTrigger>
+                  <TabsTrigger value="kanban" className="text-xs tracking-wide data-[state=active]:bg-accent">
+                    看板 Kanban
+                  </TabsTrigger>
                   <TabsTrigger value="calendar" className="text-xs tracking-wide data-[state=active]:bg-accent">
                     暦 Takvim
                   </TabsTrigger>
@@ -83,6 +87,9 @@ const Index = () => {
                 </TabsContent>
                 <TabsContent value="gantt">
                   <GanttView projectId={selectedProject.id} />
+                </TabsContent>
+                <TabsContent value="kanban">
+                  <KanbanView projectId={selectedProject.id} />
                 </TabsContent>
                 <TabsContent value="calendar">
                   <CalendarView projectId={selectedProject.id} />
