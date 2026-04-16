@@ -10,7 +10,7 @@ import KanbanView from "@/components/KanbanView";
 import { useProjects } from "@/hooks/useProjects";
 
 const Index = () => {
-  const { projects, loading, createProject, deleteProject } = useProjects();
+  const { projects, loading, createProject, updateProject, deleteProject } = useProjects();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
@@ -20,8 +20,8 @@ const Index = () => {
     setSelectedProjectId(projects[0].id);
   }
 
-  const handleCreate = async (name: string) => {
-    const p = await createProject(name);
+  const handleCreate = async (name: string, parentId?: string) => {
+    const p = await createProject(name, parentId);
     if (p) setSelectedProjectId(p.id);
   };
 
@@ -41,6 +41,7 @@ const Index = () => {
           onSelect={setSelectedProjectId}
           onCreate={handleCreate}
           onDelete={handleDelete}
+          onUpdateProject={updateProject}
         />
 
         <div className="flex-1 flex flex-col min-w-0">

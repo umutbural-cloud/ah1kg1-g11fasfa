@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2, GripVertical, Pencil, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useTasks, Task, TaskStatus } from "@/hooks/useTasks";
 
 const COLUMNS: { key: TaskStatus; label: string; jpLabel: string }[] = [
@@ -12,45 +13,111 @@ const COLUMNS: { key: TaskStatus; label: string; jpLabel: string }[] = [
 
 const KanbanCard = ({
   task,
+  onUpdate,
   onDelete,
   onDragStart,
 }: {
   task: Task;
+  onUpdate: (id: string, updates: Partial<Omit<Task, "id" | "project_id" | "user_id" | "created_at">>) => void;
   onDelete: (id: string) => void;
   onDragStart: (e: React.DragEvent, taskId: string) => void;
-}) => (
-  <div
-    draggable
-    onDragStart={(e) => onDragStart(e, task.id)}
-    className="group border border-border/60 rounded-sm p-3 bg-card/50 hover:bg-card transition-colors cursor-grab active:cursor-grabbing"
-  >
-    <div className="flex items-start gap-2">
-      <GripVertical className="h-3.5 w-3.5 mt-0.5 text-muted-foreground/40 shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-light truncate">{task.title}</p>
-        {task.description && (
-          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.description}</p>
-        )}
-        {task.start_date && (
-          <p className="text-[10px] text-muted-foreground mt-1.5">
-            {task.start_date}{task.end_date && ` → ${task.end_date}`}
-          </p>
-        )}
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description || "");
+  const [startDate, setStartDate] = useState(task.start_date || "");
+  const [endDate, setEndDate] = useState(task.end_date || "");
+
+  const handleSave = () => {
+    if (!title.trim()) return;
+    onUpdate(task.id, {
+      title: title.trim(),
+      description: description.trim() || null,
+      start_date: startDate || null,
+      end_date: endDate || null,
+    });
+    setEditing(false);
+  };
+
+  const handleCancel = () => {
+    setTitle(task.title);
+    setDescription(task.description || "");
+    setStartDate(task.start_date || "");
+    setEndDate(task.end_date || "");
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="border border-border/60 rounded-sm p-3 bg-card space-y-2">
+        <Input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Başlık..."
+          className="bg-transparent h-7 text-sm"
+          autoFocus
+        />
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Açıklama..."
+          className="bg-transparent min-h-[60px] text-xs resize-none"
+        />
+        <div className="flex gap-2">
+          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="bg-transparent h-7 text-xs flex-1" />
+          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="bg-transparent h-7 text-xs flex-1" />
+        </div>
+        <div className="flex gap-1 justify-end">
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleSave}><Check className="h-3 w-3" /></Button>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCancel}><X className="h-3 w-3" /></Button>
+        </div>
       </div>
-      <button
-        onClick={() => onDelete(task.id)}
-        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0"
-      >
-        <Trash2 className="h-3 w-3" />
-      </button>
+    );
+  }
+
+  return (
+    <div
+      draggable
+      onDragStart={(e) => onDragStart(e, task.id)}
+      className="group border border-border/60 rounded-sm p-3 bg-card/50 hover:bg-card transition-colors cursor-grab active:cursor-grabbing"
+    >
+      <div className="flex items-start gap-2">
+        <GripVertical className="h-3.5 w-3.5 mt-0.5 text-muted-foreground/40 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-light truncate">{task.title}</p>
+          {task.description && (
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.description}</p>
+          )}
+          {task.start_date && (
+            <p className="text-[10px] text-muted-foreground mt-1.5">
+              {task.start_date}{task.end_date && ` → ${task.end_date}`}
+            </p>
+          )}
+        </div>
+        <div className="flex gap-0.5 shrink-0">
+          <button
+            onClick={() => setEditing(true)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+          <button
+            onClick={() => onDelete(task.id)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const KanbanColumn = ({
   column,
   tasks,
   onCreateTask,
+  onUpdateTask,
   onDeleteTask,
   onDragStart,
   onDrop,
@@ -58,6 +125,7 @@ const KanbanColumn = ({
   column: (typeof COLUMNS)[0];
   tasks: Task[];
   onCreateTask: (title: string, status: TaskStatus) => void;
+  onUpdateTask: (id: string, updates: Partial<Omit<Task, "id" | "project_id" | "user_id" | "created_at">>) => void;
   onDeleteTask: (id: string) => void;
   onDragStart: (e: React.DragEvent, taskId: string) => void;
   onDrop: (status: TaskStatus) => void;
@@ -110,7 +178,7 @@ const KanbanColumn = ({
           </div>
         )}
         {tasks.map((task) => (
-          <KanbanCard key={task.id} task={task} onDelete={onDeleteTask} onDragStart={onDragStart} />
+          <KanbanCard key={task.id} task={task} onUpdate={onUpdateTask} onDelete={onDeleteTask} onDragStart={onDragStart} />
         ))}
       </div>
     </div>
@@ -150,6 +218,7 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
             column={col}
             tasks={tasks.filter((t) => t.status === col.key)}
             onCreateTask={handleCreate}
+            onUpdateTask={updateTask}
             onDeleteTask={deleteTask}
             onDragStart={handleDragStart}
             onDrop={handleDrop}

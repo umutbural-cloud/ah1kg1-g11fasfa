@@ -55,23 +55,37 @@ export type Database = {
       projects: {
         Row: {
           created_at: string
+          emoji: string
           id: string
           name: string
+          parent_id: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
+          emoji?: string
           id?: string
           name: string
+          parent_id?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
+          emoji?: string
           id?: string
           name?: string
+          parent_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {
