@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Plus, Trash2, LogOut, ChevronRight } from "lucide-react";
+import { Plus, Trash2, LogOut, ChevronRight, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,13 +73,26 @@ const ProjectItem = ({
   depth?: number;
 }) => {
   const [expanded, setExpanded] = useState(true);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(project.name);
   const hasChildren = children.length > 0;
+
+  const startRename = () => {
+    setRenameValue(project.name);
+    setRenaming(true);
+  };
+
+  const commitRename = () => {
+    const v = renameValue.trim();
+    if (v && v !== project.name) onUpdateProject(project.id, { name: v });
+    setRenaming(false);
+  };
 
   return (
     <>
       <SidebarMenuItem>
         <SidebarMenuButton
-          onClick={() => onSelect(project.id)}
+          onClick={() => !renaming && onSelect(project.id)}
           className={`group/item text-sm font-light ${selectedId === project.id ? "bg-accent text-accent-foreground" : ""}`}
           style={{ paddingLeft: `${8 + depth * 16}px` }}
         >
@@ -91,17 +104,46 @@ const ProjectItem = ({
             <span className="w-3 mr-0.5 shrink-0" />
           )}
           <EmojiPicker current={project.emoji} onSelect={(emoji) => onUpdateProject(project.id, { emoji })} />
-          <span className="truncate flex-1 ml-1.5">{project.name}</span>
+          {renaming ? (
+            <Input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onBlur={commitRename}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitRename();
+                if (e.key === "Escape") { setRenameValue(project.name); setRenaming(false); }
+              }}
+              onClick={(e) => e.stopPropagation()}
+              autoFocus
+              className="h-6 ml-1.5 text-xs bg-transparent px-1 py-0 flex-1"
+            />
+          ) : (
+            <span
+              className="truncate flex-1 ml-1.5"
+              onDoubleClick={(e) => { e.stopPropagation(); startRename(); }}
+            >
+              {project.name}
+            </span>
+          )}
           <div className="flex gap-0.5 opacity-0 group-hover/item:opacity-100 shrink-0">
+            <button
+              onClick={(e) => { e.stopPropagation(); startRename(); }}
+              className="text-muted-foreground hover:text-foreground"
+              title="Yeniden adlandır"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
             <button
               onClick={(e) => { e.stopPropagation(); onAddSub(project.id); }}
               className="text-muted-foreground hover:text-foreground"
+              title="Alt proje ekle"
             >
               <Plus className="h-3 w-3" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}
               className="text-muted-foreground hover:text-destructive"
+              title="Sil"
             >
               <Trash2 className="h-3 w-3" />
             </button>

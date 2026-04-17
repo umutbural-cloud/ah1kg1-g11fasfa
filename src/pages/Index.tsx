@@ -1,28 +1,43 @@
 import { useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText, Table as TableIcon, GanttChart, Kanban, Calendar } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
 import NotesView from "@/components/NotesView";
 import TableView from "@/components/TableView";
 import GanttView from "@/components/GanttView";
-import CalendarView from "@/components/CalendarView";
 import KanbanView from "@/components/KanbanView";
+import WeeklyCalendarView from "@/components/WeeklyCalendarView";
 import { useProjects } from "@/hooks/useProjects";
+
+type View = "notes" | "table" | "gantt" | "kanban" | "calendar";
+
+const VIEWS: { id: View; label: string; jp: string; icon: any }[] = [
+  { id: "notes", label: "Notlar", jp: "ノート", icon: FileText },
+  { id: "table", label: "Tablo", jp: "表", icon: TableIcon },
+  { id: "gantt", label: "Gantt", jp: "ガント", icon: GanttChart },
+  { id: "kanban", label: "Kanban", jp: "看板", icon: Kanban },
+  { id: "calendar", label: "Hafta", jp: "週", icon: Calendar },
+];
 
 const Index = () => {
   const { projects, loading, createProject, updateProject, deleteProject } = useProjects();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [view, setView] = useState<View>("notes");
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
-  // Auto-select first project
   if (!selectedProjectId && projects.length > 0 && !loading) {
     setSelectedProjectId(projects[0].id);
   }
 
   const handleCreate = async (name: string, parentId?: string) => {
     const p = await createProject(name, parentId);
-    if (p) setSelectedProjectId(p.id);
+    if (p) { setSelectedProjectId(p.id); setView("notes"); }
+  };
+
+  const handleSelect = (id: string) => {
+    setSelectedProjectId(id);
+    setView("notes");
   };
 
   const handleDelete = async (id: string) => {
@@ -38,21 +53,50 @@ const Index = () => {
         <AppSidebar
           projects={projects}
           selectedId={selectedProjectId}
-          onSelect={setSelectedProjectId}
+          onSelect={handleSelect}
           onCreate={handleCreate}
           onDelete={handleDelete}
           onUpdateProject={updateProject}
         />
 
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-12 flex items-center border-b border-border/60 px-4 gap-4">
-            <SidebarTrigger className="text-muted-foreground" />
+          <header className="h-12 flex items-center justify-between border-b border-border/60 px-4 gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <SidebarTrigger className="text-muted-foreground" />
+              {selectedProject && (
+                <h1 className="text-base tracking-wide truncate font-light">
+                  <span className="mr-2">{selectedProject.emoji}</span>
+                  {selectedProject.name}
+                </h1>
+              )}
+            </div>
+
             {selectedProject && (
-              <h1 className="text-base tracking-wide truncate">{selectedProject.name}</h1>
+              <nav className="flex items-center gap-0.5">
+                {VIEWS.map((v) => {
+                  const Icon = v.icon;
+                  const active = view === v.id;
+                  return (
+                    <button
+                      key={v.id}
+                      onClick={() => setView(v.id)}
+                      title={`${v.jp} ${v.label}`}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs tracking-wide transition-colors ${
+                        active
+                          ? "bg-accent text-accent-foreground"
+                          : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      <span className="hidden md:inline">{v.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
             )}
           </header>
 
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-6 overflow-auto">
             {!selectedProject ? (
               <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                 <div className="text-center space-y-2">
@@ -61,41 +105,13 @@ const Index = () => {
                 </div>
               </div>
             ) : (
-              <Tabs defaultValue="notes" className="space-y-6">
-                <TabsList className="bg-transparent border border-border/60 h-9">
-                  <TabsTrigger value="notes" className="text-xs tracking-wide data-[state=active]:bg-accent">
-                    ノート Notlar
-                  </TabsTrigger>
-                  <TabsTrigger value="table" className="text-xs tracking-wide data-[state=active]:bg-accent">
-                    表 Tablo
-                  </TabsTrigger>
-                  <TabsTrigger value="gantt" className="text-xs tracking-wide data-[state=active]:bg-accent">
-                    ガント Gantt
-                  </TabsTrigger>
-                  <TabsTrigger value="kanban" className="text-xs tracking-wide data-[state=active]:bg-accent">
-                    看板 Kanban
-                  </TabsTrigger>
-                  <TabsTrigger value="calendar" className="text-xs tracking-wide data-[state=active]:bg-accent">
-                    暦 Takvim
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="notes">
-                  <NotesView projectId={selectedProject.id} />
-                </TabsContent>
-                <TabsContent value="table">
-                  <TableView projectId={selectedProject.id} />
-                </TabsContent>
-                <TabsContent value="gantt">
-                  <GanttView projectId={selectedProject.id} />
-                </TabsContent>
-                <TabsContent value="kanban">
-                  <KanbanView projectId={selectedProject.id} />
-                </TabsContent>
-                <TabsContent value="calendar">
-                  <CalendarView projectId={selectedProject.id} />
-                </TabsContent>
-              </Tabs>
+              <>
+                {view === "notes" && <NotesView key={selectedProject.id} projectId={selectedProject.id} />}
+                {view === "table" && <TableView projectId={selectedProject.id} />}
+                {view === "gantt" && <GanttView projectId={selectedProject.id} />}
+                {view === "kanban" && <KanbanView projectId={selectedProject.id} />}
+                {view === "calendar" && <WeeklyCalendarView projectId={selectedProject.id} />}
+              </>
             )}
           </main>
         </div>
