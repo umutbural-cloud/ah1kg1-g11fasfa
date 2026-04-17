@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,31 +10,53 @@ import {
   format,
   isSameDay,
   addWeeks,
+  addMonths,
   parseISO,
   isWithinInterval,
+  startOfMonth,
+  endOfMonth,
+  isSameMonth,
 } from "date-fns";
 import { tr } from "date-fns/locale";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 07:00 - 20:00
+const SLOT_HEIGHT = 44; // px per hour slot
+
+type Mode = "week" | "month";
+type SlotInfo = { date: Date; startHour: number; endHour: number };
 
 const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
   const { tasks, loading, createTask, updateTask, deleteTask } = useTasks(projectId);
-  const [currentWeek, setCurrentWeek] = useState(new Date());
-  const [selectedSlot, setSelectedSlot] = useState<{ date: Date; hour: number } | null>(null);
+  const [current, setCurrent] = useState(new Date());
+  const [mode, setMode] = useState<Mode>("week");
+  const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null);
   const [newTitle, setNewTitle] = useState("");
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("10:00");
   const [openTask, setOpenTask] = useState<Task | null>(null);
 
+  // Drag-to-create state
+  const [dragging, setDragging] = useState<{ day: Date; startHour: number; currentHour: number } | null>(null);
+  const dragRef = useRef<{ day: Date; startHour: number } | null>(null);
+
   const days = useMemo(() => {
-    const start = startOfWeek(currentWeek, { weekStartsOn: 1 });
-    const end = endOfWeek(currentWeek, { weekStartsOn: 1 });
+    if (mode === "week") {
+      const start = startOfWeek(current, { weekStartsOn: 1 });
+      const end = endOfWeek(current, { weekStartsOn: 1 });
+      return eachDayOfInterval({ start, end });
+    }
+    // month: full weeks covering the month
+    const start = startOfWeek(startOfMonth(current), { weekStartsOn: 1 });
+    const end = endOfWeek(endOfMonth(current), { weekStartsOn: 1 });
     return eachDayOfInterval({ start, end });
-  }, [currentWeek]);
+  }, [current, mode]);
 
   const getTasksForDay = (day: Date) =>
     tasks.filter((t) => {
@@ -45,12 +67,49 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
       return false;
     });
 
+  const navigate = (dir: number) => {
+    setCurrent(mode === "week" ? addWeeks(current, dir) : addMonths(current, dir));
+  };
+
+  const openSlot = (date: Date, startHour: number, endHour: number) => {
+    setSelectedSlot({ date, startHour, endHour });
+    setStartTime(`${String(startHour).padStart(2, "0")}:00`);
+    setEndTime(`${String(endHour).padStart(2, "0")}:00`);
+    setNewTitle("");
+  };
+
   const handleCreate = async () => {
     if (!newTitle.trim() || !selectedSlot) return;
     const dateStr = format(selectedSlot.date, "yyyy-MM-dd");
-    await createTask({ title: newTitle.trim(), start_date: dateStr, end_date: dateStr });
+    const description = `${startTime} – ${endTime}`;
+    await createTask({
+      title: newTitle.trim(),
+      start_date: dateStr,
+      end_date: dateStr,
+      description,
+    });
     setNewTitle("");
     setSelectedSlot(null);
+  };
+
+  // Mouse handlers for drag-to-create
+  const handleSlotMouseDown = (day: Date, hour: number) => {
+    dragRef.current = { day, startHour: hour };
+    setDragging({ day, startHour: hour, currentHour: hour });
+  };
+  const handleSlotMouseEnter = (day: Date, hour: number) => {
+    if (dragRef.current && isSameDay(dragRef.current.day, day)) {
+      setDragging((d) => (d ? { ...d, currentHour: hour } : null));
+    }
+  };
+  const handleMouseUp = () => {
+    if (dragging && dragRef.current) {
+      const startHour = Math.min(dragging.startHour, dragging.currentHour);
+      const endHour = Math.max(dragging.startHour, dragging.currentHour) + 1;
+      openSlot(dragging.day, startHour, endHour);
+    }
+    dragRef.current = null;
+    setDragging(null);
   };
 
   const today = new Date();
@@ -61,83 +120,186 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg tracking-wide">週 — Hafta</h2>
+        <h2 className="text-lg tracking-wide">
+          {mode === "week" ? "週 — Hafta" : "月 — Ay"}
+        </h2>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentWeek(addWeeks(currentWeek, -1))}>
+          <div className="flex border border-border/60 rounded-sm overflow-hidden">
+            <button
+              onClick={() => setMode("week")}
+              className={`text-xs px-2.5 py-1 ${mode === "week" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent/50"}`}
+            >
+              Hafta
+            </button>
+            <button
+              onClick={() => setMode("month")}
+              className={`text-xs px-2.5 py-1 ${mode === "month" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent/50"}`}
+            >
+              Ay
+            </button>
+          </div>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(-1)}>
             <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
           <span className="text-sm text-muted-foreground min-w-[180px] text-center">
-            {format(days[0], "d MMM", { locale: tr })} – {format(days[6], "d MMM yyyy", { locale: tr })}
+            {mode === "week"
+              ? `${format(days[0], "d MMM", { locale: tr })} – ${format(days[6], "d MMM yyyy", { locale: tr })}`
+              : format(current, "MMMM yyyy", { locale: tr })}
           </span>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(1)}>
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setCurrentWeek(new Date())}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setCurrent(new Date())}>
             Bugün
           </Button>
         </div>
       </div>
 
-      <div className="border border-border/60 rounded-sm overflow-hidden">
-        {/* Day headers */}
-        <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border/60 bg-card/30">
-          <div />
-          {days.map((day, i) => {
-            const isToday = isSameDay(day, today);
-            return (
-              <div key={i} className="text-center p-2 border-l border-border/30">
-                <div className="text-[10px] text-muted-foreground tracking-wide">{weekDays[i]}</div>
-                <div className={`text-sm mt-0.5 ${isToday ? "text-foreground font-medium" : "text-muted-foreground font-light"}`}>
-                  {format(day, "d")}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* All-day row */}
-        <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border/60 min-h-[40px]">
-          <div className="text-[9px] text-muted-foreground p-1.5 tracking-wide">tüm gün</div>
-          {days.map((day, i) => {
-            const dayTasks = getTasksForDay(day);
-            return (
-              <div
-                key={i}
-                className="border-l border-border/30 p-1 space-y-0.5 cursor-pointer hover:bg-card/40"
-                onClick={() => setSelectedSlot({ date: day, hour: 9 })}
-              >
-                {dayTasks.map((t) => (
-                  <div
-                    key={t.id}
-                    onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
-                    className="text-[10px] font-light truncate px-1.5 py-1 rounded-sm bg-foreground/10 hover:bg-foreground/20 transition-colors border-l-2 border-foreground/40"
-                  >
-                    {t.title}
+      {mode === "week" ? (
+        <div
+          className="border border-border/60 rounded-sm overflow-hidden select-none"
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          {/* Day headers */}
+          <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border/60 bg-card/30">
+            <div />
+            {days.map((day, i) => {
+              const isToday = isSameDay(day, today);
+              return (
+                <div key={i} className="text-center p-2 border-l border-border/30">
+                  <div className="text-[10px] text-muted-foreground tracking-wide">{weekDays[i]}</div>
+                  <div className={`text-sm mt-0.5 ${isToday ? "text-foreground font-medium" : "text-muted-foreground font-light"}`}>
+                    {format(day, "d")}
                   </div>
-                ))}
-              </div>
-            );
-          })}
-        </div>
+                </div>
+              );
+            })}
+          </div>
 
-        {/* Hour grid */}
-        <div className="max-h-[60vh] overflow-y-auto">
-          {HOURS.map((hour) => (
-            <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border/30 min-h-[44px]">
-              <div className="text-[10px] text-muted-foreground p-1.5 tracking-wide">
-                {String(hour).padStart(2, "0")}:00
-              </div>
-              {days.map((day, i) => (
+          {/* All-day row */}
+          <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border/60 min-h-[40px]">
+            <div className="text-[9px] text-muted-foreground p-1.5 tracking-wide">tüm gün</div>
+            {days.map((day, i) => {
+              const dayTasks = getTasksForDay(day).filter((t) => !t.description?.match(/\d{2}:\d{2}/));
+              return (
                 <div
                   key={i}
-                  onClick={() => setSelectedSlot({ date: day, hour })}
-                  className="border-l border-border/30 cursor-pointer hover:bg-card/40 transition-colors"
-                />
-              ))}
-            </div>
-          ))}
+                  className="border-l border-border/30 p-1 space-y-0.5 cursor-pointer hover:bg-card/40"
+                  onClick={() => openSlot(day, 9, 10)}
+                >
+                  {dayTasks.map((t) => (
+                    <div
+                      key={t.id}
+                      onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
+                      className="text-[10px] font-light truncate px-1.5 py-1 rounded-sm bg-foreground/10 hover:bg-foreground/20 transition-colors border-l-2 border-foreground/40"
+                    >
+                      {t.title}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Hour grid */}
+          <div className="max-h-[60vh] overflow-y-auto relative">
+            {HOURS.map((hour) => (
+              <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border/30" style={{ minHeight: SLOT_HEIGHT }}>
+                <div className="text-[10px] text-muted-foreground p-1.5 tracking-wide">
+                  {String(hour).padStart(2, "0")}:00
+                </div>
+                {days.map((day, i) => {
+                  const isDraggingThis =
+                    dragging && isSameDay(dragging.day, day) &&
+                    hour >= Math.min(dragging.startHour, dragging.currentHour) &&
+                    hour <= Math.max(dragging.startHour, dragging.currentHour);
+                  // Show timed task blocks at their start hour
+                  const timedTasks = tasks.filter((t) => {
+                    if (!t.start_date || !t.description) return false;
+                    if (!isSameDay(parseISO(t.start_date), day)) return false;
+                    const m = t.description.match(/^(\d{2}):\d{2}/);
+                    return m && parseInt(m[1]) === hour;
+                  });
+                  return (
+                    <div
+                      key={i}
+                      onMouseDown={() => handleSlotMouseDown(day, hour)}
+                      onMouseEnter={() => handleSlotMouseEnter(day, hour)}
+                      className={`border-l border-border/30 cursor-pointer transition-colors relative ${
+                        isDraggingThis ? "bg-foreground/15" : "hover:bg-card/40"
+                      }`}
+                    >
+                      {timedTasks.map((t) => {
+                        const m = t.description!.match(/^(\d{2}):(\d{2})\s*–\s*(\d{2}):(\d{2})/);
+                        const sh = m ? parseInt(m[1]) + parseInt(m[2]) / 60 : hour;
+                        const eh = m ? parseInt(m[3]) + parseInt(m[4]) / 60 : hour + 1;
+                        const heightHrs = Math.max(0.5, eh - sh);
+                        return (
+                          <div
+                            key={t.id}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
+                            className="absolute left-0.5 right-0.5 px-1.5 py-1 rounded-sm bg-foreground/15 hover:bg-foreground/25 border-l-2 border-foreground/50 text-[10px] font-light truncate cursor-pointer z-10"
+                            style={{ top: 1, height: `${heightHrs * SLOT_HEIGHT - 2}px` }}
+                          >
+                            {t.title}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        // MONTH VIEW
+        <div className="border border-border/60 rounded-sm overflow-hidden">
+          <div className="grid grid-cols-7 border-b border-border/60 bg-card/30">
+            {weekDays.map((d) => (
+              <div key={d} className="text-center p-2 border-l first:border-l-0 border-border/30 text-[10px] text-muted-foreground tracking-wide">
+                {d}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 auto-rows-[100px]">
+            {days.map((day, i) => {
+              const isToday = isSameDay(day, today);
+              const inMonth = isSameMonth(day, current);
+              const dayTasks = getTasksForDay(day);
+              return (
+                <div
+                  key={i}
+                  className={`border-l border-t border-border/30 p-1.5 cursor-pointer hover:bg-card/40 overflow-hidden ${
+                    !inMonth ? "bg-muted/20" : ""
+                  }`}
+                  onClick={() => openSlot(day, 9, 10)}
+                >
+                  <div className={`text-xs mb-1 ${isToday ? "text-foreground font-medium" : inMonth ? "text-foreground/70" : "text-muted-foreground/40"}`}>
+                    {format(day, "d")}
+                  </div>
+                  <div className="space-y-0.5">
+                    {dayTasks.slice(0, 3).map((t) => (
+                      <div
+                        key={t.id}
+                        onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
+                        className="text-[10px] font-light truncate px-1 py-0.5 rounded-sm bg-foreground/10 hover:bg-foreground/20 border-l-2 border-foreground/40"
+                      >
+                        {t.title}
+                      </div>
+                    ))}
+                    {dayTasks.length > 3 && (
+                      <div className="text-[9px] text-muted-foreground px-1">+{dayTasks.length - 3}</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* New task dialog */}
       <Dialog open={!!selectedSlot} onOpenChange={(o) => { if (!o) { setSelectedSlot(null); setNewTitle(""); } }}>
@@ -146,8 +308,11 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
             <DialogTitle className="text-base font-light tracking-wide">
               {selectedSlot && format(selectedSlot.date, "d MMMM yyyy", { locale: tr })}
             </DialogTitle>
+            <DialogDescription className="text-xs">
+              Görev için saat aralığı belirleyin
+            </DialogDescription>
           </DialogHeader>
-          <div className="flex gap-2">
+          <div className="space-y-3">
             <Input
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
@@ -156,8 +321,18 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
               className="bg-transparent h-9 text-sm"
               autoFocus
             />
-            <Button variant="ghost" size="sm" onClick={handleCreate} className="h-9">
-              <Plus className="h-3.5 w-3.5" />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Başlangıç</div>
+                <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="bg-transparent h-8 text-xs" />
+              </div>
+              <div>
+                <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Bitiş</div>
+                <Input type="time" value={endTime} min={startTime} onChange={(e) => setEndTime(e.target.value)} className="bg-transparent h-8 text-xs" />
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={handleCreate} className="w-full h-9">
+              <Plus className="h-3.5 w-3.5 mr-1" /> Ekle
             </Button>
           </div>
         </DialogContent>
@@ -166,6 +341,10 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
       {/* Task detail dialog */}
       <Dialog open={!!openTask} onOpenChange={(o) => { if (!o) setOpenTask(null); }}>
         <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Görev detayı</DialogTitle>
+            <DialogDescription className="sr-only">Görevi düzenleyin veya silin</DialogDescription>
+          </DialogHeader>
           {openTask && (
             <div className="space-y-3">
               <Input
@@ -184,8 +363,11 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                     type="date"
                     value={openTask.start_date || ""}
                     onChange={(e) => {
-                      setOpenTask({ ...openTask, start_date: e.target.value });
-                      updateTask(openTask.id, { start_date: e.target.value || null });
+                      const v = e.target.value;
+                      const updates: any = { start_date: v || null };
+                      if (v && openTask.end_date && v > openTask.end_date) updates.end_date = v;
+                      setOpenTask({ ...openTask, ...updates });
+                      updateTask(openTask.id, updates);
                     }}
                     className="bg-transparent h-8 text-xs"
                   />
@@ -195,14 +377,22 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                   <Input
                     type="date"
                     value={openTask.end_date || ""}
+                    min={openTask.start_date || undefined}
                     onChange={(e) => {
-                      setOpenTask({ ...openTask, end_date: e.target.value });
-                      updateTask(openTask.id, { end_date: e.target.value || null });
+                      const v = e.target.value;
+                      if (v && openTask.start_date && v < openTask.start_date) return;
+                      setOpenTask({ ...openTask, end_date: v || null });
+                      updateTask(openTask.id, { end_date: v || null });
                     }}
                     className="bg-transparent h-8 text-xs"
                   />
                 </div>
               </div>
+              {openTask.description && (
+                <div className="text-xs text-muted-foreground tracking-wide">
+                  {openTask.description}
+                </div>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
