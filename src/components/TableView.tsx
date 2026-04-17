@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Plus, Trash2, Check, X } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTasks, TaskStatus } from "@/hooks/useTasks";
@@ -73,6 +74,7 @@ const TableView = ({ projectId }: { projectId: string }) => {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
+                <TableHead className="w-10"></TableHead>
                 <TableHead className="text-xs font-light tracking-wide">Başlık</TableHead>
                 <TableHead className="text-xs font-light tracking-wide w-32">Durum</TableHead>
                 <TableHead className="text-xs font-light tracking-wide w-28">Başlangıç</TableHead>
@@ -83,6 +85,14 @@ const TableView = ({ projectId }: { projectId: string }) => {
             <TableBody>
               {filtered.map((task) => (
                 <TableRow key={task.id} className="group">
+                  <TableCell className="py-1">
+                    <Checkbox
+                      checked={task.status === "done"}
+                      onCheckedChange={(checked) =>
+                        updateTask(task.id, { status: checked ? "done" : "todo" })
+                      }
+                    />
+                  </TableCell>
                   <TableCell className={`text-sm font-light ${statusColors[task.status]}`}>
                     {task.title}
                   </TableCell>
