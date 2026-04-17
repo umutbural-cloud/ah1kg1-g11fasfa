@@ -115,7 +115,12 @@ const TableView = ({ projectId }: { projectId: string }) => {
                     <Input
                       type="date"
                       value={task.start_date || ""}
-                      onChange={(e) => updateTask(task.id, { start_date: e.target.value || null })}
+                      onChange={(e) => {
+                        const v = e.target.value || null;
+                        const updates: any = { start_date: v };
+                        if (v && task.end_date && v > task.end_date) updates.end_date = v;
+                        updateTask(task.id, updates);
+                      }}
                       className="h-7 text-xs bg-transparent border-none p-0"
                     />
                   </TableCell>
@@ -123,7 +128,12 @@ const TableView = ({ projectId }: { projectId: string }) => {
                     <Input
                       type="date"
                       value={task.end_date || ""}
-                      onChange={(e) => updateTask(task.id, { end_date: e.target.value || null })}
+                      min={task.start_date || undefined}
+                      onChange={(e) => {
+                        const v = e.target.value || null;
+                        if (v && task.start_date && v < task.start_date) return;
+                        updateTask(task.id, { end_date: v });
+                      }}
                       className="h-7 text-xs bg-transparent border-none p-0"
                     />
                   </TableCell>

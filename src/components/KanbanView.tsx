@@ -63,9 +63,15 @@ const KanbanCard = ({
           placeholder="Açıklama..."
           className="bg-transparent min-h-[60px] text-xs resize-none"
         />
-        <div className="flex gap-2">
-          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="bg-transparent h-7 text-xs flex-1" />
-          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="bg-transparent h-7 text-xs flex-1" />
+        <div className="space-y-2">
+          <div>
+            <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Başlangıç</div>
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="bg-transparent h-7 text-xs" />
+          </div>
+          <div>
+            <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Bitiş</div>
+            <Input type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEndDate(e.target.value)} className="bg-transparent h-7 text-xs" />
+          </div>
         </div>
         <div className="flex gap-1 justify-end">
           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleSave}><Check className="h-3 w-3" /></Button>

@@ -16,7 +16,7 @@ const VIEWS: { id: View; label: string; jp: string; icon: any }[] = [
   { id: "table", label: "Tablo", jp: "表", icon: TableIcon },
   { id: "gantt", label: "Gantt", jp: "ガント", icon: GanttChart },
   { id: "kanban", label: "Kanban", jp: "看板", icon: Kanban },
-  { id: "calendar", label: "Hafta", jp: "週", icon: Calendar },
+  { id: "calendar", label: "Takvim", jp: "暦", icon: Calendar },
 ];
 
 const Index = () => {
