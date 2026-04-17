@@ -14,7 +14,6 @@ import {
   Heading3,
   CheckSquare,
   Quote,
-  Code,
   Strikethrough,
   Undo,
   Redo,
@@ -42,6 +41,7 @@ const ToolbarButton = ({
 }) => (
   <button
     type="button"
+    onMouseDown={(e) => e.preventDefault()}
     onClick={onClick}
     title={title}
     className={`p-1.5 rounded-sm transition-colors ${
@@ -74,9 +74,6 @@ const Toolbar = ({ editor }: { editor: Editor | null }) => {
       </ToolbarButton>
       <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive("strike")} title="Üstü çizili">
         <Strikethrough className="h-3.5 w-3.5" />
-      </ToolbarButton>
-      <ToolbarButton onClick={() => editor.chain().focus().toggleCode().run()} active={editor.isActive("code")} title="Kod">
-        <Code className="h-3.5 w-3.5" />
       </ToolbarButton>
       <div className="w-px h-4 bg-border/60 mx-1" />
       <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} title="Madde">
@@ -111,7 +108,9 @@ const NotesView = ({ projectId }: { projectId: string }) => {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+      }),
       TaskList,
       TaskItem.configure({ nested: true }),
       Placeholder.configure({ placeholder: "Notunuzu yazın..." }),
@@ -119,8 +118,7 @@ const NotesView = ({ projectId }: { projectId: string }) => {
     content: "",
     editorProps: {
       attributes: {
-        class:
-          "prose prose-sm max-w-none focus:outline-none min-h-[60vh] font-light leading-relaxed",
+        class: "focus:outline-none min-h-[60vh] font-light leading-relaxed",
       },
     },
   });
@@ -129,7 +127,7 @@ const NotesView = ({ projectId }: { projectId: string }) => {
   useEffect(() => {
     let active = true;
     const load = async () => {
-      if (!user || !projectId) return;
+      if (!user || !projectId || !editor) return;
       setLoading(true);
       const { data: existing } = await supabase
         .from("notes")
@@ -151,7 +149,7 @@ const NotesView = ({ projectId }: { projectId: string }) => {
       if (!active || !n) return;
       setNote(n);
       setTitle(n.title || "");
-      editor?.commands.setContent(n.content ? safeParse(n.content) : "");
+      editor.commands.setContent(n.content ? safeParse(n.content) : "");
       setLoading(false);
     };
     load();

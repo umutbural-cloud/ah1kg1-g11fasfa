@@ -108,35 +108,99 @@
   }
 }
 
-/* TipTap editor styling */
-@layer components {
-  .ProseMirror {
-    @apply text-foreground outline-none;
-  }
-  .ProseMirror p.is-editor-empty:first-child::before {
-    content: attr(data-placeholder);
-    @apply text-muted-foreground float-left h-0 pointer-events-none;
-  }
-  .ProseMirror h1 { @apply text-2xl mt-6 mb-3 font-light tracking-wide; font-family: 'Noto Serif JP', serif; }
-  .ProseMirror h2 { @apply text-xl mt-5 mb-2 font-light tracking-wide; font-family: 'Noto Serif JP', serif; }
-  .ProseMirror h3 { @apply text-lg mt-4 mb-2 font-light tracking-wide; font-family: 'Noto Serif JP', serif; }
-  .ProseMirror p { @apply my-2 leading-relaxed; }
-  .ProseMirror ul { @apply list-disc pl-6 my-2 space-y-1; }
-  .ProseMirror ol { @apply list-decimal pl-6 my-2 space-y-1; }
-  .ProseMirror blockquote { @apply border-l-2 border-border pl-4 italic text-muted-foreground my-3; }
-  .ProseMirror code { @apply bg-muted px-1.5 py-0.5 rounded-sm text-xs font-mono; }
-  .ProseMirror pre { @apply bg-muted p-3 rounded-sm text-xs font-mono my-3 overflow-x-auto; }
-  .ProseMirror pre code { @apply bg-transparent p-0; }
-  .ProseMirror strong { @apply font-medium text-foreground; }
-  .ProseMirror em { @apply italic; }
-  .ProseMirror s { @apply line-through text-muted-foreground; }
+/* TipTap editor styling — high specificity to override Tailwind preflight */
+.ProseMirror {
+  color: hsl(var(--foreground));
+  outline: none;
+}
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: hsl(var(--muted-foreground));
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.ProseMirror h1 {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+.ProseMirror h2 {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.ProseMirror h3 {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+.ProseMirror p {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
+}
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.ProseMirror li { margin: 0.25rem 0; }
+.ProseMirror li > p { margin: 0; }
+.ProseMirror blockquote {
+  border-left: 2px solid hsl(var(--border));
+  padding-left: 1rem;
+  font-style: italic;
+  color: hsl(var(--muted-foreground));
+  margin: 0.75rem 0;
+}
+.ProseMirror strong { font-weight: 600; color: hsl(var(--foreground)); }
+.ProseMirror em { font-style: italic; }
+.ProseMirror s { text-decoration: line-through; color: hsl(var(--muted-foreground)); }
 
-  .ProseMirror ul[data-type="taskList"] { @apply list-none pl-0 my-2 space-y-1; }
-  .ProseMirror ul[data-type="taskList"] li { @apply flex items-start gap-2; }
-  .ProseMirror ul[data-type="taskList"] li > label { @apply mt-1 shrink-0 cursor-pointer select-none; }
-  .ProseMirror ul[data-type="taskList"] li > label > input[type="checkbox"] {
-    @apply w-3.5 h-3.5 rounded-sm border border-border accent-foreground cursor-pointer;
-  }
-  .ProseMirror ul[data-type="taskList"] li > div { @apply flex-1; }
-  .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div { @apply text-muted-foreground line-through; }
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.5rem 0;
+}
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+.ProseMirror ul[data-type="taskList"] li > label {
+  margin-top: 0.35rem;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+}
+.ProseMirror ul[data-type="taskList"] li > label > input[type="checkbox"] {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 0.125rem;
+  accent-color: hsl(var(--foreground));
+  cursor: pointer;
+}
+.ProseMirror ul[data-type="taskList"] li > div { flex: 1; }
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: hsl(var(--muted-foreground));
+  text-decoration: line-through;
 }
