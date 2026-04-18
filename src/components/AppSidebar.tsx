@@ -1,7 +1,6 @@
-import { useState, useRef } from "react";
-import { Plus, Trash2, LogOut, ChevronRight, Pencil } from "lucide-react";
+import { useState } from "react";
+import { Plus, Trash2, LogOut, ChevronRight, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -20,24 +19,38 @@ import {
 } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/useAuth";
 import { Project } from "@/hooks/useProjects";
+import type { ViewKey } from "@/hooks/useProjectViews";
 
 const EMOJIS = ["📁", "🎯", "💼", "🚀", "📝", "🎨", "💡", "🔧", "📊", "🌟", "🎵", "📚", "🏠", "⚡", "🌱", "🔥", "❤️", "🧩", "🎮", "🍀"];
+
+const VIEW_META: Record<ViewKey, { label: string; jp: string; icon: any }> = {
+  notes: { label: "Notlar", jp: "ノート", icon: FileText },
+  table: { label: "Tablo", jp: "表", icon: TableIcon },
+  gantt: { label: "Gantt", jp: "ガント", icon: GanttChart },
+  kanban: { label: "Kanban", jp: "看板", icon: Kanban },
+  calendar: { label: "Takvim", jp: "暦", icon: Calendar },
+};
+const ALL_VIEW_KEYS: ViewKey[] = ["notes", "table", "gantt", "kanban", "calendar"];
 
 type Props = {
   projects: Project[];
   selectedId: string | null;
-  onSelect: (id: string) => void;
+  selectedView: ViewKey;
+  onSelect: (id: string, view?: ViewKey) => void;
   onCreate: (name: string, parentId?: string) => void;
   onDelete: (id: string) => void;
   onUpdateProject: (id: string, updates: { name?: string; emoji?: string }) => void;
+  getProjectViews: (projectId: string) => ViewKey[];
+  onAddView: (projectId: string, v: ViewKey) => void;
+  onRemoveView: (projectId: string, v: ViewKey) => void;
 };
 
 const EmojiPicker = ({ current, onSelect }: { current: string; onSelect: (emoji: string) => void }) => (
   <Popover>
     <PopoverTrigger asChild>
-      <button className="text-sm hover:scale-110 transition-transform shrink-0">{current}</button>
+      <button onClick={(e) => e.stopPropagation()} className="text-sm hover:scale-110 transition-transform shrink-0">{current}</button>
     </PopoverTrigger>
-    <PopoverContent className="w-48 p-2" align="start">
+    <PopoverContent className="w-48 p-2" align="start" onClick={(e) => e.stopPropagation()}>
       <div className="grid grid-cols-5 gap-1">
         {EMOJIS.map((e) => (
           <button
@@ -57,30 +70,36 @@ const ProjectItem = ({
   project,
   children,
   selectedId,
+  selectedView,
   onSelect,
   onDelete,
   onUpdateProject,
   onAddSub,
+  getProjectViews,
+  onAddView,
+  onRemoveView,
   depth = 0,
 }: {
   project: Project;
   children: Project[];
   selectedId: string | null;
-  onSelect: (id: string) => void;
+  selectedView: ViewKey;
+  onSelect: (id: string, view?: ViewKey) => void;
   onDelete: (id: string) => void;
   onUpdateProject: (id: string, updates: { name?: string; emoji?: string }) => void;
   onAddSub: (parentId: string) => void;
+  getProjectViews: (id: string) => ViewKey[];
+  onAddView: (id: string, v: ViewKey) => void;
+  onRemoveView: (id: string, v: ViewKey) => void;
   depth?: number;
 }) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(project.name);
-  const hasChildren = children.length > 0;
-
-  const startRename = () => {
-    setRenameValue(project.name);
-    setRenaming(true);
-  };
+  const hasSubProjects = children.length > 0;
+  const isSelected = selectedId === project.id;
+  const projectViews = getProjectViews(project.id);
+  const availableToAdd = ALL_VIEW_KEYS.filter((v) => !projectViews.includes(v));
 
   const commitRename = () => {
     const v = renameValue.trim();
@@ -88,21 +107,26 @@ const ProjectItem = ({
     setRenaming(false);
   };
 
+  const handleProjectClick = () => {
+    if (renaming) return;
+    onSelect(project.id);
+    setExpanded(true);
+  };
+
   return (
     <>
       <SidebarMenuItem>
         <SidebarMenuButton
-          onClick={() => !renaming && onSelect(project.id)}
-          className={`group/item text-sm font-light ${selectedId === project.id ? "bg-accent text-accent-foreground" : ""}`}
+          onClick={handleProjectClick}
+          className={`group/item text-sm font-light ${isSelected ? "bg-accent text-accent-foreground" : ""}`}
           style={{ paddingLeft: `${8 + depth * 16}px` }}
         >
-          {hasChildren ? (
-            <button onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }} className="shrink-0 mr-0.5">
-              <ChevronRight className={`h-3 w-3 transition-transform ${expanded ? "rotate-90" : ""}`} />
-            </button>
-          ) : (
-            <span className="w-3 mr-0.5 shrink-0" />
-          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+            className="shrink-0 mr-0.5"
+          >
+            <ChevronRight className={`h-3 w-3 transition-transform ${expanded ? "rotate-90" : ""}`} />
+          </button>
           <EmojiPicker current={project.emoji} onSelect={(emoji) => onUpdateProject(project.id, { emoji })} />
           {renaming ? (
             <Input
@@ -120,46 +144,102 @@ const ProjectItem = ({
           ) : (
             <span
               className="truncate flex-1 ml-1.5"
-              onDoubleClick={(e) => { e.stopPropagation(); startRename(); }}
+              onDoubleClick={(e) => { e.stopPropagation(); setRenameValue(project.name); setRenaming(true); }}
             >
               {project.name}
             </span>
           )}
           <div className="flex gap-0.5 opacity-0 group-hover/item:opacity-100 shrink-0">
-            <button
-              onClick={(e) => { e.stopPropagation(); startRename(); }}
-              className="text-muted-foreground hover:text-foreground"
-              title="Yeniden adlandır"
-            >
+            <button onClick={(e) => { e.stopPropagation(); setRenameValue(project.name); setRenaming(true); }} className="text-muted-foreground hover:text-foreground" title="Yeniden adlandır">
               <Pencil className="h-3 w-3" />
             </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onAddSub(project.id); }}
-              className="text-muted-foreground hover:text-foreground"
-              title="Alt proje ekle"
-            >
+            <button onClick={(e) => { e.stopPropagation(); onAddSub(project.id); }} className="text-muted-foreground hover:text-foreground" title="Alt proje">
               <Plus className="h-3 w-3" />
             </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}
-              className="text-muted-foreground hover:text-destructive"
-              title="Sil"
-            >
+            <button onClick={(e) => { e.stopPropagation(); onDelete(project.id); }} className="text-muted-foreground hover:text-destructive" title="Sil">
               <Trash2 className="h-3 w-3" />
             </button>
           </div>
         </SidebarMenuButton>
       </SidebarMenuItem>
+
+      {/* Alt sayfalar (görünümler) */}
+      {expanded && projectViews.map((vk) => {
+        const meta = VIEW_META[vk];
+        const Icon = meta.icon;
+        const active = isSelected && selectedView === vk;
+        return (
+          <SidebarMenuItem key={vk}>
+            <SidebarMenuButton
+              onClick={() => onSelect(project.id, vk)}
+              className={`text-xs font-light group/view ${active ? "bg-accent/60 text-accent-foreground" : "text-muted-foreground"}`}
+              style={{ paddingLeft: `${8 + (depth + 1) * 16 + 12}px` }}
+            >
+              <Icon className="h-3 w-3 shrink-0" />
+              <span className="truncate flex-1">{meta.label}</span>
+              {vk !== "notes" && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onRemoveView(project.id, vk); }}
+                  className="opacity-0 group-hover/view:opacity-100 text-muted-foreground hover:text-destructive shrink-0"
+                  title="Bu görünümü kaldır"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
+
+      {/* Görünüm ekle */}
+      {expanded && availableToAdd.length > 0 && (
+        <SidebarMenuItem>
+          <Popover>
+            <PopoverTrigger asChild>
+              <SidebarMenuButton
+                className="text-[10px] text-muted-foreground/70 font-light"
+                style={{ paddingLeft: `${8 + (depth + 1) * 16 + 12}px` }}
+              >
+                <Plus className="h-3 w-3" />
+                <span>Görünüm ekle</span>
+              </SidebarMenuButton>
+            </PopoverTrigger>
+            <PopoverContent className="w-44 p-1" align="start">
+              {availableToAdd.map((vk) => {
+                const meta = VIEW_META[vk];
+                const Icon = meta.icon;
+                return (
+                  <button
+                    key={vk}
+                    onClick={() => onAddView(project.id, vk)}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent rounded-sm transition-colors"
+                  >
+                    <Icon className="h-3 w-3" />
+                    <span>{meta.label}</span>
+                    <span className="text-muted-foreground/60 ml-auto text-[9px]">{meta.jp}</span>
+                  </button>
+                );
+              })}
+            </PopoverContent>
+          </Popover>
+        </SidebarMenuItem>
+      )}
+
+      {/* Alt projeler */}
       {expanded && children.map((child) => (
         <ProjectItem
           key={child.id}
           project={child}
           children={[]}
           selectedId={selectedId}
+          selectedView={selectedView}
           onSelect={onSelect}
           onDelete={onDelete}
           onUpdateProject={onUpdateProject}
           onAddSub={onAddSub}
+          getProjectViews={getProjectViews}
+          onAddView={onAddView}
+          onRemoveView={onRemoveView}
           depth={depth + 1}
         />
       ))}
@@ -167,7 +247,7 @@ const ProjectItem = ({
   );
 };
 
-const AppSidebar = ({ projects, selectedId, onSelect, onCreate, onDelete, onUpdateProject }: Props) => {
+const AppSidebar = ({ projects, selectedId, selectedView, onSelect, onCreate, onDelete, onUpdateProject, getProjectViews, onAddView, onRemoveView }: Props) => {
   const { signOut, user } = useAuth();
   const [newName, setNewName] = useState("");
   const [showInput, setShowInput] = useState(false);
@@ -211,10 +291,14 @@ const AppSidebar = ({ projects, selectedId, onSelect, onCreate, onDelete, onUpda
                     project={project}
                     children={getChildren(project.id)}
                     selectedId={selectedId}
+                    selectedView={selectedView}
                     onSelect={onSelect}
                     onDelete={onDelete}
                     onUpdateProject={onUpdateProject}
                     onAddSub={handleAddSub}
+                    getProjectViews={getProjectViews}
+                    onAddView={onAddView}
+                    onRemoveView={onRemoveView}
                   />
                   {addingParentId === project.id && (
                     <SidebarMenuItem>
