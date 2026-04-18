@@ -7,6 +7,8 @@ import TableView from "@/components/TableView";
 import GanttView from "@/components/GanttView";
 import KanbanView from "@/components/KanbanView";
 import WeeklyCalendarView from "@/components/WeeklyCalendarView";
+import JournalView from "@/components/JournalView";
+import { format } from "date-fns";
 import { useProjects } from "@/hooks/useProjects";
 import { useProjectViews, ViewKey } from "@/hooks/useProjectViews";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -23,6 +25,7 @@ const Index = () => {
   const { projects, loading, createProject, updateProject, deleteProject } = useProjects();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [view, setView] = useState<ViewKey>("notes");
+  const [journalDate, setJournalDate] = useState<string | null>(null);
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
   const { views: projectViews, addView, removeView } = useProjectViews(selectedProjectId);
@@ -59,17 +62,21 @@ const Index = () => {
 
   const handleCreate = async (name: string, parentId?: string) => {
     const p = await createProject(name, parentId);
-    if (p) { setSelectedProjectId(p.id); setView("notes"); }
+    if (p) { setSelectedProjectId(p.id); setView("notes"); setJournalDate(null); }
   };
 
   const handleSelect = (id: string, v?: ViewKey) => {
+    setJournalDate(null);
     setSelectedProjectId(id);
     if (v) setView(v);
     else {
-      // Default: open first available view (notes)
       const pvs = getProjectViewsFor(id);
       setView(pvs.includes(view) ? view : (pvs[0] || "notes"));
     }
+  };
+
+  const handleSelectJournal = (date: string) => {
+    setJournalDate(date);
   };
 
   const handleDelete = async (id: string) => {
@@ -87,7 +94,7 @@ const Index = () => {
       <div className="min-h-screen flex w-full">
         <AppSidebar
           projects={projects}
-          selectedId={selectedProjectId}
+          selectedId={journalDate ? null : selectedProjectId}
           selectedView={view}
           onSelect={handleSelect}
           onCreate={handleCreate}
@@ -96,13 +103,20 @@ const Index = () => {
           getProjectViews={getProjectViewsFor}
           onAddView={handleAddViewFor}
           onRemoveView={handleRemoveViewFor}
+          journalDate={journalDate}
+          onSelectJournal={handleSelectJournal}
         />
 
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-12 flex items-center justify-between border-b border-border/60 px-4 gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <SidebarTrigger className="text-muted-foreground" />
-              {selectedProject && (
+              {journalDate ? (
+                <h1 className="text-base tracking-wide truncate font-light">
+                  <span className="mr-2">📔</span>
+                  日記 · {format(new Date(journalDate), "d MMMM yyyy")}
+                </h1>
+              ) : selectedProject && (
                 <h1 className="text-base tracking-wide truncate font-light">
                   <span className="mr-2">{selectedProject.emoji}</span>
                   {selectedProject.name}
@@ -110,7 +124,7 @@ const Index = () => {
               )}
             </div>
 
-            {selectedProject && (
+            {!journalDate && selectedProject && (
               <nav className="flex items-center gap-0.5">
                 {VIEWS.filter((v) => activeViews.includes(v.id)).map((v) => {
                   const Icon = v.icon;
@@ -164,7 +178,9 @@ const Index = () => {
           </header>
 
           <main className="flex-1 p-6 overflow-auto">
-            {!selectedProject ? (
+            {journalDate ? (
+              <JournalView key={journalDate} date={journalDate} />
+            ) : !selectedProject ? (
               <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                 <div className="text-center space-y-2">
                   <p className="text-2xl tracking-widest">計画</p>
