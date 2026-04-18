@@ -47,6 +47,75 @@ type Props = {
   getProjectViews: (projectId: string) => ViewKey[];
   onAddView: (projectId: string, v: ViewKey) => void;
   onRemoveView: (projectId: string, v: ViewKey) => void;
+  journalDate: string | null;
+  onSelectJournal: (date: string) => void;
+};
+
+const JournalSection = ({ journalDate, onSelectJournal }: { journalDate: string | null; onSelectJournal: (d: string) => void }) => {
+  const today = format(new Date(), "yyyy-MM-dd");
+  const active = journalDate !== null;
+  const current = journalDate || today;
+  const currentDate = parseISO(current);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const shift = (n: number) => {
+    onSelectJournal(format(addDays(currentDate, n), "yyyy-MM-dd"));
+  };
+
+  return (
+    <div className="px-2 py-2">
+      <button
+        onClick={() => onSelectJournal(current)}
+        className={cn(
+          "w-full flex items-center gap-1.5 px-1.5 py-1 rounded-sm text-xs transition-colors",
+          active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+        )}
+      >
+        <BookOpen className="h-3 w-3 shrink-0" />
+        <span className="font-light tracking-wide">日記 Günlük</span>
+      </button>
+      <div className="flex items-center gap-0.5 mt-1.5">
+        <button
+          onClick={(e) => { e.stopPropagation(); shift(-1); }}
+          className="p-1 text-muted-foreground hover:text-foreground rounded-sm hover:bg-accent/50"
+          title="Önceki gün"
+        >
+          <ChevronLeft className="h-3 w-3" />
+        </button>
+        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+          <PopoverTrigger asChild>
+            <button
+              className="flex-1 text-[11px] text-center font-light tracking-wide text-muted-foreground hover:text-foreground py-1 rounded-sm hover:bg-accent/50 transition-colors"
+              title="Tarih seç"
+            >
+              {format(currentDate, "d MMM yyyy", { locale: tr })}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <CalendarPicker
+              mode="single"
+              selected={currentDate}
+              onSelect={(d) => {
+                if (d) {
+                  onSelectJournal(format(d, "yyyy-MM-dd"));
+                  setPickerOpen(false);
+                }
+              }}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
+        <button
+          onClick={(e) => { e.stopPropagation(); shift(1); }}
+          className="p-1 text-muted-foreground hover:text-foreground rounded-sm hover:bg-accent/50"
+          title="Sonraki gün"
+        >
+          <ChevronRight className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
+  );
 };
 
 const EmojiPicker = ({ current, onSelect }: { current: string; onSelect: (emoji: string) => void }) => (
