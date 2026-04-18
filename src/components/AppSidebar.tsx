@@ -320,7 +320,7 @@ const ProjectItem = ({
   );
 };
 
-const AppSidebar = ({ projects, selectedId, selectedView, onSelect, onCreate, onDelete, onUpdateProject, getProjectViews, onAddView, onRemoveView }: Props) => {
+const AppSidebar = ({ projects, selectedId, selectedView, onSelect, onCreate, onDelete, onUpdateProject, getProjectViews, onAddView, onRemoveView, journalDate, onSelectJournal }: Props) => {
   const { signOut, user } = useAuth();
   const [newName, setNewName] = useState("");
   const [showInput, setShowInput] = useState(false);
