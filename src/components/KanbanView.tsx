@@ -138,6 +138,7 @@ const KanbanColumn = ({
 }) => {
   const [newTitle, setNewTitle] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+  const [showAllDone, setShowAllDone] = useState(false);
 
   const handleAdd = () => {
     if (!newTitle.trim()) return;
@@ -145,6 +146,14 @@ const KanbanColumn = ({
     setNewTitle("");
     setIsAdding(false);
   };
+
+  const isDoneCol = column.key === "done";
+  // Sort done by most recently updated (use created_at desc as proxy)
+  const sorted = isDoneCol
+    ? [...tasks].sort((a, b) => (b.created_at > a.created_at ? 1 : -1))
+    : tasks;
+  const visibleTasks = isDoneCol && !showAllDone ? sorted.slice(0, 3) : sorted;
+  const hiddenCount = isDoneCol ? Math.max(0, sorted.length - 3) : 0;
 
   return (
     <div
@@ -183,9 +192,17 @@ const KanbanColumn = ({
             </div>
           </div>
         )}
-        {tasks.map((task) => (
+        {visibleTasks.map((task) => (
           <KanbanCard key={task.id} task={task} onUpdate={onUpdateTask} onDelete={onDeleteTask} onDragStart={onDragStart} />
         ))}
+        {isDoneCol && hiddenCount > 0 && (
+          <button
+            onClick={() => setShowAllDone(!showAllDone)}
+            className="w-full text-xs text-muted-foreground hover:text-foreground py-2 tracking-wide transition-colors"
+          >
+            {showAllDone ? "↑ Sadece son 3'ü göster" : `↓ ${hiddenCount} tane daha göster`}
+          </button>
+        )}
       </div>
     </div>
   );
