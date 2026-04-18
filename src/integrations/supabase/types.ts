@@ -92,9 +92,13 @@ export type Database = {
           created_at: string
           description: string | null
           end_date: string | null
+          end_time: string | null
+          hidden: boolean
           id: string
+          position: number
           project_id: string
           start_date: string | null
+          start_time: string | null
           status: Database["public"]["Enums"]["task_status"]
           title: string
           user_id: string
@@ -103,9 +107,13 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_date?: string | null
+          end_time?: string | null
+          hidden?: boolean
           id?: string
+          position?: number
           project_id: string
           start_date?: string | null
+          start_time?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           title: string
           user_id: string
@@ -114,9 +122,13 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_date?: string | null
+          end_time?: string | null
+          hidden?: boolean
           id?: string
+          position?: number
           project_id?: string
           start_date?: string | null
+          start_time?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           title?: string
           user_id?: string
