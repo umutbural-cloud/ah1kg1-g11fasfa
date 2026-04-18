@@ -1,6 +1,10 @@
 import { useState } from "react";
-import { Plus, Trash2, LogOut, ChevronRight, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X } from "lucide-react";
+import { Plus, Trash2, LogOut, ChevronRight, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, BookOpen, ChevronLeft } from "lucide-react";
+import { format, addDays, parseISO } from "date-fns";
+import { tr } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import {
   Sidebar,
   SidebarContent,
