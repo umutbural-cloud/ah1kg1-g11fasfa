@@ -81,12 +81,12 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
   const handleCreate = async () => {
     if (!newTitle.trim() || !selectedSlot) return;
     const dateStr = format(selectedSlot.date, "yyyy-MM-dd");
-    const description = `${startTime} – ${endTime}`;
     await createTask({
       title: newTitle.trim(),
       start_date: dateStr,
       end_date: dateStr,
-      description,
+      start_time: startTime,
+      end_time: endTime,
     });
     setNewTitle("");
     setSelectedSlot(null);
@@ -181,7 +181,7 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
           <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border/60 min-h-[40px]">
             <div className="text-[9px] text-muted-foreground p-1.5 tracking-wide">tüm gün</div>
             {days.map((day, i) => {
-              const dayTasks = getTasksForDay(day).filter((t) => !t.description?.match(/\d{2}:\d{2}/));
+              const dayTasks = getTasksForDay(day).filter((t) => !t.start_time);
               return (
                 <div
                   key={i}
@@ -214,12 +214,10 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                     dragging && isSameDay(dragging.day, day) &&
                     hour >= Math.min(dragging.startHour, dragging.currentHour) &&
                     hour <= Math.max(dragging.startHour, dragging.currentHour);
-                  // Show timed task blocks at their start hour
                   const timedTasks = tasks.filter((t) => {
-                    if (!t.start_date || !t.description) return false;
+                    if (!t.start_date || !t.start_time) return false;
                     if (!isSameDay(parseISO(t.start_date), day)) return false;
-                    const m = t.description.match(/^(\d{2}):\d{2}/);
-                    return m && parseInt(m[1]) === hour;
+                    return parseInt(t.start_time.slice(0, 2)) === hour;
                   });
                   return (
                     <div
@@ -231,10 +229,9 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                       }`}
                     >
                       {timedTasks.map((t) => {
-                        const m = t.description!.match(/^(\d{2}):(\d{2})\s*–\s*(\d{2}):(\d{2})/);
-                        const sh = m ? parseInt(m[1]) + parseInt(m[2]) / 60 : hour;
-                        const eh = m ? parseInt(m[3]) + parseInt(m[4]) / 60 : hour + 1;
-                        const heightHrs = Math.max(0.5, eh - sh);
+                        const [sh, sm] = t.start_time!.split(":").map(Number);
+                        const [eh, em] = (t.end_time || t.start_time!).split(":").map(Number);
+                        const heightHrs = Math.max(0.5, (eh + em / 60) - (sh + sm / 60));
                         return (
                           <div
                             key={t.id}
@@ -243,7 +240,8 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                             className="absolute left-0.5 right-0.5 px-1.5 py-1 rounded-sm bg-foreground/15 hover:bg-foreground/25 border-l-2 border-foreground/50 text-[10px] font-light truncate cursor-pointer z-10"
                             style={{ top: 1, height: `${heightHrs * SLOT_HEIGHT - 2}px` }}
                           >
-                            {t.title}
+                            <div className="truncate">{t.title}</div>
+                            <div className="text-[9px] text-muted-foreground">{t.start_time?.slice(0,5)}{t.end_time && `–${t.end_time.slice(0,5)}`}</div>
                           </div>
                         );
                       })}
@@ -388,11 +386,35 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                   />
                 </div>
               </div>
-              {openTask.description && (
-                <div className="text-xs text-muted-foreground tracking-wide">
-                  {openTask.description}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Başlangıç saati</div>
+                  <Input
+                    type="time"
+                    value={openTask.start_time?.slice(0,5) || ""}
+                    onChange={(e) => {
+                      const v = e.target.value || null;
+                      setOpenTask({ ...openTask, start_time: v });
+                      updateTask(openTask.id, { start_time: v });
+                    }}
+                    className="bg-transparent h-8 text-xs"
+                  />
                 </div>
-              )}
+                <div>
+                  <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Bitiş saati</div>
+                  <Input
+                    type="time"
+                    value={openTask.end_time?.slice(0,5) || ""}
+                    min={openTask.start_time?.slice(0,5)}
+                    onChange={(e) => {
+                      const v = e.target.value || null;
+                      setOpenTask({ ...openTask, end_time: v });
+                      updateTask(openTask.id, { end_time: v });
+                    }}
+                    className="bg-transparent h-8 text-xs"
+                  />
+                </div>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
