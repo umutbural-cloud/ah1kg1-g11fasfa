@@ -420,6 +420,10 @@ const AppSidebar = ({ projects, selectedId, selectedView, onSelect, onCreate, on
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <div className="border-t border-border/60 mt-1">
+          <JournalSection journalDate={journalDate} onSelectJournal={onSelectJournal} />
+        </div>
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/60 p-3">
