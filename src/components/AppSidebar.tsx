@@ -1,10 +1,6 @@
 import { useState } from "react";
-import { Plus, Trash2, LogOut, ChevronRight, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, BookOpen, ChevronLeft } from "lucide-react";
-import { format, addDays, parseISO } from "date-fns";
-import { tr } from "date-fns/locale";
+import { Plus, Trash2, LogOut, ChevronRight, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Calendar as CalendarPicker } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
 import {
   Sidebar,
   SidebarContent,
@@ -36,86 +32,20 @@ const VIEW_META: Record<ViewKey, { label: string; jp: string; icon: any }> = {
 };
 const ALL_VIEW_KEYS: ViewKey[] = ["notes", "table", "gantt", "kanban", "calendar"];
 
+export type Section = "project" | "backlog" | "trash" | "journal";
+
 type Props = {
   projects: Project[];
   selectedId: string | null;
   selectedView: ViewKey;
+  section: Section;
   onSelect: (id: string, view?: ViewKey) => void;
   onCreate: (name: string, parentId?: string) => void;
   onDelete: (id: string) => void;
-  onUpdateProject: (id: string, updates: { name?: string; emoji?: string }) => void;
-  getProjectViews: (projectId: string) => ViewKey[];
-  onAddView: (projectId: string, v: ViewKey) => void;
-  onRemoveView: (projectId: string, v: ViewKey) => void;
-  journalDate: string | null;
-  onSelectJournal: (date: string) => void;
-};
-
-const JournalSection = ({ journalDate, onSelectJournal }: { journalDate: string | null; onSelectJournal: (d: string) => void }) => {
-  const today = format(new Date(), "yyyy-MM-dd");
-  const active = journalDate !== null;
-  const current = journalDate || today;
-  const currentDate = parseISO(current);
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  const shift = (n: number) => {
-    onSelectJournal(format(addDays(currentDate, n), "yyyy-MM-dd"));
-  };
-
-  return (
-    <div className="px-2 py-2">
-      <button
-        onClick={() => onSelectJournal(current)}
-        className={cn(
-          "w-full flex items-center gap-1.5 px-1.5 py-1 rounded-sm text-xs transition-colors",
-          active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-        )}
-      >
-        <BookOpen className="h-3 w-3 shrink-0" />
-        <span className="font-light tracking-wide">日記 Günlük</span>
-      </button>
-      <div className="flex items-center gap-0.5 mt-1.5">
-        <button
-          onClick={(e) => { e.stopPropagation(); shift(-1); }}
-          className="p-1 text-muted-foreground hover:text-foreground rounded-sm hover:bg-accent/50"
-          title="Önceki gün"
-        >
-          <ChevronLeft className="h-3 w-3" />
-        </button>
-        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-          <PopoverTrigger asChild>
-            <button
-              className="flex-1 text-[11px] text-center font-light tracking-wide text-muted-foreground hover:text-foreground py-1 rounded-sm hover:bg-accent/50 transition-colors"
-              title="Tarih seç"
-            >
-              {format(currentDate, "d MMM yyyy", { locale: tr })}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <CalendarPicker
-              mode="single"
-              selected={currentDate}
-              onSelect={(d) => {
-                if (d) {
-                  onSelectJournal(format(d, "yyyy-MM-dd"));
-                  setPickerOpen(false);
-                }
-              }}
-              initialFocus
-              className={cn("p-3 pointer-events-auto")}
-            />
-          </PopoverContent>
-        </Popover>
-        <button
-          onClick={(e) => { e.stopPropagation(); shift(1); }}
-          className="p-1 text-muted-foreground hover:text-foreground rounded-sm hover:bg-accent/50"
-          title="Sonraki gün"
-        >
-          <ChevronRight className="h-3 w-3" />
-        </button>
-      </div>
-    </div>
-  );
+  onUpdateProject: (id: string, updates: { name?: string; emoji?: string; enabled_views?: ViewKey[] }) => void;
+  onSelectBacklog: () => void;
+  onSelectTrash: () => void;
+  onSelectJournal: () => void;
 };
 
 const EmojiPicker = ({ current, onSelect }: { current: string; onSelect: (emoji: string) => void }) => (
@@ -144,34 +74,29 @@ const ProjectItem = ({
   children,
   selectedId,
   selectedView,
+  section,
   onSelect,
   onDelete,
   onUpdateProject,
   onAddSub,
-  getProjectViews,
-  onAddView,
-  onRemoveView,
   depth = 0,
 }: {
   project: Project;
   children: Project[];
   selectedId: string | null;
   selectedView: ViewKey;
+  section: Section;
   onSelect: (id: string, view?: ViewKey) => void;
   onDelete: (id: string) => void;
-  onUpdateProject: (id: string, updates: { name?: string; emoji?: string }) => void;
+  onUpdateProject: (id: string, updates: { name?: string; emoji?: string; enabled_views?: ViewKey[] }) => void;
   onAddSub: (parentId: string) => void;
-  getProjectViews: (id: string) => ViewKey[];
-  onAddView: (id: string, v: ViewKey) => void;
-  onRemoveView: (id: string, v: ViewKey) => void;
   depth?: number;
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(project.name);
-  const hasSubProjects = children.length > 0;
-  const isSelected = selectedId === project.id;
-  const projectViews = getProjectViews(project.id);
+  const isSelected = section === "project" && selectedId === project.id;
+  const projectViews = project.enabled_views || ["notes", "table"];
   const availableToAdd = ALL_VIEW_KEYS.filter((v) => !projectViews.includes(v));
 
   const commitRename = () => {
@@ -185,6 +110,9 @@ const ProjectItem = ({
     onSelect(project.id);
     setExpanded(true);
   };
+
+  const addView = (v: ViewKey) => onUpdateProject(project.id, { enabled_views: [...projectViews, v] });
+  const removeView = (v: ViewKey) => onUpdateProject(project.id, { enabled_views: projectViews.filter((x) => x !== v) });
 
   return (
     <>
@@ -252,7 +180,7 @@ const ProjectItem = ({
               <span className="truncate flex-1">{meta.label}</span>
               {vk !== "notes" && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); onRemoveView(project.id, vk); }}
+                  onClick={(e) => { e.stopPropagation(); removeView(vk); }}
                   className="opacity-0 group-hover/view:opacity-100 text-muted-foreground hover:text-destructive shrink-0"
                   title="Bu görünümü kaldır"
                 >
@@ -284,7 +212,7 @@ const ProjectItem = ({
                 return (
                   <button
                     key={vk}
-                    onClick={() => onAddView(project.id, vk)}
+                    onClick={() => addView(vk)}
                     className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent rounded-sm transition-colors"
                   >
                     <Icon className="h-3 w-3" />
@@ -306,13 +234,11 @@ const ProjectItem = ({
           children={[]}
           selectedId={selectedId}
           selectedView={selectedView}
+          section={section}
           onSelect={onSelect}
           onDelete={onDelete}
           onUpdateProject={onUpdateProject}
           onAddSub={onAddSub}
-          getProjectViews={getProjectViews}
-          onAddView={onAddView}
-          onRemoveView={onRemoveView}
           depth={depth + 1}
         />
       ))}
@@ -320,7 +246,7 @@ const ProjectItem = ({
   );
 };
 
-const AppSidebar = ({ projects, selectedId, selectedView, onSelect, onCreate, onDelete, onUpdateProject, getProjectViews, onAddView, onRemoveView, journalDate, onSelectJournal }: Props) => {
+const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onCreate, onDelete, onUpdateProject, onSelectBacklog, onSelectTrash, onSelectJournal }: Props) => {
   const { signOut, user } = useAuth();
   const [newName, setNewName] = useState("");
   const [showInput, setShowInput] = useState(false);
@@ -352,6 +278,32 @@ const AppSidebar = ({ projects, selectedId, selectedView, onSelect, onCreate, on
   return (
     <Sidebar collapsible="icon" className="border-r border-border/60">
       <SidebarContent>
+        {/* Heybe */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={onSelectBacklog}
+                  className={`text-sm font-light ${section === "backlog" ? "bg-accent text-accent-foreground" : ""}`}
+                >
+                  <Package className="h-3.5 w-3.5" />
+                  <span className="tracking-wide">荷袋 Heybe</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={onSelectJournal}
+                  className={`text-sm font-light ${section === "journal" ? "bg-accent text-accent-foreground" : ""}`}
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  <span className="tracking-wide">日記 Günlük</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">
             計画 Projeler
@@ -365,13 +317,11 @@ const AppSidebar = ({ projects, selectedId, selectedView, onSelect, onCreate, on
                     children={getChildren(project.id)}
                     selectedId={selectedId}
                     selectedView={selectedView}
+                    section={section}
                     onSelect={onSelect}
                     onDelete={onDelete}
                     onUpdateProject={onUpdateProject}
                     onAddSub={handleAddSub}
-                    getProjectViews={getProjectViews}
-                    onAddView={onAddView}
-                    onRemoveView={onRemoveView}
                   />
                   {addingParentId === project.id && (
                     <SidebarMenuItem>
@@ -421,9 +371,22 @@ const AppSidebar = ({ projects, selectedId, selectedView, onSelect, onCreate, on
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <div className="border-t border-border/60 mt-1">
-          <JournalSection journalDate={journalDate} onSelectJournal={onSelectJournal} />
-        </div>
+        {/* Çöp kutusu */}
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={onSelectTrash}
+                  className={`text-xs font-light ${section === "trash" ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`}
+                >
+                  <Trash className="h-3 w-3" />
+                  <span className="tracking-wide">ゴミ箱 Çöp Kutusu</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/60 p-3">

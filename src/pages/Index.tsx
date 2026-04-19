@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { FileText, Table as TableIcon, GanttChart, Kanban, Calendar, Plus } from "lucide-react";
-import AppSidebar from "@/components/AppSidebar";
+import { FileText, Table as TableIcon, GanttChart, Kanban, Calendar, Plus, Undo, Redo } from "lucide-react";
+import { format } from "date-fns";
+import AppSidebar, { Section } from "@/components/AppSidebar";
 import NotesView from "@/components/NotesView";
 import TableView from "@/components/TableView";
 import GanttView from "@/components/GanttView";
 import KanbanView from "@/components/KanbanView";
 import WeeklyCalendarView from "@/components/WeeklyCalendarView";
 import JournalView from "@/components/JournalView";
-import { format } from "date-fns";
+import BacklogView from "@/components/BacklogView";
+import TrashView from "@/components/TrashView";
 import { useProjects } from "@/hooks/useProjects";
-import { useProjectViews, ViewKey } from "@/hooks/useProjectViews";
+import { ViewKey } from "@/hooks/useProjectViews";
+import { useUndo } from "@/hooks/useUndo";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const VIEWS: { id: ViewKey; label: string; jp: string; icon: any }[] = [
@@ -23,100 +26,86 @@ const VIEWS: { id: ViewKey; label: string; jp: string; icon: any }[] = [
 
 const Index = () => {
   const { projects, loading, createProject, updateProject, deleteProject } = useProjects();
+  const { undo, redo, canUndo, canRedo } = useUndo();
+  const [section, setSection] = useState<Section>("backlog");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [view, setView] = useState<ViewKey>("notes");
-  const [journalDate, setJournalDate] = useState<string | null>(null);
+  const [journalDate, setJournalDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
-  const { views: projectViews, addView, removeView } = useProjectViews(selectedProjectId);
+  const projectViews: ViewKey[] = selectedProject?.enabled_views || ["notes", "table"];
 
-  if (!selectedProjectId && projects.length > 0 && !loading) {
-    setSelectedProjectId(projects[0].id);
-  }
+  // Auto-select first project once loaded if nothing selected
+  useEffect(() => {
+    if (!loading && !selectedProjectId && projects.length > 0 && section === "backlog") {
+      // keep on backlog by default; but allow project click to switch
+    }
+  }, [loading, projects, selectedProjectId, section]);
 
-  // Per-project views helper for sidebar
-  const getProjectViewsFor = (pid: string): ViewKey[] => {
-    try {
-      const m = JSON.parse(localStorage.getItem("keikaku.projectViews.v1") || "{}");
-      return m[pid] || ["notes", "table"];
-    } catch { return ["notes", "table"]; }
-  };
-
-  const handleAddViewFor = (pid: string, v: ViewKey) => {
-    const m = (() => { try { return JSON.parse(localStorage.getItem("keikaku.projectViews.v1") || "{}"); } catch { return {}; } })();
-    const cur: ViewKey[] = m[pid] || ["notes", "table"];
-    if (cur.includes(v)) return;
-    m[pid] = [...cur, v];
-    localStorage.setItem("keikaku.projectViews.v1", JSON.stringify(m));
-    if (pid === selectedProjectId) addView(v);
-    else setSelectedProjectId(selectedProjectId); // force render
-  };
-  const handleRemoveViewFor = (pid: string, v: ViewKey) => {
-    const m = (() => { try { return JSON.parse(localStorage.getItem("keikaku.projectViews.v1") || "{}"); } catch { return {}; } })();
-    const cur: ViewKey[] = m[pid] || ["notes", "table"];
-    m[pid] = cur.filter((x) => x !== v);
-    localStorage.setItem("keikaku.projectViews.v1", JSON.stringify(m));
-    if (pid === selectedProjectId) removeView(v);
-    if (pid === selectedProjectId && view === v) setView("notes");
-  };
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const meta = e.metaKey || e.ctrlKey;
+      if (!meta) return;
+      if (e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      else if ((e.key === "z" && e.shiftKey) || e.key === "y") { e.preventDefault(); redo(); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [undo, redo]);
 
   const handleCreate = async (name: string, parentId?: string) => {
     const p = await createProject(name, parentId);
-    if (p) { setSelectedProjectId(p.id); setView("notes"); setJournalDate(null); }
+    if (p) { setSelectedProjectId(p.id); setSection("project"); setView("notes"); }
   };
 
   const handleSelect = (id: string, v?: ViewKey) => {
-    setJournalDate(null);
+    setSection("project");
     setSelectedProjectId(id);
+    const project = projects.find((p) => p.id === id);
+    const pvs = project?.enabled_views || ["notes", "table"];
     if (v) setView(v);
-    else {
-      const pvs = getProjectViewsFor(id);
-      setView(pvs.includes(view) ? view : (pvs[0] || "notes"));
-    }
-  };
-
-  const handleSelectJournal = (date: string) => {
-    setJournalDate(date);
+    else setView(pvs.includes(view) ? view : (pvs[0] || "notes"));
   };
 
   const handleDelete = async (id: string) => {
     await deleteProject(id);
     if (selectedProjectId === id) {
-      setSelectedProjectId(projects.find((p) => p.id !== id)?.id || null);
+      setSelectedProjectId(null);
+      setSection("backlog");
     }
   };
 
-  const activeViews = selectedProject ? projectViews : [];
-  const availableToAdd = VIEWS.filter((v) => !activeViews.includes(v.id));
+  const addView = (v: ViewKey) => {
+    if (!selectedProject) return;
+    if (projectViews.includes(v)) return;
+    updateProject(selectedProject.id, { enabled_views: [...projectViews, v] });
+  };
+
+  const availableToAdd = VIEWS.filter((v) => !projectViews.includes(v.id));
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar
           projects={projects}
-          selectedId={journalDate ? null : selectedProjectId}
+          selectedId={selectedProjectId}
           selectedView={view}
+          section={section}
           onSelect={handleSelect}
           onCreate={handleCreate}
           onDelete={handleDelete}
           onUpdateProject={updateProject}
-          getProjectViews={getProjectViewsFor}
-          onAddView={handleAddViewFor}
-          onRemoveView={handleRemoveViewFor}
-          journalDate={journalDate}
-          onSelectJournal={handleSelectJournal}
+          onSelectBacklog={() => setSection("backlog")}
+          onSelectTrash={() => setSection("trash")}
+          onSelectJournal={() => setSection("journal")}
         />
 
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-12 flex items-center justify-between border-b border-border/60 px-4 gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <SidebarTrigger className="text-muted-foreground" />
-              {journalDate ? (
-                <h1 className="text-base tracking-wide truncate font-light">
-                  <span className="mr-2">📔</span>
-                  日記 · {format(new Date(journalDate), "d MMMM yyyy")}
-                </h1>
-              ) : selectedProject && (
+              {section === "project" && selectedProject && (
                 <h1 className="text-base tracking-wide truncate font-light">
                   <span className="mr-2">{selectedProject.emoji}</span>
                   {selectedProject.name}
@@ -124,81 +113,104 @@ const Index = () => {
               )}
             </div>
 
-            {!journalDate && selectedProject && (
-              <nav className="flex items-center gap-0.5">
-                {VIEWS.filter((v) => activeViews.includes(v.id)).map((v) => {
-                  const Icon = v.icon;
-                  const active = view === v.id;
-                  return (
-                    <button
-                      key={v.id}
-                      onClick={() => setView(v.id)}
-                      title={`${v.jp} ${v.label}`}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs tracking-wide transition-colors ${
-                        active
-                          ? "bg-accent text-accent-foreground"
-                          : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                      }`}
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                      <span className="hidden md:inline">{v.label}</span>
-                    </button>
-                  );
-                })}
-                {availableToAdd.length > 0 && (
-                  <Popover>
-                    <PopoverTrigger asChild>
+            <div className="flex items-center gap-2">
+              {section === "project" && selectedProject && (
+                <nav className="flex items-center gap-0.5 mr-2">
+                  {VIEWS.filter((v) => projectViews.includes(v.id)).map((v) => {
+                    const Icon = v.icon;
+                    const active = view === v.id;
+                    return (
                       <button
-                        title="Görünüm ekle"
-                        className="flex items-center gap-1 px-1.5 py-1 rounded-sm text-xs text-muted-foreground/70 hover:bg-accent/50 hover:text-foreground transition-colors"
+                        key={v.id}
+                        onClick={() => setView(v.id)}
+                        title={`${v.jp} ${v.label}`}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs tracking-wide transition-colors ${
+                          active
+                            ? "bg-accent text-accent-foreground"
+                            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                        }`}
                       >
-                        <Plus className="h-3 w-3" />
+                        <Icon className="h-3.5 w-3.5" />
+                        <span className="hidden md:inline">{v.label}</span>
                       </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-44 p-1" align="end">
-                      {availableToAdd.map((v) => {
-                        const Icon = v.icon;
-                        return (
-                          <button
-                            key={v.id}
-                            onClick={() => { addView(v.id); setView(v.id); }}
-                            className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent rounded-sm transition-colors"
-                          >
-                            <Icon className="h-3 w-3" />
-                            <span>{v.label}</span>
-                            <span className="text-muted-foreground/60 ml-auto text-[9px]">{v.jp}</span>
-                          </button>
-                        );
-                      })}
-                    </PopoverContent>
-                  </Popover>
-                )}
-              </nav>
-            )}
+                    );
+                  })}
+                  {availableToAdd.length > 0 && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          title="Görünüm ekle"
+                          className="flex items-center gap-1 px-1.5 py-1 rounded-sm text-xs text-muted-foreground/70 hover:bg-accent/50 hover:text-foreground transition-colors"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-44 p-1" align="end">
+                        {availableToAdd.map((v) => {
+                          const Icon = v.icon;
+                          return (
+                            <button
+                              key={v.id}
+                              onClick={() => { addView(v.id); setView(v.id); }}
+                              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent rounded-sm transition-colors"
+                            >
+                              <Icon className="h-3 w-3" />
+                              <span>{v.label}</span>
+                              <span className="text-muted-foreground/60 ml-auto text-[9px]">{v.jp}</span>
+                            </button>
+                          );
+                        })}
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </nav>
+              )}
+              <button
+                onClick={() => undo()}
+                disabled={!canUndo}
+                title="Geri al (Ctrl/Cmd+Z)"
+                className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-colors"
+              >
+                <Undo className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => redo()}
+                disabled={!canRedo}
+                title="Yinele (Ctrl/Cmd+Shift+Z)"
+                className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-colors"
+              >
+                <Redo className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </header>
 
           <main className="flex-1 p-6 overflow-auto">
-            {journalDate ? (
-              <JournalView key={journalDate} date={journalDate} />
-            ) : !selectedProject ? (
-              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                <div className="text-center space-y-2">
-                  <p className="text-2xl tracking-widest">計画</p>
-                  <p className="text-xs">Bir proje seçin veya yeni bir proje oluşturun</p>
+            {section === "backlog" && <BacklogView />}
+            {section === "trash" && <TrashView />}
+            {section === "journal" && (
+              <JournalView key={journalDate} date={journalDate} onDateChange={setJournalDate} />
+            )}
+            {section === "project" && (
+              !selectedProject ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  <div className="text-center space-y-2">
+                    <p className="text-2xl tracking-widest">計画</p>
+                    <p className="text-xs">Bir proje seçin veya yeni bir proje oluşturun</p>
+                  </div>
                 </div>
-              </div>
-            ) : !activeViews.includes(view) ? (
-              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                <p className="text-xs">Bu görünüm bu projeye eklenmemiş</p>
-              </div>
-            ) : (
-              <>
-                {view === "notes" && <NotesView key={selectedProject.id} projectId={selectedProject.id} />}
-                {view === "table" && <TableView projectId={selectedProject.id} />}
-                {view === "gantt" && <GanttView projectId={selectedProject.id} />}
-                {view === "kanban" && <KanbanView projectId={selectedProject.id} />}
-                {view === "calendar" && <WeeklyCalendarView projectId={selectedProject.id} />}
-              </>
+              ) : !projectViews.includes(view) ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  <p className="text-xs">Bu görünüm bu projeye eklenmemiş</p>
+                </div>
+              ) : (
+                <>
+                  {view === "notes" && <NotesView key={selectedProject.id} projectId={selectedProject.id} />}
+                  {view === "table" && <TableView projectId={selectedProject.id} />}
+                  {view === "gantt" && <GanttView projectId={selectedProject.id} />}
+                  {view === "kanban" && <KanbanView projectId={selectedProject.id} />}
+                  {view === "calendar" && <WeeklyCalendarView projectId={selectedProject.id} />}
+                </>
+              )
             )}
           </main>
         </div>

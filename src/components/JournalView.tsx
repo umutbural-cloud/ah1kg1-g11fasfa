@@ -6,12 +6,15 @@ import TaskItem from "@tiptap/extension-task-item";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
   Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3,
-  CheckSquare, Quote, Strikethrough, Undo, Redo,
+  CheckSquare, Quote, Strikethrough, Undo, Redo, ChevronLeft, ChevronRight, Calendar as CalendarIcon,
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, addDays } from "date-fns";
 import { tr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const ToolbarButton = ({
   onClick, active, children, title,
@@ -56,11 +59,14 @@ function safeParse(s: string): any {
   try { return JSON.parse(s); } catch { return s; }
 }
 
-const JournalView = ({ date }: { date: string }) => {
+const JournalView = ({ date, onDateChange }: { date: string; onDateChange: (d: string) => void }) => {
   const { user } = useAuth();
   const [entryId, setEntryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const currentDate = parseISO(date);
 
   const editor = useEditor({
     extensions: [
@@ -85,6 +91,7 @@ const JournalView = ({ date }: { date: string }) => {
         .select("*")
         .eq("user_id", user.id)
         .eq("entry_date", date)
+        .is("deleted_at", null)
         .maybeSingle();
 
       let n = existing;
@@ -122,21 +129,65 @@ const JournalView = ({ date }: { date: string }) => {
     return () => { editor.off("update", handler); clearTimeout(timer); };
   }, [editor, entryId]);
 
-  if (loading) return <div className="text-center text-muted-foreground text-sm py-12">読み込み中...</div>;
+  const shift = (n: number) => onDateChange(format(addDays(currentDate, n), "yyyy-MM-dd"));
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-4">
-        <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">日記 Günlük</div>
-        <h1 className="text-3xl font-light tracking-wide mt-1">
-          {format(parseISO(date), "d MMMM yyyy, EEEE", { locale: tr })}
-        </h1>
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-1">
+          <button onClick={() => shift(-1)} className="p-1.5 text-muted-foreground hover:text-foreground rounded-sm hover:bg-accent/50" title="Önceki gün">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+            <PopoverTrigger asChild>
+              <button className="flex items-center gap-2 px-3 py-1.5 rounded-sm hover:bg-accent/50 transition-colors">
+                <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                <div className="text-left">
+                  <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">日記 Günlük</div>
+                  <div className="text-2xl font-light tracking-wide">
+                    {format(currentDate, "d MMMM yyyy, EEEE", { locale: tr })}
+                  </div>
+                </div>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarPicker
+                mode="single"
+                selected={currentDate}
+                onSelect={(d) => {
+                  if (d) {
+                    onDateChange(format(d, "yyyy-MM-dd"));
+                    setPickerOpen(false);
+                  }
+                }}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+          <button onClick={() => shift(1)} className="p-1.5 text-muted-foreground hover:text-foreground rounded-sm hover:bg-accent/50" title="Sonraki gün">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+        <button
+          onClick={() => onDateChange(format(new Date(), "yyyy-MM-dd"))}
+          className="text-[10px] tracking-wide text-muted-foreground hover:text-foreground uppercase"
+        >
+          Bugün
+        </button>
       </div>
-      <Toolbar editor={editor} />
-      <EditorContent editor={editor} />
-      <div className="text-[10px] text-muted-foreground mt-6 tracking-wide">
-        {saving ? "保存中..." : "保存済み"}
-      </div>
+
+      {loading ? (
+        <div className="text-center text-muted-foreground text-sm py-12">読み込み中...</div>
+      ) : (
+        <>
+          <Toolbar editor={editor} />
+          <EditorContent editor={editor} />
+          <div className="text-[10px] text-muted-foreground mt-6 tracking-wide">
+            {saving ? "保存中..." : "保存済み"}
+          </div>
+        </>
+      )}
     </div>
   );
 };

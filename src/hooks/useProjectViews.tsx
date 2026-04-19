@@ -1,33 +1,19 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { useProjects, ViewKey } from "./useProjects";
 
-export type ViewKey = "notes" | "table" | "gantt" | "kanban" | "calendar";
+export type { ViewKey } from "./useProjects";
 
 const ALL_VIEWS: ViewKey[] = ["notes", "table", "gantt", "kanban", "calendar"];
 const DEFAULT_VIEWS: ViewKey[] = ["notes", "table"];
-const STORAGE_KEY = "keikaku.projectViews.v1";
-
-type Map = Record<string, ViewKey[]>;
-
-const read = (): Map => {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
-};
-const write = (m: Map) => localStorage.setItem(STORAGE_KEY, JSON.stringify(m));
 
 export const useProjectViews = (projectId: string | null) => {
-  const [views, setViews] = useState<ViewKey[]>(DEFAULT_VIEWS);
+  const { projects, updateProject } = useProjects();
+  const project = useMemo(() => projects.find((p) => p.id === projectId), [projects, projectId]);
+  const views: ViewKey[] = project?.enabled_views?.length ? project.enabled_views : DEFAULT_VIEWS;
 
-  useEffect(() => {
+  const setProjectViews = async (next: ViewKey[]) => {
     if (!projectId) return;
-    const m = read();
-    setViews(m[projectId] || DEFAULT_VIEWS);
-  }, [projectId]);
-
-  const setProjectViews = (next: ViewKey[]) => {
-    if (!projectId) return;
-    const m = read();
-    m[projectId] = next;
-    write(m);
-    setViews(next);
+    await updateProject(projectId, { enabled_views: next });
   };
 
   const addView = (v: ViewKey) => {
