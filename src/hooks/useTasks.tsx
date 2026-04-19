@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { useUndo } from "./useUndo";
 import type { Database } from "@/integrations/supabase/types";
 
 export type TaskStatus = Database["public"]["Enums"]["task_status"];
@@ -18,11 +19,13 @@ export type Task = {
   end_time: string | null;
   position: number;
   hidden: boolean;
+  deleted_at: string | null;
   created_at: string;
 };
 
 export const useTasks = (projectId: string | null) => {
   const { user } = useAuth();
+  const { push } = useUndo();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,6 +35,7 @@ export const useTasks = (projectId: string | null) => {
       .from("tasks")
       .select("*")
       .eq("project_id", projectId)
+      .is("deleted_at", null)
       .order("position", { ascending: true });
     setTasks((data as Task[]) || []);
     setLoading(false);
@@ -55,30 +59,73 @@ export const useTasks = (projectId: string | null) => {
       .insert({ ...task, project_id: projectId, user_id: user.id, position: maxPos + 1 } as any)
       .select()
       .single();
-    if (!error && data) setTasks((prev) => [...prev, data as Task]);
+    if (!error && data) {
+      const created = data as Task;
+      setTasks((prev) => [...prev, created]);
+      push({
+        label: "Görev eklendi",
+        undo: async () => {
+          await supabase.from("tasks").update({ deleted_at: new Date().toISOString() }).eq("id", created.id);
+          setTasks((prev) => prev.filter((t) => t.id !== created.id));
+        },
+        redo: async () => {
+          await supabase.from("tasks").update({ deleted_at: null }).eq("id", created.id);
+          fetchTasks();
+        },
+      });
+    }
     return data as Task | null;
   };
 
   const updateTask = async (id: string, updates: Partial<Omit<Task, "id" | "project_id" | "user_id" | "created_at">>) => {
+    const before = tasks.find((t) => t.id === id);
     const { data, error } = await supabase.from("tasks").update(updates as any).eq("id", id).select().single();
-    if (!error && data) setTasks((prev) => prev.map((t) => (t.id === id ? (data as Task) : t)));
+    if (!error && data) {
+      setTasks((prev) => prev.map((t) => (t.id === id ? (data as Task) : t)));
+      if (before) {
+        const beforeSnap: any = {};
+        Object.keys(updates).forEach((k) => { beforeSnap[k] = (before as any)[k]; });
+        push({
+          label: "Görev düzenlendi",
+          undo: async () => {
+            const { data: r } = await supabase.from("tasks").update(beforeSnap).eq("id", id).select().single();
+            if (r) setTasks((prev) => prev.map((t) => (t.id === id ? (r as Task) : t)));
+          },
+          redo: async () => {
+            const { data: r } = await supabase.from("tasks").update(updates as any).eq("id", id).select().single();
+            if (r) setTasks((prev) => prev.map((t) => (t.id === id ? (r as Task) : t)));
+          },
+        });
+      }
+    }
     return data;
   };
 
   const deleteTask = async (id: string) => {
-    await supabase.from("tasks").delete().eq("id", id);
+    const before = tasks.find((t) => t.id === id);
+    if (!before) return;
+    await supabase.from("tasks").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     setTasks((prev) => prev.filter((t) => t.id !== id));
+    push({
+      label: "Görev silindi",
+      undo: async () => {
+        await supabase.from("tasks").update({ deleted_at: null }).eq("id", id);
+        setTasks((prev) => [...prev, { ...before, deleted_at: null }].sort((a, b) => a.position - b.position));
+      },
+      redo: async () => {
+        await supabase.from("tasks").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+        setTasks((prev) => prev.filter((t) => t.id !== id));
+      },
+    });
   };
 
-  // Reorder by passing a new ordered array of task IDs (only those being reordered)
+  // Reorder by passing a new ordered array of task IDs
   const reorderTasks = async (orderedIds: string[]) => {
-    // Optimistic
     const idToPos = new Map(orderedIds.map((id, i) => [id, i + 1]));
     setTasks((prev) =>
       [...prev].map((t) => (idToPos.has(t.id) ? { ...t, position: idToPos.get(t.id)! } : t))
         .sort((a, b) => a.position - b.position)
     );
-    // Persist
     await Promise.all(
       orderedIds.map((id, i) =>
         supabase.from("tasks").update({ position: i + 1 } as any).eq("id", id)
