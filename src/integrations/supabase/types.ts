@@ -14,10 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      backlog_tasks: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          position: number
+          priority: Database["public"]["Enums"]["priority_level"]
+          title: string
+          updated_at: string
+          urgency: Database["public"]["Enums"]["urgency_level"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          position?: number
+          priority?: Database["public"]["Enums"]["priority_level"]
+          title: string
+          updated_at?: string
+          urgency?: Database["public"]["Enums"]["urgency_level"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          position?: number
+          priority?: Database["public"]["Enums"]["priority_level"]
+          title?: string
+          updated_at?: string
+          urgency?: Database["public"]["Enums"]["urgency_level"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           content: string
           created_at: string
+          deleted_at: string | null
           entry_date: string
           id: string
           updated_at: string
@@ -26,6 +69,7 @@ export type Database = {
         Insert: {
           content?: string
           created_at?: string
+          deleted_at?: string | null
           entry_date: string
           id?: string
           updated_at?: string
@@ -34,6 +78,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          deleted_at?: string | null
           entry_date?: string
           id?: string
           updated_at?: string
@@ -45,6 +90,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          deleted_at: string | null
           id: string
           project_id: string
           title: string
@@ -54,6 +100,7 @@ export type Database = {
         Insert: {
           content?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           project_id: string
           title?: string
@@ -63,6 +110,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           project_id?: string
           title?: string
@@ -82,7 +130,9 @@ export type Database = {
       projects: {
         Row: {
           created_at: string
+          deleted_at: string | null
           emoji: string
+          enabled_views: Json
           id: string
           name: string
           parent_id: string | null
@@ -90,7 +140,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           emoji?: string
+          enabled_views?: Json
           id?: string
           name: string
           parent_id?: string | null
@@ -98,7 +150,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           emoji?: string
+          enabled_views?: Json
           id?: string
           name?: string
           parent_id?: string | null
@@ -117,6 +171,7 @@ export type Database = {
       tasks: {
         Row: {
           created_at: string
+          deleted_at: string | null
           description: string | null
           end_date: string | null
           end_time: string | null
@@ -132,6 +187,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           end_date?: string | null
           end_time?: string | null
@@ -147,6 +203,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           end_date?: string | null
           end_time?: string | null
@@ -175,10 +232,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      purge_soft_deleted: { Args: never; Returns: undefined }
     }
     Enums: {
+      priority_level: "low" | "medium" | "high"
       task_status: "todo" | "in_progress" | "done"
+      urgency_level: "someday" | "this_week" | "today"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -306,7 +365,9 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      priority_level: ["low", "medium", "high"],
       task_status: ["todo", "in_progress", "done"],
+      urgency_level: ["someday", "this_week", "today"],
     },
   },
 } as const
