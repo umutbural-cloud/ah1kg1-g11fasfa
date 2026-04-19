@@ -133,6 +133,7 @@ const NotesView = ({ projectId }: { projectId: string }) => {
         .from("notes")
         .select("*")
         .eq("project_id", projectId)
+        .is("deleted_at", null)
         .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();
