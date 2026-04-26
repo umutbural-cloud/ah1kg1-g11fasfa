@@ -76,8 +76,15 @@ const Index = () => {
   const handleDelete = async (id: string) => {
     await deleteProject(id);
     if (selectedProjectId === id) {
-      setSelectedProjectId(null);
-      setSection("backlog");
+      const def = projects.find((p) => p.is_default && p.id !== id);
+      if (def) {
+        setSelectedProjectId(def.id);
+        setSection("project");
+        setView("table");
+      } else {
+        setSelectedProjectId(null);
+        setSection("backlog");
+      }
     }
   };
 
