@@ -21,11 +21,23 @@ const Pomodoro = () => {
   const { user } = useAuth();
   const { durationSec, remainingSec, phase, kind, setDuration, start, pause, resume, reset, startBreak } = usePomodoro();
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [editingMin, setEditingMin] = useState<string>(String(Math.floor(durationSec / 60)));
+  const [editingTime, setEditingTime] = useState(false);
+  const [editVal, setEditVal] = useState(formatMMSS(remainingSec));
 
   useEffect(() => {
-    setEditingMin(String(Math.floor(durationSec / 60)));
-  }, [durationSec]);
+    if (!editingTime) setEditVal(formatMMSS(remainingSec));
+  }, [remainingSec, editingTime]);
+
+  const commitTime = () => {
+    const m = editVal.match(/^(\d{1,3}):?(\d{0,2})$/);
+    if (m) {
+      const mins = parseInt(m[1] || "0", 10);
+      const secs = parseInt(m[2] || "0", 10);
+      const total = mins * 60 + secs;
+      if (total > 0) setDuration(total);
+    }
+    setEditingTime(false);
+  };
 
   const load = async () => {
     if (!user) return;
