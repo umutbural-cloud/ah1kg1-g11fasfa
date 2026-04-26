@@ -135,7 +135,11 @@ const Pomodoro = () => {
             </button>
           )}
 
-          <div className="flex items-center justify-center gap-3">
+          <div
+            className={`flex items-center justify-center gap-3 transition-all duration-700 ease-out ${
+              phase === "running" ? "opacity-30 hover:opacity-100 scale-95" : "opacity-100 scale-100"
+            }`}
+          >
             {isFinished ? (
               <>
                 <button
@@ -156,24 +160,24 @@ const Pomodoro = () => {
               </>
             ) : isRunning ? (
               <>
-                <button onClick={pause} className="flex items-center gap-2 px-5 py-2 rounded-sm bg-accent hover:bg-accent/80 text-sm">
+                <button onClick={pause} className="flex items-center gap-2 px-5 py-2 rounded-sm bg-accent hover:bg-accent/80 text-sm transition-colors">
                   <Pause className="h-4 w-4" /> Duraklat
                 </button>
-                <button onClick={reset} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm">
+                <button onClick={reset} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
                   <Square className="h-4 w-4" /> Durdur
                 </button>
               </>
             ) : isPaused ? (
               <>
-                <button onClick={resume} className="flex items-center gap-2 px-5 py-2 rounded-sm bg-accent hover:bg-accent/80 text-sm">
+                <button onClick={resume} className="flex items-center gap-2 px-5 py-2 rounded-sm bg-accent hover:bg-accent/80 text-sm transition-colors">
                   <Play className="h-4 w-4" /> Devam
                 </button>
-                <button onClick={reset} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm">
+                <button onClick={reset} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
                   <Square className="h-4 w-4" /> Durdur
                 </button>
               </>
             ) : (
-              <button onClick={start} className="flex items-center gap-2 px-6 py-2 rounded-sm bg-foreground text-background hover:bg-foreground/90 text-sm">
+              <button onClick={start} className="flex items-center gap-2 px-6 py-2 rounded-sm bg-foreground text-background hover:bg-foreground/90 text-sm transition-colors">
                 <Play className="h-4 w-4" /> Başlat
               </button>
             )}
@@ -181,12 +185,16 @@ const Pomodoro = () => {
         </div>
 
         {/* History */}
-        <section className="mt-12">
+        <section
+          className={`mt-12 transition-all duration-700 ease-out ${
+            phase === "running" ? "opacity-30 hover:opacity-100" : "opacity-100"
+          }`}
+        >
           <div className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light mb-4">
-            歴史 Çalışma Geçmişi
+            Çalışma Geçmişi
           </div>
           {grouped.length === 0 ? (
-            <div className="text-center text-xs text-muted-foreground py-8">空 — Henüz oturum yok</div>
+            <div className="text-center text-xs text-muted-foreground py-8">Henüz oturum yok</div>
           ) : (
             <div className="space-y-6">
               {grouped.map(([day, items]) => {
