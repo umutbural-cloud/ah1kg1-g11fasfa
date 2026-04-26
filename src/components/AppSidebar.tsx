@@ -291,7 +291,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                   className={`text-sm font-light ${section === "backlog" ? "bg-accent text-accent-foreground" : ""}`}
                 >
                   <Package className="h-3.5 w-3.5" />
-                  <span className="tracking-wide">荷袋 Heybe</span>
+                  <span className="tracking-wide">Heybe</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -300,7 +300,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                   className={`text-sm font-light ${section === "journal" ? "bg-accent text-accent-foreground" : ""}`}
                 >
                   <FileText className="h-3.5 w-3.5" />
-                  <span className="tracking-wide">日記 Günlük</span>
+                  <span className="tracking-wide">Günlük</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -385,7 +385,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                   className={`text-xs font-light ${section === "trash" ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`}
                 >
                   <Trash className="h-3 w-3" />
-                  <span className="tracking-wide">ゴミ箱 Çöp Kutusu</span>
+                  <span className="tracking-wide">Çöp Kutusu</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

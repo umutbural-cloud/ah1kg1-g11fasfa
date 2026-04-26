@@ -61,7 +61,7 @@ const JournalWorkSessions = ({ date }: { date: string }) => {
       >
         {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         <Clock className="h-3.5 w-3.5" />
-        <span className="tracking-wide flex-1 text-left">時 — Günlük çalışma süresi</span>
+        <span className="tracking-wide flex-1 text-left">Günlük çalışma süresi</span>
         <span className="tabular-nums text-foreground/80">
           {totalH > 0 ? `${totalH}s ` : ""}{totalM}d
         </span>

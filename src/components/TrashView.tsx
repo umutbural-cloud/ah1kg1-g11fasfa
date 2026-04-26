@@ -21,7 +21,7 @@ const TrashView = () => {
     <div className="max-w-3xl mx-auto space-y-4">
       <div className="flex items-end justify-between">
         <div>
-          <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">ゴミ箱 Çöp Kutusu</div>
+          <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">Çöp Kutusu</div>
           <h1 className="text-3xl font-light tracking-wide mt-1">Çöp Kutusu</h1>
           <p className="text-xs text-muted-foreground mt-1 font-light">
             Silinen öğeler 30 gün burada kalır, sonra kalıcı olarak silinir.
