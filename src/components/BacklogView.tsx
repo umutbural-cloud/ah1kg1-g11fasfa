@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, ArrowRight, Flame, Clock, AlertCircle, ChevronDown } from "lucide-react";
+import { Plus, Trash2, ArrowRight, ArrowUp, ArrowDown, ChevronsUpDown, Filter, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -55,7 +55,7 @@ const BacklogRow = ({ item, projects, onUpdate, onDelete, onMove }: {
   onMove: (id: string, projectId: string) => void;
 }) => {
   return (
-    <div className="group grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-2 px-3 py-2 border-b border-border/40 hover:bg-card/40 transition-colors">
+    <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-2 px-3 py-2 border-b border-border/40 hover:bg-card/40 transition-colors">
       <Input
         value={item.title}
         onChange={(e) => onUpdate(item.id, { title: e.target.value })}
@@ -87,7 +87,7 @@ const BacklogRow = ({ item, projects, onUpdate, onDelete, onMove }: {
         onChange={(e) => onUpdate(item.id, { due_date: e.target.value || null })}
         className="h-7 w-32 text-xs bg-transparent border-none p-0"
       />
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1">
         <MoveMenu projects={projects} onMove={(pid) => onMove(item.id, pid)} />
         <button
           onClick={() => onDelete(item.id)}
@@ -101,13 +101,81 @@ const BacklogRow = ({ item, projects, onUpdate, onDelete, onMove }: {
   );
 };
 
-type SortKey = "manual" | "priority" | "urgency" | "due_date";
+type SortKey = "title" | "priority" | "urgency" | "due_date" | null;
+type SortDir = "asc" | "desc";
+
+const HeaderCell = <T extends string>({
+  label,
+  width,
+  sortKey,
+  currentSort,
+  currentDir,
+  onSort,
+  filterOptions,
+  filterValue,
+  onFilter,
+  align = "left",
+}: {
+  label: string;
+  width?: string;
+  sortKey: SortKey;
+  currentSort: SortKey;
+  currentDir: SortDir;
+  onSort: (k: SortKey) => void;
+  filterOptions?: { value: T | "all"; label: string }[];
+  filterValue?: T | "all";
+  onFilter?: (v: T | "all") => void;
+  align?: "left" | "center";
+}) => {
+  const active = currentSort === sortKey;
+  const filterActive = filterValue && filterValue !== "all";
+  return (
+    <div className={`flex items-center gap-1 ${width || ""} ${align === "center" ? "justify-center" : ""}`}>
+      <button
+        onClick={() => sortKey && onSort(sortKey)}
+        className="flex items-center gap-1 hover:text-foreground transition-colors"
+      >
+        <span>{label}</span>
+        {active ? (
+          currentDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+        ) : (
+          <ChevronsUpDown className="h-3 w-3 opacity-40" />
+        )}
+      </button>
+      {filterOptions && onFilter && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              className={`p-0.5 rounded-sm hover:bg-accent transition-colors ${filterActive ? "text-foreground" : "opacity-40 hover:opacity-100"}`}
+              title="Filtrele"
+            >
+              <Filter className="h-3 w-3" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-36 p-1" align="start">
+            {filterOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => onFilter(opt.value)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent rounded-sm transition-colors text-left"
+              >
+                {filterValue === opt.value ? <Check className="h-3 w-3" /> : <span className="w-3" />}
+                <span>{opt.label}</span>
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
+  );
+};
 
 const BacklogView = () => {
   const { items, loading, createItem, updateItem, deleteItem, moveToProject } = useBacklog();
   const { projects } = useProjects();
   const [newTitle, setNewTitle] = useState("");
-  const [sortBy, setSortBy] = useState<SortKey>("manual");
+  const [sortKey, setSortKey] = useState<SortKey>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [filterPriority, setFilterPriority] = useState<Priority | "all">("all");
   const [filterUrgency, setFilterUrgency] = useState<Urgency | "all">("all");
 
@@ -117,21 +185,35 @@ const BacklogView = () => {
     setNewTitle("");
   };
 
+  const handleSort = (k: SortKey) => {
+    if (sortKey === k) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(k);
+      setSortDir("asc");
+    }
+  };
+
   let filtered = items;
   if (filterPriority !== "all") filtered = filtered.filter((i) => i.priority === filterPriority);
   if (filterUrgency !== "all") filtered = filtered.filter((i) => i.urgency === filterUrgency);
 
   const sorted = [...filtered];
-  if (sortBy === "priority") sorted.sort((a, b) => priorityMeta[a.priority].rank - priorityMeta[b.priority].rank);
-  else if (sortBy === "urgency") sorted.sort((a, b) => urgencyMeta[a.urgency].rank - urgencyMeta[b.urgency].rank);
-  else if (sortBy === "due_date") sorted.sort((a, b) => {
-    if (!a.due_date && !b.due_date) return 0;
-    if (!a.due_date) return 1;
-    if (!b.due_date) return -1;
-    return a.due_date.localeCompare(b.due_date);
-  });
-
-  const flatProjects = projects;
+  if (sortKey) {
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "title") cmp = a.title.localeCompare(b.title, "tr");
+      else if (sortKey === "priority") cmp = priorityMeta[a.priority].rank - priorityMeta[b.priority].rank;
+      else if (sortKey === "urgency") cmp = urgencyMeta[a.urgency].rank - urgencyMeta[b.urgency].rank;
+      else if (sortKey === "due_date") {
+        if (!a.due_date && !b.due_date) cmp = 0;
+        else if (!a.due_date) cmp = 1;
+        else if (!b.due_date) cmp = -1;
+        else cmp = a.due_date.localeCompare(b.due_date);
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }
 
   if (loading) return <div className="text-center text-muted-foreground text-sm py-12">読み込み中...</div>;
 
@@ -143,39 +225,6 @@ const BacklogView = () => {
         <p className="text-xs text-muted-foreground mt-1 font-light max-w-prose">
           Karmaşık alan. Tüm görevleri, fikirleri buraya at; öncelik ver, sırala, sonra projelere taşıyıp sade alanlarda çalış.
         </p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="text-muted-foreground tracking-wide">Sırala:</span>
-        <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
-          <SelectTrigger className="h-7 w-32 text-xs bg-transparent"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="manual">Manuel</SelectItem>
-            <SelectItem value="priority">Önceliğe</SelectItem>
-            <SelectItem value="urgency">Aciliyete</SelectItem>
-            <SelectItem value="due_date">Bitiş tarihine</SelectItem>
-          </SelectContent>
-        </Select>
-        <span className="text-muted-foreground tracking-wide ml-2">Öncelik:</span>
-        <Select value={filterPriority} onValueChange={(v) => setFilterPriority(v as any)}>
-          <SelectTrigger className="h-7 w-28 text-xs bg-transparent"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tümü</SelectItem>
-            <SelectItem value="high">Yüksek</SelectItem>
-            <SelectItem value="medium">Orta</SelectItem>
-            <SelectItem value="low">Düşük</SelectItem>
-          </SelectContent>
-        </Select>
-        <span className="text-muted-foreground tracking-wide ml-2">Aciliyet:</span>
-        <Select value={filterUrgency} onValueChange={(v) => setFilterUrgency(v as any)}>
-          <SelectTrigger className="h-7 w-28 text-xs bg-transparent"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tümü</SelectItem>
-            <SelectItem value="today">Bugün</SelectItem>
-            <SelectItem value="this_week">Bu hafta</SelectItem>
-            <SelectItem value="someday">Bir gün</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="flex gap-2">
@@ -199,17 +248,47 @@ const BacklogView = () => {
       ) : (
         <div className="border border-border/60 rounded-sm overflow-hidden">
           <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-2 px-3 py-2 border-b border-border/60 text-[10px] tracking-wide uppercase text-muted-foreground bg-card/30">
-            <span>Başlık</span>
-            <span className="w-24">Öncelik</span>
-            <span className="w-24">Aciliyet</span>
-            <span className="w-32">Bitiş</span>
+            <HeaderCell label="Başlık" sortKey="title" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
+            <HeaderCell
+              label="Öncelik"
+              width="w-24"
+              sortKey="priority"
+              currentSort={sortKey}
+              currentDir={sortDir}
+              onSort={handleSort}
+              filterOptions={[
+                { value: "all", label: "Tümü" },
+                { value: "high", label: "Yüksek" },
+                { value: "medium", label: "Orta" },
+                { value: "low", label: "Düşük" },
+              ]}
+              filterValue={filterPriority}
+              onFilter={(v) => setFilterPriority(v as any)}
+            />
+            <HeaderCell
+              label="Aciliyet"
+              width="w-24"
+              sortKey="urgency"
+              currentSort={sortKey}
+              currentDir={sortDir}
+              onSort={handleSort}
+              filterOptions={[
+                { value: "all", label: "Tümü" },
+                { value: "today", label: "Bugün" },
+                { value: "this_week", label: "Bu hafta" },
+                { value: "someday", label: "Bir gün" },
+              ]}
+              filterValue={filterUrgency}
+              onFilter={(v) => setFilterUrgency(v as any)}
+            />
+            <HeaderCell label="Bitiş" width="w-32" sortKey="due_date" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
             <span className="w-20"></span>
           </div>
           {sorted.map((item) => (
             <BacklogRow
               key={item.id}
               item={item}
-              projects={flatProjects}
+              projects={projects}
               onUpdate={updateItem}
               onDelete={deleteItem}
               onMove={moveToProject}
