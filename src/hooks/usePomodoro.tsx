@@ -85,7 +85,7 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const persistSession = useCallback(async (k: PomodoroKind, started: Date, ended: Date, durationS: number) => {
-    if (!user || durationS < 5) return;
+    if (!user || durationS < 1) return;
     await supabase.from("pomodoro_sessions").insert({
       user_id: user.id,
       started_at: started.toISOString(),
