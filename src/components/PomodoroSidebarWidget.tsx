@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
-import { Clock, Play, Pause, Square, RotateCcw, ChevronRight } from "lucide-react";
+import { Clock, Play, Pause, Check, RotateCcw, SkipForward } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePomodoro, formatMMSS } from "@/hooks/usePomodoro";
 
 const PomodoroSidebarWidget = () => {
   const navigate = useNavigate();
-  const { durationSec, remainingSec, phase, kind, setDuration, start, pause, resume, reset, startBreak } = usePomodoro();
+  const { remainingSec, phase, kind, setDuration, start, pause, resume, complete, reset, skipBreak } = usePomodoro();
 
   const isRunning = phase === "running";
   const isPaused = phase === "paused";
-  const isFinished = phase === "finished";
   const isIdle = phase === "idle";
+  const isBreak = kind === "break";
 
   const [editing, setEditing] = useState(false);
   const [editVal, setEditVal] = useState(formatMMSS(remainingSec));
@@ -40,7 +40,7 @@ const PomodoroSidebarWidget = () => {
           <div className="flex items-center gap-2 mb-1.5">
             <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <span className="text-sm font-light tracking-wide">Pomodoro</span>
-            {kind === "break" && phase !== "idle" && (
+            {isBreak && phase !== "idle" && (
               <span className="text-[9px] text-muted-foreground uppercase tracking-wider">mola</span>
             )}
           </div>
@@ -73,37 +73,39 @@ const PomodoroSidebarWidget = () => {
             )}
 
             <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-              {isFinished ? (
-                <>
-                  <button onClick={() => startBreak()} title="Mola" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                  <button onClick={reset} title="Sıfırla" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
-                    <RotateCcw className="h-3.5 w-3.5" />
-                  </button>
-                </>
-              ) : isRunning ? (
+              {isRunning ? (
                 <>
                   <button onClick={pause} title="Duraklat" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
                     <Pause className="h-3.5 w-3.5" />
                   </button>
-                  <button onClick={reset} title="Durdur" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
-                    <Square className="h-3.5 w-3.5" />
-                  </button>
+                  {isBreak ? (
+                    <button onClick={skipBreak} title="Molayı atla" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                      <SkipForward className="h-3.5 w-3.5" />
+                    </button>
+                  ) : (
+                    <button onClick={complete} title="Tamamla" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                      <Check className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </>
               ) : isPaused ? (
                 <>
                   <button onClick={resume} title="Devam" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
                     <Play className="h-3.5 w-3.5" />
                   </button>
-                  <button onClick={reset} title="Durdur" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
-                    <Square className="h-3.5 w-3.5" />
+                  <button onClick={complete} title="Tamamla" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                    <Check className="h-3.5 w-3.5" />
                   </button>
                 </>
               ) : (
-                <button onClick={start} title="Başlat" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
-                  <Play className="h-3.5 w-3.5" />
-                </button>
+                <>
+                  <button onClick={start} title="Başlat" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                    <Play className="h-3.5 w-3.5" />
+                  </button>
+                  <button onClick={reset} title="Sıfırla" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </button>
+                </>
               )}
             </div>
           </div>

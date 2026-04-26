@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Play, Pause, Square, RotateCcw, ChevronRight, Clock } from "lucide-react";
+import { ArrowLeft, Play, Pause, Check, RotateCcw, SkipForward, Clock, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO, startOfDay } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -19,7 +19,7 @@ type Session = {
 const Pomodoro = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { durationSec, remainingSec, phase, kind, setDuration, start, pause, resume, reset, startBreak } = usePomodoro();
+  const { remainingSec, phase, kind, setDuration, start, pause, resume, complete, reset, skipBreak } = usePomodoro();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [editingTime, setEditingTime] = useState(false);
   const [editVal, setEditVal] = useState(formatMMSS(remainingSec));
@@ -71,15 +71,27 @@ const Pomodoro = () => {
 
   const isRunning = phase === "running";
   const isPaused = phase === "paused";
-  const isFinished = phase === "finished";
+  const isIdle = phase === "idle";
+  const isBreak = kind === "break";
 
   const updateNote = async (id: string, note: string) => {
     await supabase.from("pomodoro_sessions").update({ note }).eq("id", id);
     setSessions((arr) => arr.map((s) => (s.id === id ? { ...s, note } : s)));
   };
 
-  const isIdle = phase === "idle";
-  const showControlsArea = phase !== "running";
+  const updateDuration = async (id: string, minutes: number) => {
+    const session = sessions.find((s) => s.id === id);
+    if (!session) return;
+    const newDuration = Math.max(1, Math.round(minutes)) * 60;
+    const newEnd = new Date(parseISO(session.started_at).getTime() + newDuration * 1000).toISOString();
+    await supabase.from("pomodoro_sessions").update({ duration_seconds: newDuration, ended_at: newEnd }).eq("id", id);
+    setSessions((arr) => arr.map((s) => (s.id === id ? { ...s, duration_seconds: newDuration, ended_at: newEnd } : s)));
+  };
+
+  const deleteSession = async (id: string) => {
+    await supabase.from("pomodoro_sessions").delete().eq("id", id);
+    setSessions((arr) => arr.filter((s) => s.id !== id));
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -92,18 +104,17 @@ const Pomodoro = () => {
       </header>
 
       <main className="max-w-3xl mx-auto p-8">
-        {/* Timer */}
         <div
           className={`text-center transition-all duration-700 ease-out ${
-            phase === "running" ? "py-24" : "py-12"
+            isRunning ? "py-24" : "py-12"
           }`}
         >
           <div
             className={`text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light mb-4 transition-opacity duration-500 ${
-              phase === "running" ? "opacity-40" : "opacity-100"
+              isRunning ? "opacity-40" : "opacity-100"
             }`}
           >
-            {kind === "work" ? "Çalışma" : "Mola"}
+            {isBreak ? "Dinlenme" : "Çalışma"}
           </div>
 
           {editingTime && isIdle ? (
@@ -124,7 +135,7 @@ const Pomodoro = () => {
               disabled={!isIdle}
               title={isIdle ? "Süreyi düzenlemek için tıkla" : ""}
               className={`text-8xl font-extralight tracking-widest tabular-nums mb-8 block mx-auto transition-all duration-700 ease-out ${
-                phase === "running"
+                isRunning
                   ? "scale-110 text-foreground"
                   : isIdle
                   ? "hover:text-foreground/80 cursor-text"
@@ -137,57 +148,49 @@ const Pomodoro = () => {
 
           <div
             className={`flex items-center justify-center gap-3 transition-all duration-700 ease-out ${
-              phase === "running" ? "opacity-30 hover:opacity-100 scale-95" : "opacity-100 scale-100"
+              isRunning ? "opacity-30 hover:opacity-100 scale-95" : "opacity-100 scale-100"
             }`}
           >
-            {isFinished ? (
-              <>
-                <button
-                  onClick={() => startBreak()}
-                  className="flex items-center gap-2 px-5 py-2 rounded-sm bg-accent hover:bg-accent/80 text-sm transition-colors"
-                  title="Molayı başlat"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                  <span>Mola başlat</span>
-                </button>
-                <button
-                  onClick={reset}
-                  className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  <span>Sıfırla</span>
-                </button>
-              </>
-            ) : isRunning ? (
+            {isRunning ? (
               <>
                 <button onClick={pause} className="flex items-center gap-2 px-5 py-2 rounded-sm bg-accent hover:bg-accent/80 text-sm transition-colors">
                   <Pause className="h-4 w-4" /> Duraklat
                 </button>
-                <button onClick={reset} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
-                  <Square className="h-4 w-4" /> Durdur
-                </button>
+                {isBreak ? (
+                  <button onClick={skipBreak} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
+                    <SkipForward className="h-4 w-4" /> Atla
+                  </button>
+                ) : (
+                  <button onClick={complete} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
+                    <Check className="h-4 w-4" /> Tamamla
+                  </button>
+                )}
               </>
             ) : isPaused ? (
               <>
                 <button onClick={resume} className="flex items-center gap-2 px-5 py-2 rounded-sm bg-accent hover:bg-accent/80 text-sm transition-colors">
                   <Play className="h-4 w-4" /> Devam
                 </button>
-                <button onClick={reset} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
-                  <Square className="h-4 w-4" /> Durdur
+                <button onClick={complete} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
+                  <Check className="h-4 w-4" /> Tamamla
                 </button>
               </>
             ) : (
-              <button onClick={start} className="flex items-center gap-2 px-6 py-2 rounded-sm bg-foreground text-background hover:bg-foreground/90 text-sm transition-colors">
-                <Play className="h-4 w-4" /> Başlat
-              </button>
+              <>
+                <button onClick={start} className="flex items-center gap-2 px-6 py-2 rounded-sm bg-foreground text-background hover:bg-foreground/90 text-sm transition-colors">
+                  <Play className="h-4 w-4" /> Başlat
+                </button>
+                <button onClick={reset} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
+                  <RotateCcw className="h-4 w-4" /> Sıfırla
+                </button>
+              </>
             )}
           </div>
         </div>
 
-        {/* History */}
         <section
           className={`mt-12 transition-all duration-700 ease-out ${
-            phase === "running" ? "opacity-30 hover:opacity-100" : "opacity-100"
+            isRunning ? "opacity-30 hover:opacity-100" : "opacity-100"
           }`}
         >
           <div className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light mb-4">
@@ -213,7 +216,13 @@ const Pomodoro = () => {
                     </div>
                     <div className="divide-y divide-border/40">
                       {items.map((s) => (
-                        <SessionRow key={s.id} session={s} onUpdateNote={updateNote} />
+                        <SessionRow
+                          key={s.id}
+                          session={s}
+                          onUpdateNote={updateNote}
+                          onUpdateDuration={updateDuration}
+                          onDelete={deleteSession}
+                        />
                       ))}
                     </div>
                   </div>
@@ -227,15 +236,61 @@ const Pomodoro = () => {
   );
 };
 
-const SessionRow = ({ session, onUpdateNote }: { session: Session; onUpdateNote: (id: string, note: string) => void }) => {
+const SessionRow = ({
+  session,
+  onUpdateNote,
+  onUpdateDuration,
+  onDelete,
+}: {
+  session: Session;
+  onUpdateNote: (id: string, note: string) => void;
+  onUpdateDuration: (id: string, minutes: number) => void;
+  onDelete: (id: string) => void;
+}) => {
   const [note, setNote] = useState(session.note || "");
-  const mins = Math.round(session.duration_seconds / 60);
+  const [editingMin, setEditingMin] = useState(false);
+  const [minVal, setMinVal] = useState(String(Math.round(session.duration_seconds / 60)));
+
+  useEffect(() => {
+    setMinVal(String(Math.round(session.duration_seconds / 60)));
+  }, [session.duration_seconds]);
+
+  const commitMin = () => {
+    const n = parseInt(minVal, 10);
+    if (!isNaN(n) && n > 0 && n * 60 !== session.duration_seconds) {
+      onUpdateDuration(session.id, n);
+    } else {
+      setMinVal(String(Math.round(session.duration_seconds / 60)));
+    }
+    setEditingMin(false);
+  };
+
   return (
-    <div className="flex items-center gap-3 px-3 py-2 text-xs">
-      <span className={`text-[10px] uppercase tracking-wider ${session.kind === "break" ? "text-muted-foreground" : "text-foreground"}`}>
-        {session.kind === "work" ? "作業" : "休憩"}
+    <div className="group flex items-center gap-3 px-3 py-2 text-xs">
+      <span className={`text-[10px] uppercase tracking-wider w-12 ${session.kind === "break" ? "text-muted-foreground" : "text-foreground"}`}>
+        {session.kind === "work" ? "Çalışma" : "Mola"}
       </span>
-      <span className="tabular-nums w-16">{mins} dk</span>
+      {editingMin ? (
+        <input
+          value={minVal}
+          onChange={(e) => setMinVal(e.target.value.replace(/[^\d]/g, ""))}
+          onBlur={commitMin}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commitMin();
+            if (e.key === "Escape") { setMinVal(String(Math.round(session.duration_seconds / 60))); setEditingMin(false); }
+          }}
+          autoFocus
+          className="w-12 bg-transparent border-b border-border/60 outline-none focus:border-foreground/40 text-xs tabular-nums"
+        />
+      ) : (
+        <button
+          onClick={() => setEditingMin(true)}
+          title="Süreyi düzenle"
+          className="tabular-nums w-16 text-left hover:text-foreground/80"
+        >
+          {Math.round(session.duration_seconds / 60)} dk
+        </button>
+      )}
       <span className="tabular-nums text-muted-foreground w-28">
         {format(parseISO(session.started_at), "HH:mm")} - {format(parseISO(session.ended_at), "HH:mm")}
       </span>
@@ -246,6 +301,13 @@ const SessionRow = ({ session, onUpdateNote }: { session: Session; onUpdateNote:
         placeholder="ne çalıştın?"
         className="flex-1 bg-transparent border-0 outline-none text-xs placeholder:text-muted-foreground/40"
       />
+      <button
+        onClick={() => onDelete(session.id)}
+        title="Sil"
+        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 };
