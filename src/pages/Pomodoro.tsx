@@ -79,10 +79,10 @@ const Pomodoro = () => {
     setSessions((arr) => arr.map((s) => (s.id === id ? { ...s, note } : s)));
   };
 
-  const updateDuration = async (id: string, minutes: number) => {
+  const updateDuration = async (id: string, totalSeconds: number) => {
     const session = sessions.find((s) => s.id === id);
     if (!session) return;
-    const newDuration = Math.max(1, Math.round(minutes)) * 60;
+    const newDuration = Math.max(1, Math.round(totalSeconds));
     const newEnd = new Date(parseISO(session.started_at).getTime() + newDuration * 1000).toISOString();
     await supabase.from("pomodoro_sessions").update({ duration_seconds: newDuration, ended_at: newEnd }).eq("id", id);
     setSessions((arr) => arr.map((s) => (s.id === id ? { ...s, duration_seconds: newDuration, ended_at: newEnd } : s)));
