@@ -187,6 +187,7 @@ const JournalView = ({ date, onDateChange }: { date: string; onDateChange: (d: s
           <div className="text-[10px] text-muted-foreground mt-6 tracking-wide">
             {saving ? "保存中..." : "保存済み"}
           </div>
+          <JournalCompletedTasks date={date} />
         </>
       )}
     </div>
