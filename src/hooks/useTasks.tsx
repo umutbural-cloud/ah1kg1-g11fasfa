@@ -21,6 +21,7 @@ export type Task = {
   hidden: boolean;
   deleted_at: string | null;
   created_at: string;
+  completed_at: string | null;
 };
 
 export const useTasks = (projectId: string | null) => {
