@@ -92,7 +92,13 @@ const TableView = ({ projectId }: { projectId: string }) => {
   };
 
   const visible = tasks.filter((t) => !t.hidden && t.status !== "done");
-  const doneTasks = tasks.filter((t) => !t.hidden && t.status === "done");
+  const doneTasks = tasks
+    .filter((t) => !t.hidden && t.status === "done")
+    .sort((a, b) => {
+      const ta = a.completed_at ? new Date(a.completed_at).getTime() : 0;
+      const tb = b.completed_at ? new Date(b.completed_at).getTime() : 0;
+      return tb - ta; // en yeni en üstte
+    });
   const hiddenTasks = tasks.filter((t) => t.hidden);
 
   const handleDragEnd = (e: DragEndEvent) => {
