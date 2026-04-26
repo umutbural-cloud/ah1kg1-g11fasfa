@@ -90,6 +90,8 @@ export const useProjects = () => {
   };
 
   const deleteProject = async (id: string) => {
+    const target = projects.find((p) => p.id === id);
+    if (target?.is_default) return; // sabit proje silinemez
     await supabase.from("projects").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     setProjects((prev) => prev.filter((p) => p.id !== id && p.parent_id !== id));
     push({
