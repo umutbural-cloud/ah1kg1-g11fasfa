@@ -85,7 +85,7 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const persistSession = useCallback(async (k: PomodoroKind, started: Date, ended: Date, durationS: number) => {
-    if (!user || durationS < 5) return;
+    if (!user || durationS < 1) return;
     await supabase.from("pomodoro_sessions").insert({
       user_id: user.id,
       started_at: started.toISOString(),
@@ -178,8 +178,9 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
     if (phase !== "running" && phase !== "paused") return;
     const ended = new Date();
     const started = startedAt || new Date(ended.getTime() - (durationSec - remainingSec) * 1000);
-    const elapsed = Math.max(0, durationSec - remainingSec);
-    if (elapsed >= 5) {
+    const elapsedFromClock = Math.round((ended.getTime() - started.getTime()) / 1000);
+    const elapsed = Math.min(Math.max(elapsedFromClock, 0), durationSec);
+    if (elapsed >= 1) {
       persistSession(kind, started, ended, elapsed);
     }
     clearTimer();

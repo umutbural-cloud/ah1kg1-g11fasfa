@@ -79,10 +79,10 @@ const Pomodoro = () => {
     setSessions((arr) => arr.map((s) => (s.id === id ? { ...s, note } : s)));
   };
 
-  const updateDuration = async (id: string, minutes: number) => {
+  const updateDuration = async (id: string, totalSeconds: number) => {
     const session = sessions.find((s) => s.id === id);
     if (!session) return;
-    const newDuration = Math.max(1, Math.round(minutes)) * 60;
+    const newDuration = Math.max(1, Math.round(totalSeconds));
     const newEnd = new Date(parseISO(session.started_at).getTime() + newDuration * 1000).toISOString();
     await supabase.from("pomodoro_sessions").update({ duration_seconds: newDuration, ended_at: newEnd }).eq("id", id);
     setSessions((arr) => arr.map((s) => (s.id === id ? { ...s, duration_seconds: newDuration, ended_at: newEnd } : s)));
@@ -236,6 +236,14 @@ const Pomodoro = () => {
   );
 };
 
+const formatDuration = (sec: number) => {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  if (m === 0) return `${s} sn`;
+  if (s === 0) return `${m} dk`;
+  return `${m} dk ${s} sn`;
+};
+
 const SessionRow = ({
   session,
   onUpdateNote,
@@ -244,51 +252,65 @@ const SessionRow = ({
 }: {
   session: Session;
   onUpdateNote: (id: string, note: string) => void;
-  onUpdateDuration: (id: string, minutes: number) => void;
+  onUpdateDuration: (id: string, totalSeconds: number) => void;
   onDelete: (id: string) => void;
 }) => {
   const [note, setNote] = useState(session.note || "");
-  const [editingMin, setEditingMin] = useState(false);
-  const [minVal, setMinVal] = useState(String(Math.round(session.duration_seconds / 60)));
+  const [editingDur, setEditingDur] = useState(false);
+  const initialEditVal = () => {
+    const m = Math.floor(session.duration_seconds / 60);
+    const s = session.duration_seconds % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  };
+  const [durVal, setDurVal] = useState(initialEditVal());
 
   useEffect(() => {
-    setMinVal(String(Math.round(session.duration_seconds / 60)));
+    setDurVal(initialEditVal());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.duration_seconds]);
 
-  const commitMin = () => {
-    const n = parseInt(minVal, 10);
-    if (!isNaN(n) && n > 0 && n * 60 !== session.duration_seconds) {
-      onUpdateDuration(session.id, n);
+  const commitDur = () => {
+    const match = durVal.match(/^(\d{1,3}):?(\d{0,2})$/);
+    if (match) {
+      const mins = parseInt(match[1] || "0", 10);
+      const secs = parseInt(match[2] || "0", 10);
+      const total = mins * 60 + secs;
+      if (total > 0 && total !== session.duration_seconds) {
+        onUpdateDuration(session.id, total);
+      } else {
+        setDurVal(initialEditVal());
+      }
     } else {
-      setMinVal(String(Math.round(session.duration_seconds / 60)));
+      setDurVal(initialEditVal());
     }
-    setEditingMin(false);
+    setEditingDur(false);
   };
 
   return (
     <div className="group flex items-center gap-3 px-3 py-2 text-xs">
-      <span className={`text-[10px] uppercase tracking-wider w-12 ${session.kind === "break" ? "text-muted-foreground" : "text-foreground"}`}>
+      <span className={`text-[10px] uppercase tracking-wider w-16 ${session.kind === "break" ? "text-muted-foreground" : "text-foreground"}`}>
         {session.kind === "work" ? "Çalışma" : "Mola"}
       </span>
-      {editingMin ? (
+      {editingDur ? (
         <input
-          value={minVal}
-          onChange={(e) => setMinVal(e.target.value.replace(/[^\d]/g, ""))}
-          onBlur={commitMin}
+          value={durVal}
+          onChange={(e) => setDurVal(e.target.value)}
+          onBlur={commitDur}
           onKeyDown={(e) => {
-            if (e.key === "Enter") commitMin();
-            if (e.key === "Escape") { setMinVal(String(Math.round(session.duration_seconds / 60))); setEditingMin(false); }
+            if (e.key === "Enter") commitDur();
+            if (e.key === "Escape") { setDurVal(initialEditVal()); setEditingDur(false); }
           }}
           autoFocus
-          className="w-12 bg-transparent border-b border-border/60 outline-none focus:border-foreground/40 text-xs tabular-nums"
+          placeholder="dk:sn"
+          className="w-20 bg-transparent border-b border-border/60 outline-none focus:border-foreground/40 text-xs tabular-nums"
         />
       ) : (
         <button
-          onClick={() => setEditingMin(true)}
-          title="Süreyi düzenle"
-          className="tabular-nums w-16 text-left hover:text-foreground/80"
+          onClick={() => setEditingDur(true)}
+          title="Süreyi düzenle (dk:sn)"
+          className="tabular-nums w-24 text-left hover:text-foreground/80"
         >
-          {Math.round(session.duration_seconds / 60)} dk
+          {formatDuration(session.duration_seconds)}
         </button>
       )}
       <span className="tabular-nums text-muted-foreground w-28">
