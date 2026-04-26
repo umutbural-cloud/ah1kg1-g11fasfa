@@ -14,9 +14,10 @@ export type Project = {
   created_at: string;
   enabled_views: ViewKey[];
   deleted_at: string | null;
+  is_default?: boolean;
 };
 
-const DEFAULT_VIEWS: ViewKey[] = ["notes", "table"];
+const DEFAULT_VIEWS: ViewKey[] = ["table", "notes"];
 
 export const useProjects = () => {
   const { user } = useAuth();
