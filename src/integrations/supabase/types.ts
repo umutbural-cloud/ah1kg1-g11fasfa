@@ -127,6 +127,42 @@ export type Database = {
           },
         ]
       }
+      pomodoro_sessions: {
+        Row: {
+          created_at: string
+          duration_seconds: number
+          ended_at: string
+          id: string
+          kind: Database["public"]["Enums"]["pomodoro_kind"]
+          note: string | null
+          started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds: number
+          ended_at: string
+          id?: string
+          kind?: Database["public"]["Enums"]["pomodoro_kind"]
+          note?: string | null
+          started_at: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["pomodoro_kind"]
+          note?: string | null
+          started_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           created_at: string
@@ -241,6 +277,7 @@ export type Database = {
       purge_soft_deleted: { Args: never; Returns: undefined }
     }
     Enums: {
+      pomodoro_kind: "work" | "break"
       priority_level: "low" | "medium" | "high"
       task_status: "todo" | "in_progress" | "done"
       urgency_level: "someday" | "this_week" | "today"
@@ -371,6 +408,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      pomodoro_kind: ["work", "break"],
       priority_level: ["low", "medium", "high"],
       task_status: ["todo", "in_progress", "done"],
       urgency_level: ["someday", "this_week", "today"],
