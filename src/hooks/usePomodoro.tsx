@@ -3,22 +3,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
 
-export type PomodoroPhase = "idle" | "running" | "paused" | "finished";
+export type PomodoroPhase = "idle" | "running" | "paused";
 export type PomodoroKind = "work" | "break";
 
 type Ctx = {
-  durationSec: number;       // configured duration
-  remainingSec: number;       // counts down
+  durationSec: number;
+  remainingSec: number;
   phase: PomodoroPhase;
   kind: PomodoroKind;
   startedAt: Date | null;
+  workDurationSec: number;     // user-configured work duration
+  breakDurationSec: number;    // user-configured break duration
   setDuration: (sec: number) => void;
   start: () => void;
   pause: () => void;
   resume: () => void;
-  stop: () => void;             // discards
-  reset: () => void;            // back to configured duration
-  startBreak: (sec?: number) => void;
+  complete: () => void;        // saves & moves to next phase
+  reset: () => void;
+  skipBreak: () => void;       // during a break, jump straight to work
 };
 
 const PomodoroContext = createContext<Ctx | null>(null);
@@ -26,14 +28,13 @@ const PomodoroContext = createContext<Ctx | null>(null);
 const DEFAULT_WORK = 25 * 60;
 const DEFAULT_BREAK = 5 * 60;
 
-// Soft chime via WebAudio
 function playChime() {
   try {
     const Ctor = (window as any).AudioContext || (window as any).webkitAudioContext;
     if (!Ctor) return;
     const ctx = new Ctor();
     const now = ctx.currentTime;
-    const notes = [880, 1318.5, 1760]; // A5, E6, A6
+    const notes = [880, 1318.5, 1760];
     notes.forEach((freq, i) => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
@@ -53,13 +54,28 @@ function playChime() {
 
 export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
+  const [workDurationSec, setWorkDurationSec] = useState(DEFAULT_WORK);
+  const [breakDurationSec] = useState(DEFAULT_BREAK);
   const [durationSec, setDurationSec] = useState(DEFAULT_WORK);
   const [remainingSec, setRemainingSec] = useState(DEFAULT_WORK);
   const [phase, setPhase] = useState<PomodoroPhase>("idle");
   const [kind, setKind] = useState<PomodoroKind>("work");
   const [startedAt, setStartedAt] = useState<Date | null>(null);
   const intervalRef = useRef<number | null>(null);
-  const elapsedRef = useRef(0); // accumulated seconds when paused/finished
+  // refs mirror state so timer callbacks see fresh values
+  const phaseRef = useRef(phase);
+  const kindRef = useRef(kind);
+  const startedAtRef = useRef<Date | null>(null);
+  const durationRef = useRef(durationSec);
+  const workDurRef = useRef(workDurationSec);
+  const breakDurRef = useRef(breakDurationSec);
+
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
+  useEffect(() => { kindRef.current = kind; }, [kind]);
+  useEffect(() => { startedAtRef.current = startedAt; }, [startedAt]);
+  useEffect(() => { durationRef.current = durationSec; }, [durationSec]);
+  useEffect(() => { workDurRef.current = workDurationSec; }, [workDurationSec]);
+  useEffect(() => { breakDurRef.current = breakDurationSec; }, [breakDurationSec]);
 
   const clearTimer = () => {
     if (intervalRef.current) {
@@ -69,7 +85,7 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const persistSession = useCallback(async (k: PomodoroKind, started: Date, ended: Date, durationS: number) => {
-    if (!user || durationS < 5) return; // ignore tiny ones
+    if (!user || durationS < 5) return;
     await supabase.from("pomodoro_sessions").insert({
       user_id: user.id,
       started_at: started.toISOString(),
@@ -80,23 +96,45 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
     window.dispatchEvent(new CustomEvent("pomodoro:session-saved"));
   }, [user]);
 
+  // Auto-cycle: when current phase finishes, save it and start the next
+  const handleAutoFinish = useCallback(() => {
+    const ended = new Date();
+    const started = startedAtRef.current || new Date(ended.getTime() - durationRef.current * 1000);
+    const elapsed = Math.min(Math.round((ended.getTime() - started.getTime()) / 1000), durationRef.current);
+    const finishedKind = kindRef.current;
+    persistSession(finishedKind, started, ended, elapsed);
+    playChime();
+
+    if (finishedKind === "work") {
+      toast.success("Pomodoro tamamlandı! Mola zamanı.");
+      // start break automatically
+      const br = breakDurRef.current;
+      setKind("break");
+      setDurationSec(br);
+      setRemainingSec(br);
+      setStartedAt(new Date());
+      setPhase("running");
+    } else {
+      toast.success("Mola bitti! Çalışmaya dönüldü.");
+      const wk = workDurRef.current;
+      setKind("work");
+      setDurationSec(wk);
+      setRemainingSec(wk);
+      setStartedAt(new Date());
+      setPhase("running");
+    }
+  }, [persistSession]);
+
   const tick = useCallback(() => {
     setRemainingSec((r) => {
       if (r <= 1) {
         clearTimer();
-        const ended = new Date();
-        const started = startedAt || new Date(ended.getTime() - durationSec * 1000);
-        const elapsed = Math.round((ended.getTime() - started.getTime()) / 1000);
-        elapsedRef.current = 0;
-        setPhase("finished");
-        playChime();
-        toast.success(kind === "work" ? "Pomodoro tamamlandı! Mola zamanı." : "Mola bitti!");
-        persistSession(kind, started, ended, Math.min(elapsed, durationSec));
+        handleAutoFinish();
         return 0;
       }
       return r - 1;
     });
-  }, [startedAt, durationSec, kind, persistSession]);
+  }, [handleAutoFinish]);
 
   useEffect(() => {
     if (phase === "running") {
@@ -111,6 +149,7 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
   const setDuration = (sec: number) => {
     if (phase === "running" || phase === "paused") return;
     const v = Math.max(10, Math.min(sec, 180 * 60));
+    if (kind === "work") setWorkDurationSec(v);
     setDurationSec(v);
     setRemainingSec(v);
   };
@@ -119,7 +158,8 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
     if (phase === "running") return;
     setStartedAt(new Date());
     setKind("work");
-    setRemainingSec(durationSec);
+    setDurationSec(workDurationSec);
+    setRemainingSec(workDurationSec);
     setPhase("running");
   };
 
@@ -133,17 +173,33 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
     setPhase("running");
   };
 
-  const stop = () => {
-    // Save partial session if running/paused
-    if ((phase === "running" || phase === "paused") && startedAt) {
-      const ended = new Date();
-      const elapsed = Math.max(0, durationSec - remainingSec);
-      if (elapsed >= 5) persistSession(kind, startedAt, ended, elapsed);
+  // Manual completion: save partial session, then start next phase (like auto-finish)
+  const complete = () => {
+    if (phase !== "running" && phase !== "paused") return;
+    const ended = new Date();
+    const started = startedAt || new Date(ended.getTime() - (durationSec - remainingSec) * 1000);
+    const elapsed = Math.max(0, durationSec - remainingSec);
+    if (elapsed >= 5) {
+      persistSession(kind, started, ended, elapsed);
     }
     clearTimer();
-    setPhase("idle");
-    setStartedAt(null);
-    setRemainingSec(durationSec);
+    playChime();
+
+    if (kind === "work") {
+      toast.success("Çalışma kaydedildi. Mola zamanı.");
+      setKind("break");
+      setDurationSec(breakDurationSec);
+      setRemainingSec(breakDurationSec);
+      setStartedAt(new Date());
+      setPhase("running");
+    } else {
+      toast.success("Mola bitti.");
+      setKind("work");
+      setDurationSec(workDurationSec);
+      setRemainingSec(workDurationSec);
+      setStartedAt(null);
+      setPhase("idle");
+    }
   };
 
   const reset = () => {
@@ -151,21 +207,28 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
     setPhase("idle");
     setStartedAt(null);
     setKind("work");
-    setRemainingSec(durationSec);
+    setDurationSec(workDurationSec);
+    setRemainingSec(workDurationSec);
   };
 
-  const startBreak = (sec = DEFAULT_BREAK) => {
+  const skipBreak = () => {
+    if (kind !== "break") return;
     clearTimer();
-    setKind("break");
-    setDurationSec(sec);
-    setRemainingSec(sec);
+    setKind("work");
+    setDurationSec(workDurationSec);
+    setRemainingSec(workDurationSec);
     setStartedAt(new Date());
     setPhase("running");
+    toast("Mola atlandı.");
   };
 
   return (
     <PomodoroContext.Provider
-      value={{ durationSec, remainingSec, phase, kind, startedAt, setDuration, start, pause, resume, stop, reset, startBreak }}
+      value={{
+        durationSec, remainingSec, phase, kind, startedAt,
+        workDurationSec, breakDurationSec,
+        setDuration, start, pause, resume, complete, reset, skipBreak,
+      }}
     >
       {children}
     </PomodoroContext.Provider>
