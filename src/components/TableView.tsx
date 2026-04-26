@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTasks, Task } from "@/hooks/useTasks";
+import { format, parseISO } from "date-fns";
+import { tr } from "date-fns/locale";
 import {
   DndContext,
   PointerSensor,
@@ -90,7 +92,13 @@ const TableView = ({ projectId }: { projectId: string }) => {
   };
 
   const visible = tasks.filter((t) => !t.hidden && t.status !== "done");
-  const doneTasks = tasks.filter((t) => !t.hidden && t.status === "done");
+  const doneTasks = tasks
+    .filter((t) => !t.hidden && t.status === "done")
+    .sort((a, b) => {
+      const ta = a.completed_at ? new Date(a.completed_at).getTime() : 0;
+      const tb = b.completed_at ? new Date(b.completed_at).getTime() : 0;
+      return tb - ta; // en yeni en üstte
+    });
   const hiddenTasks = tasks.filter((t) => t.hidden);
 
   const handleDragEnd = (e: DragEndEvent) => {
@@ -185,7 +193,12 @@ const TableView = ({ projectId }: { projectId: string }) => {
                       />
                     </TableCell>
                     <TableCell className="text-sm font-light text-muted-foreground line-through">{task.title}</TableCell>
-                    <TableCell className="w-16 text-right">
+                    <TableCell className="text-[11px] text-muted-foreground/70 font-light text-right whitespace-nowrap">
+                      {task.completed_at
+                        ? format(parseISO(task.completed_at), "d MMM yyyy HH:mm:ss", { locale: tr })
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="w-12 text-right">
                       <button
                         onClick={() => deleteTask(task.id)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1"
