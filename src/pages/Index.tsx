@@ -27,20 +27,25 @@ const VIEWS: { id: ViewKey; label: string; jp: string; icon: any }[] = [
 const Index = () => {
   const { projects, loading, createProject, updateProject, deleteProject } = useProjects();
   const { undo, redo, canUndo, canRedo } = useUndo();
-  const [section, setSection] = useState<Section>("backlog");
+  const [section, setSection] = useState<Section>("project");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [view, setView] = useState<ViewKey>("notes");
+  const [view, setView] = useState<ViewKey>("table");
   const [journalDate, setJournalDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
-  const projectViews: ViewKey[] = selectedProject?.enabled_views || ["notes", "table"];
+  const projectViews: ViewKey[] = selectedProject?.enabled_views || ["table", "notes"];
 
-  // Auto-select first project once loaded if nothing selected
+  // İlk yüklemede sabit "Yapılacaklar Listesi" projesinin tablo görünümünü aç
   useEffect(() => {
-    if (!loading && !selectedProjectId && projects.length > 0 && section === "backlog") {
-      // keep on backlog by default; but allow project click to switch
+    if (loading || selectedProjectId) return;
+    const def = projects.find((p) => p.is_default);
+    if (def) {
+      setSelectedProjectId(def.id);
+      setSection("project");
+      const pvs = (def.enabled_views?.length ? def.enabled_views : ["table", "notes"]) as ViewKey[];
+      setView(pvs.includes("table") ? "table" : pvs[0]);
     }
-  }, [loading, projects, selectedProjectId, section]);
+  }, [loading, projects, selectedProjectId]);
 
   // Keyboard shortcuts for undo/redo
   useEffect(() => {
@@ -56,16 +61,16 @@ const Index = () => {
 
   const handleCreate = async (name: string, parentId?: string) => {
     const p = await createProject(name, parentId);
-    if (p) { setSelectedProjectId(p.id); setSection("project"); setView("notes"); }
+    if (p) { setSelectedProjectId(p.id); setSection("project"); setView("table"); }
   };
 
   const handleSelect = (id: string, v?: ViewKey) => {
     setSection("project");
     setSelectedProjectId(id);
     const project = projects.find((p) => p.id === id);
-    const pvs = project?.enabled_views || ["notes", "table"];
+    const pvs = (project?.enabled_views?.length ? project.enabled_views : ["table", "notes"]) as ViewKey[];
     if (v) setView(v);
-    else setView(pvs.includes(view) ? view : (pvs[0] || "notes"));
+    else setView(pvs.includes("table") ? "table" : (pvs[0] || "table"));
   };
 
   const handleDelete = async (id: string) => {
