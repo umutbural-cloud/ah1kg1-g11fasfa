@@ -78,10 +78,8 @@ const Pomodoro = () => {
     setSessions((arr) => arr.map((s) => (s.id === id ? { ...s, note } : s)));
   };
 
-  const commitDuration = () => {
-    const n = parseInt(editingMin, 10);
-    if (!isNaN(n) && n > 0) setDuration(n * 60);
-  };
+  const isIdle = phase === "idle";
+  const showControlsArea = phase !== "running";
 
   return (
     <div className="min-h-screen bg-background">
@@ -90,33 +88,51 @@ const Pomodoro = () => {
           <ArrowLeft className="h-4 w-4" />
         </button>
         <Clock className="h-4 w-4 text-muted-foreground" />
-        <h1 className="text-base font-light tracking-wide">時計 Pomodoro</h1>
+        <h1 className="text-base font-light tracking-wide">Pomodoro</h1>
       </header>
 
       <main className="max-w-3xl mx-auto p-8">
         {/* Timer */}
-        <div className="text-center py-12">
-          <div className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light mb-4">
-            {kind === "work" ? "作業 Çalışma" : "休憩 Mola"}
-          </div>
-          <div className="text-8xl font-extralight tracking-widest tabular-nums mb-8">
-            {formatMMSS(remainingSec)}
+        <div
+          className={`text-center transition-all duration-700 ease-out ${
+            phase === "running" ? "py-24" : "py-12"
+          }`}
+        >
+          <div
+            className={`text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light mb-4 transition-opacity duration-500 ${
+              phase === "running" ? "opacity-40" : "opacity-100"
+            }`}
+          >
+            {kind === "work" ? "Çalışma" : "Mola"}
           </div>
 
-          {phase === "idle" && (
-            <div className="flex items-center justify-center gap-2 mb-8">
-              <input
-                type="number"
-                min={1}
-                max={180}
-                value={editingMin}
-                onChange={(e) => setEditingMin(e.target.value)}
-                onBlur={commitDuration}
-                onKeyDown={(e) => e.key === "Enter" && commitDuration()}
-                className="w-16 text-center bg-transparent border border-border/60 rounded-sm px-2 py-1 text-sm tabular-nums"
-              />
-              <span className="text-xs text-muted-foreground">dakika</span>
-            </div>
+          {editingTime && isIdle ? (
+            <input
+              value={editVal}
+              onChange={(e) => setEditVal(e.target.value)}
+              onBlur={commitTime}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitTime();
+                if (e.key === "Escape") { setEditVal(formatMMSS(remainingSec)); setEditingTime(false); }
+              }}
+              autoFocus
+              className="w-[28rem] max-w-full text-center bg-transparent border-b border-border/60 focus:border-foreground/40 outline-none text-8xl font-extralight tracking-widest tabular-nums mb-8 mx-auto block"
+            />
+          ) : (
+            <button
+              onClick={() => { if (isIdle) { setEditVal(formatMMSS(remainingSec)); setEditingTime(true); } }}
+              disabled={!isIdle}
+              title={isIdle ? "Süreyi düzenlemek için tıkla" : ""}
+              className={`text-8xl font-extralight tracking-widest tabular-nums mb-8 block mx-auto transition-all duration-700 ease-out ${
+                phase === "running"
+                  ? "scale-110 text-foreground"
+                  : isIdle
+                  ? "hover:text-foreground/80 cursor-text"
+                  : ""
+              }`}
+            >
+              {formatMMSS(remainingSec)}
+            </button>
           )}
 
           <div className="flex items-center justify-center gap-3">
