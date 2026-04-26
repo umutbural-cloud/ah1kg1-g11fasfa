@@ -16,6 +16,7 @@ import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import JournalCompletedTasks from "./JournalCompletedTasks";
+import JournalWorkSessions from "./JournalWorkSessions";
 
 const ToolbarButton = ({
   onClick, active, children, title,
@@ -187,6 +188,7 @@ const JournalView = ({ date, onDateChange }: { date: string; onDateChange: (d: s
           <div className="text-[10px] text-muted-foreground mt-6 tracking-wide">
             {saving ? "保存中..." : "保存済み"}
           </div>
+          <JournalWorkSessions date={date} />
           <JournalCompletedTasks date={date} />
         </>
       )}

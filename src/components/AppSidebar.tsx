@@ -20,6 +20,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { Project } from "@/hooks/useProjects";
 import type { ViewKey } from "@/hooks/useProjectViews";
+import PomodoroSidebarWidget from "./PomodoroSidebarWidget";
 
 const EMOJIS = ["📁", "🎯", "💼", "🚀", "📝", "🎨", "💡", "🔧", "📊", "🌟", "🎵", "📚", "🏠", "⚡", "🌱", "🔥", "❤️", "🧩", "🎮", "🍀"];
 
@@ -373,10 +374,11 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Çöp kutusu */}
+        {/* Pomodoro + Çöp kutusu */}
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
+              <PomodoroSidebarWidget />
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={onSelectTrash}
