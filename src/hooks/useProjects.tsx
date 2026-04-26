@@ -36,6 +36,8 @@ export const useProjects = () => {
       ...p,
       enabled_views: Array.isArray(p.enabled_views) ? p.enabled_views : DEFAULT_VIEWS,
     })) as Project[];
+    // Default proje en üstte
+    normalized.sort((a, b) => Number(!!b.is_default) - Number(!!a.is_default));
     setProjects(normalized);
     setLoading(false);
   };
