@@ -1,92 +1,116 @@
+import { useEffect, useState } from "react";
 import { Clock, Play, Pause, Square, RotateCcw, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { usePomodoro, formatMMSS } from "@/hooks/usePomodoro";
 
 const PomodoroSidebarWidget = () => {
   const navigate = useNavigate();
-  const { remainingSec, phase, kind, start, pause, resume, reset, startBreak } = usePomodoro();
+  const { durationSec, remainingSec, phase, kind, setDuration, start, pause, resume, reset, startBreak } = usePomodoro();
 
   const isRunning = phase === "running";
   const isPaused = phase === "paused";
   const isFinished = phase === "finished";
+  const isIdle = phase === "idle";
+
+  const [editing, setEditing] = useState(false);
+  const [editVal, setEditVal] = useState(formatMMSS(remainingSec));
+
+  useEffect(() => {
+    if (!editing) setEditVal(formatMMSS(remainingSec));
+  }, [remainingSec, editing]);
+
+  const commit = () => {
+    const m = editVal.match(/^(\d{1,3}):?(\d{0,2})$/);
+    if (m) {
+      const mins = parseInt(m[1] || "0", 10);
+      const secs = parseInt(m[2] || "0", 10);
+      const total = mins * 60 + secs;
+      if (total > 0) setDuration(total);
+    }
+    setEditing(false);
+  };
 
   return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        onClick={() => navigate("/pomodoro")}
-        className="text-xs font-light text-muted-foreground group/pom"
-        title="Pomodoro"
-      >
-        <Clock className="h-3 w-3 shrink-0" />
-        <span className="tracking-wide flex-1 truncate">
-          時計 {formatMMSS(remainingSec)}
-          {kind === "break" && phase !== "idle" && <span className="ml-1 text-[9px]">休</span>}
-        </span>
-        <div className="flex items-center gap-0.5 shrink-0">
-          {isFinished ? (
-            <>
+    <>
+      <div className="px-2 py-1.5">
+        <div
+          onClick={() => navigate("/pomodoro")}
+          className="cursor-pointer rounded-sm hover:bg-accent/40 transition-colors px-2 py-2"
+        >
+          <div className="flex items-center gap-2 mb-1.5">
+            <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span className="text-sm font-light tracking-wide">Pomodoro</span>
+            {kind === "break" && phase !== "idle" && (
+              <span className="text-[9px] text-muted-foreground uppercase tracking-wider">mola</span>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
+            {editing && isIdle ? (
+              <input
+                value={editVal}
+                onChange={(e) => setEditVal(e.target.value)}
+                onBlur={commit}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commit();
+                  if (e.key === "Escape") { setEditVal(formatMMSS(remainingSec)); setEditing(false); }
+                }}
+                onClick={(e) => e.stopPropagation()}
+                autoFocus
+                className="w-20 bg-transparent border border-border/60 rounded-sm px-1.5 py-0.5 text-xl font-extralight tabular-nums tracking-wider text-foreground outline-none focus:border-foreground/40"
+              />
+            ) : (
               <button
-                onClick={(e) => { e.stopPropagation(); startBreak(); }}
-                className="p-0.5 hover:text-foreground"
-                title="Molayı başlat"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isIdle) { setEditVal(formatMMSS(remainingSec)); setEditing(true); }
+                }}
+                title={isIdle ? "Süreyi düzenle" : ""}
+                className={`text-xl font-extralight tabular-nums tracking-wider ${isIdle ? "hover:text-foreground/80 cursor-text" : "cursor-default"}`}
               >
-                <ChevronRight className="h-3 w-3" />
+                {formatMMSS(remainingSec)}
               </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); reset(); }}
-                className="p-0.5 hover:text-foreground"
-                title="Sıfırla"
-              >
-                <RotateCcw className="h-3 w-3" />
-              </button>
-            </>
-          ) : isRunning ? (
-            <>
-              <button
-                onClick={(e) => { e.stopPropagation(); pause(); }}
-                className="p-0.5 hover:text-foreground"
-                title="Duraklat"
-              >
-                <Pause className="h-3 w-3" />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); reset(); }}
-                className="p-0.5 hover:text-foreground"
-                title="Durdur"
-              >
-                <Square className="h-3 w-3" />
-              </button>
-            </>
-          ) : isPaused ? (
-            <>
-              <button
-                onClick={(e) => { e.stopPropagation(); resume(); }}
-                className="p-0.5 hover:text-foreground"
-                title="Devam"
-              >
-                <Play className="h-3 w-3" />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); reset(); }}
-                className="p-0.5 hover:text-foreground"
-                title="Durdur"
-              >
-                <Square className="h-3 w-3" />
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); start(); }}
-              className="p-0.5 hover:text-foreground"
-              title="Başlat"
-            >
-              <Play className="h-3 w-3" />
-            </button>
-          )}
+            )}
+
+            <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+              {isFinished ? (
+                <>
+                  <button onClick={() => startBreak()} title="Mola" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                  <button onClick={reset} title="Sıfırla" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              ) : isRunning ? (
+                <>
+                  <button onClick={pause} title="Duraklat" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                    <Pause className="h-3.5 w-3.5" />
+                  </button>
+                  <button onClick={reset} title="Durdur" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                    <Square className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              ) : isPaused ? (
+                <>
+                  <button onClick={resume} title="Devam" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                    <Play className="h-3.5 w-3.5" />
+                  </button>
+                  <button onClick={reset} title="Durdur" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                    <Square className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              ) : (
+                <button onClick={start} title="Başlat" className="p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                  <Play className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
+      </div>
+      <div className="mx-3 border-t border-border/60" />
+    </>
   );
 };
 

@@ -53,7 +53,7 @@ const JournalCompletedTasks = ({ date }: { date: string }) => {
       >
         {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         <CheckCircle2 className="h-3.5 w-3.5" />
-        <span className="tracking-wide">了 — Bugün tamamlananlar</span>
+        <span className="tracking-wide">Bugün tamamlananlar</span>
         <span className="text-muted-foreground/60">{tasks.length}</span>
       </button>
       {open && (

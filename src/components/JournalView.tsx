@@ -145,7 +145,7 @@ const JournalView = ({ date, onDateChange }: { date: string; onDateChange: (d: s
               <button className="flex items-center gap-2 px-3 py-1.5 rounded-sm hover:bg-accent/50 transition-colors">
                 <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
                 <div className="text-left">
-                  <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">日記 Günlük</div>
+                  <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">Günlük</div>
                   <div className="text-2xl font-light tracking-wide">
                     {format(currentDate, "d MMMM yyyy, EEEE", { locale: tr })}
                   </div>
