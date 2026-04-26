@@ -134,6 +134,7 @@ export type Database = {
           emoji: string
           enabled_views: Json
           id: string
+          is_default: boolean
           name: string
           parent_id: string | null
           user_id: string
@@ -144,6 +145,7 @@ export type Database = {
           emoji?: string
           enabled_views?: Json
           id?: string
+          is_default?: boolean
           name: string
           parent_id?: string | null
           user_id: string
@@ -154,6 +156,7 @@ export type Database = {
           emoji?: string
           enabled_views?: Json
           id?: string
+          is_default?: boolean
           name?: string
           parent_id?: string | null
           user_id?: string

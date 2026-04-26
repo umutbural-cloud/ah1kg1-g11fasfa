@@ -14,9 +14,10 @@ export type Project = {
   created_at: string;
   enabled_views: ViewKey[];
   deleted_at: string | null;
+  is_default?: boolean;
 };
 
-const DEFAULT_VIEWS: ViewKey[] = ["notes", "table"];
+const DEFAULT_VIEWS: ViewKey[] = ["table", "notes"];
 
 export const useProjects = () => {
   const { user } = useAuth();
@@ -35,6 +36,8 @@ export const useProjects = () => {
       ...p,
       enabled_views: Array.isArray(p.enabled_views) ? p.enabled_views : DEFAULT_VIEWS,
     })) as Project[];
+    // Default proje en üstte
+    normalized.sort((a, b) => Number(!!b.is_default) - Number(!!a.is_default));
     setProjects(normalized);
     setLoading(false);
   };
@@ -89,6 +92,8 @@ export const useProjects = () => {
   };
 
   const deleteProject = async (id: string) => {
+    const target = projects.find((p) => p.id === id);
+    if (target?.is_default) return; // sabit proje silinemez
     await supabase.from("projects").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     setProjects((prev) => prev.filter((p) => p.id !== id && p.parent_id !== id));
     push({
