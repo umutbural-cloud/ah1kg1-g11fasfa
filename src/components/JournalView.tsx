@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import JournalCompletedTasks from "./JournalCompletedTasks";
 
 const ToolbarButton = ({
   onClick, active, children, title,
