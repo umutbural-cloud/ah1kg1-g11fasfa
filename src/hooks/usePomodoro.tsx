@@ -178,8 +178,9 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
     if (phase !== "running" && phase !== "paused") return;
     const ended = new Date();
     const started = startedAt || new Date(ended.getTime() - (durationSec - remainingSec) * 1000);
-    const elapsed = Math.max(0, durationSec - remainingSec);
-    if (elapsed >= 5) {
+    const elapsedFromClock = Math.round((ended.getTime() - started.getTime()) / 1000);
+    const elapsed = Math.min(Math.max(elapsedFromClock, 0), durationSec);
+    if (elapsed >= 1) {
       persistSession(kind, started, ended, elapsed);
     }
     clearTimer();
