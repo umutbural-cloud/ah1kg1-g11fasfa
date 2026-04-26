@@ -193,7 +193,12 @@ const TableView = ({ projectId }: { projectId: string }) => {
                       />
                     </TableCell>
                     <TableCell className="text-sm font-light text-muted-foreground line-through">{task.title}</TableCell>
-                    <TableCell className="w-16 text-right">
+                    <TableCell className="text-[11px] text-muted-foreground/70 font-light text-right whitespace-nowrap">
+                      {task.completed_at
+                        ? format(parseISO(task.completed_at), "d MMM yyyy HH:mm:ss", { locale: tr })
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="w-12 text-right">
                       <button
                         onClick={() => deleteTask(task.id)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1"
