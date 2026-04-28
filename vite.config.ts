@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
+// touch: force dep re-optimization (v2)
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
