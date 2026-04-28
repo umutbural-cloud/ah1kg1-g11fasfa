@@ -135,6 +135,10 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
     setTimeout(() => { finishingRef.current = false; }, 50);
   }, [persistSession]);
 
+  // keep endsAt accessible to tick without re-binding interval
+  const endsAtRef = useRef<number | null>(null);
+  useEffect(() => { endsAtRef.current = endsAt; }, [endsAt]);
+
   // Tick: derive remaining from wall-clock difference (immune to setInterval throttling)
   const tick = useCallback(() => {
     if (phaseRef.current !== "running") return;
@@ -147,10 +151,6 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
       handleAutoFinish();
     }
   }, [handleAutoFinish]);
-
-  // keep endsAt accessible to tick without re-binding interval
-  const endsAtRef = useRef<number | null>(null);
-  useEffect(() => { endsAtRef.current = endsAt; }, [endsAt]);
 
   useEffect(() => {
     if (phase === "running") {
