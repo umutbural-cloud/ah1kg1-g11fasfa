@@ -61,7 +61,11 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
   const [phase, setPhase] = useState<PomodoroPhase>("idle");
   const [kind, setKind] = useState<PomodoroKind>("work");
   const [startedAt, setStartedAt] = useState<Date | null>(null);
+  // Wall-clock based tracking — survives backgrounded tabs / OS throttling
+  const [endsAt, setEndsAt] = useState<number | null>(null);   // ms epoch when current phase ends
   const intervalRef = useRef<number | null>(null);
+  const finishingRef = useRef(false);
+
   // refs mirror state so timer callbacks see fresh values
   const phaseRef = useRef(phase);
   const kindRef = useRef(kind);
@@ -98,53 +102,81 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
 
   // Auto-cycle: when current phase finishes, save it and start the next
   const handleAutoFinish = useCallback(() => {
-    const ended = new Date();
-    const started = startedAtRef.current || new Date(ended.getTime() - durationRef.current * 1000);
-    const elapsed = Math.min(Math.round((ended.getTime() - started.getTime()) / 1000), durationRef.current);
+    if (finishingRef.current) return;
+    finishingRef.current = true;
     const finishedKind = kindRef.current;
-    persistSession(finishedKind, started, ended, elapsed);
+    const dur = durationRef.current;
+    const started = startedAtRef.current || new Date(Date.now() - dur * 1000);
+    const ended = new Date(started.getTime() + dur * 1000);
+    persistSession(finishedKind, started, ended, dur);
     playChime();
 
     if (finishedKind === "work") {
       toast.success("Pomodoro tamamlandı! Mola zamanı.");
-      // start break automatically
       const br = breakDurRef.current;
+      const now = Date.now();
       setKind("break");
       setDurationSec(br);
       setRemainingSec(br);
-      setStartedAt(new Date());
+      setStartedAt(new Date(now));
+      setEndsAt(now + br * 1000);
       setPhase("running");
     } else {
       toast.success("Mola bitti! Çalışmaya dönüldü.");
       const wk = workDurRef.current;
+      const now = Date.now();
       setKind("work");
       setDurationSec(wk);
       setRemainingSec(wk);
-      setStartedAt(new Date());
+      setStartedAt(new Date(now));
+      setEndsAt(now + wk * 1000);
       setPhase("running");
     }
+    setTimeout(() => { finishingRef.current = false; }, 50);
   }, [persistSession]);
 
+  // Tick: derive remaining from wall-clock difference (immune to setInterval throttling)
   const tick = useCallback(() => {
-    setRemainingSec((r) => {
-      if (r <= 1) {
-        clearTimer();
-        handleAutoFinish();
-        return 0;
-      }
-      return r - 1;
-    });
+    if (phaseRef.current !== "running") return;
+    const ends = endsAtRef.current;
+    if (ends == null) return;
+    const remaining = Math.max(0, Math.round((ends - Date.now()) / 1000));
+    setRemainingSec(remaining);
+    if (remaining <= 0) {
+      clearTimer();
+      handleAutoFinish();
+    }
   }, [handleAutoFinish]);
+
+  // keep endsAt accessible to tick without re-binding interval
+  const endsAtRef = useRef<number | null>(null);
+  useEffect(() => { endsAtRef.current = endsAt; }, [endsAt]);
 
   useEffect(() => {
     if (phase === "running") {
       clearTimer();
-      intervalRef.current = window.setInterval(tick, 1000);
+      tick(); // immediate sync (covers tab refocus)
+      intervalRef.current = window.setInterval(tick, 500);
     } else {
       clearTimer();
     }
     return clearTimer;
   }, [phase, tick]);
+
+  // Re-sync immediately when tab becomes visible again (handles background throttling/sleep)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && phaseRef.current === "running") {
+        tick();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [tick]);
 
   const setDuration = (sec: number) => {
     if (phase === "running" || phase === "paused") return;
@@ -156,24 +188,35 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
 
   const start = () => {
     if (phase === "running") return;
-    setStartedAt(new Date());
-    setKind("work");
-    setDurationSec(workDurationSec);
-    setRemainingSec(workDurationSec);
+    const now = Date.now();
+    const dur = kind === "break" ? breakDurationSec : workDurationSec;
+    setKind(kind === "break" ? "break" : "work");
+    setDurationSec(dur);
+    setRemainingSec(dur);
+    setStartedAt(new Date(now));
+    setEndsAt(now + dur * 1000);
     setPhase("running");
   };
 
   const pause = () => {
     if (phase !== "running") return;
+    // freeze remaining at current wall-clock value
+    const ends = endsAtRef.current;
+    if (ends != null) {
+      const remaining = Math.max(0, Math.round((ends - Date.now()) / 1000));
+      setRemainingSec(remaining);
+    }
     setPhase("paused");
   };
 
   const resume = () => {
     if (phase !== "paused") return;
+    const now = Date.now();
+    setEndsAt(now + remainingSec * 1000);
     setPhase("running");
   };
 
-  // Manual completion: save partial session, then start next phase (like auto-finish)
+  // Manual completion: save partial session, then start next phase
   const complete = () => {
     if (phase !== "running" && phase !== "paused") return;
     const ended = new Date();
@@ -188,10 +231,12 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
 
     if (kind === "work") {
       toast.success("Çalışma kaydedildi. Mola zamanı.");
+      const now = Date.now();
       setKind("break");
       setDurationSec(breakDurationSec);
       setRemainingSec(breakDurationSec);
-      setStartedAt(new Date());
+      setStartedAt(new Date(now));
+      setEndsAt(now + breakDurationSec * 1000);
       setPhase("running");
     } else {
       toast.success("Mola bitti.");
@@ -199,6 +244,7 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
       setDurationSec(workDurationSec);
       setRemainingSec(workDurationSec);
       setStartedAt(null);
+      setEndsAt(null);
       setPhase("idle");
     }
   };
@@ -207,6 +253,7 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
     clearTimer();
     setPhase("idle");
     setStartedAt(null);
+    setEndsAt(null);
     setKind("work");
     setDurationSec(workDurationSec);
     setRemainingSec(workDurationSec);
@@ -215,10 +262,12 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
   const skipBreak = () => {
     if (kind !== "break") return;
     clearTimer();
+    const now = Date.now();
     setKind("work");
     setDurationSec(workDurationSec);
     setRemainingSec(workDurationSec);
-    setStartedAt(new Date());
+    setStartedAt(new Date(now));
+    setEndsAt(now + workDurationSec * 1000);
     setPhase("running");
     toast("Mola atlandı.");
   };
