@@ -178,6 +178,19 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [tick]);
 
+  // Live tab title: "Zen 24:59 — Keikaku" while running, restore when idle
+  useEffect(() => {
+    const original = document.title;
+    if (phase === "idle") return;
+    const label = kind === "break" ? "Mola" : "Zen";
+    const prefix = phase === "paused" ? "⏸ " : "";
+    document.title = `${prefix}${label} ${formatMMSS(remainingSec)} — Keikaku`;
+    return () => {
+      document.title = original;
+    };
+  }, [phase, kind, remainingSec]);
+
+
   const setDuration = (sec: number) => {
     if (phase === "running" || phase === "paused") return;
     const v = Math.max(10, Math.min(sec, 180 * 60));
