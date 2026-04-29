@@ -264,14 +264,13 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
   const skipBreak = () => {
     if (kind !== "break") return;
     clearTimer();
-    const now = Date.now();
     setKind("work");
     setDurationSec(workDurationSec);
     setRemainingSec(workDurationSec);
-    setStartedAt(new Date(now));
-    setEndsAt(now + workDurationSec * 1000);
-    setPhase("running");
-    toast("Mola atlandı.");
+    setStartedAt(null);
+    setEndsAt(null);
+    setPhase("idle");
+    toast("Mola atlandı. Çalışma için başlat'a basın.");
   };
 
   return (
