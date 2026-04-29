@@ -28,6 +28,7 @@ const VIEWS: { id: ViewKey; label: string; jp: string; icon: any }[] = [
 const Index = () => {
   const { projects, loading, createProject, updateProject, deleteProject } = useProjects();
   const { undo, redo, canUndo, canRedo } = useUndo();
+  const { theme, toggle: toggleTheme } = useTheme();
   const [section, setSection] = useState<Section>("project");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [view, setView] = useState<ViewKey>("table");
