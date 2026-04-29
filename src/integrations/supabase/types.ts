@@ -56,6 +56,71 @@ export type Database = {
         }
         Relationships: []
       }
+      habit_completions: {
+        Row: {
+          completed_at: string
+          completion_date: string
+          habit_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          completion_date: string
+          habit_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          completion_date?: string
+          habit_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_completions_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          hidden: boolean
+          id: string
+          position: number
+          project_id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          hidden?: boolean
+          id?: string
+          position?: number
+          project_id: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          hidden?: boolean
+          id?: string
+          position?: number
+          project_id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           content: string
