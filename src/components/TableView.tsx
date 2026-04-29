@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTasks, Task } from "@/hooks/useTasks";
+import HabitsSection from "./HabitsSection";
 import { format, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
 import {
