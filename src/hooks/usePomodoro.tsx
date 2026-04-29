@@ -100,7 +100,7 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
     window.dispatchEvent(new CustomEvent("pomodoro:session-saved"));
   }, [user]);
 
-  // Auto-cycle: when current phase finishes, save it and start the next
+  // Phase finished naturally: save it, switch to the next phase but WAIT for user to start
   const handleAutoFinish = useCallback(() => {
     if (finishingRef.current) return;
     finishingRef.current = true;
@@ -112,26 +112,19 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
     playChime();
 
     if (finishedKind === "work") {
-      toast.success("Pomodoro tamamlandı! Mola zamanı.");
-      const br = breakDurRef.current;
-      const now = Date.now();
+      toast.success("Pomodoro tamamlandı! Mola için başlat'a basın.");
       setKind("break");
-      setDurationSec(br);
-      setRemainingSec(br);
-      setStartedAt(new Date(now));
-      setEndsAt(now + br * 1000);
-      setPhase("running");
+      setDurationSec(breakDurRef.current);
+      setRemainingSec(breakDurRef.current);
     } else {
-      toast.success("Mola bitti! Çalışmaya dönüldü.");
-      const wk = workDurRef.current;
-      const now = Date.now();
+      toast.success("Mola bitti! Çalışma için başlat'a basın.");
       setKind("work");
-      setDurationSec(wk);
-      setRemainingSec(wk);
-      setStartedAt(new Date(now));
-      setEndsAt(now + wk * 1000);
-      setPhase("running");
+      setDurationSec(workDurRef.current);
+      setRemainingSec(workDurRef.current);
     }
+    setStartedAt(null);
+    setEndsAt(null);
+    setPhase("idle");
     setTimeout(() => { finishingRef.current = false; }, 50);
   }, [persistSession]);
 
