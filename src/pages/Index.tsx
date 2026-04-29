@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { FileText, Table as TableIcon, GanttChart, Kanban, Calendar, Plus, Undo, Redo } from "lucide-react";
+import { FileText, Table as TableIcon, GanttChart, Kanban, Calendar, Plus, Undo, Redo, Moon, Sun } from "lucide-react";
 import { format } from "date-fns";
 import AppSidebar, { Section } from "@/components/AppSidebar";
 import NotesView from "@/components/NotesView";
@@ -14,6 +14,7 @@ import TrashView from "@/components/TrashView";
 import { useProjects } from "@/hooks/useProjects";
 import { ViewKey } from "@/hooks/useProjectViews";
 import { useUndo } from "@/hooks/useUndo";
+import { useTheme } from "@/hooks/useTheme";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const VIEWS: { id: ViewKey; label: string; jp: string; icon: any }[] = [
@@ -27,6 +28,7 @@ const VIEWS: { id: ViewKey; label: string; jp: string; icon: any }[] = [
 const Index = () => {
   const { projects, loading, createProject, updateProject, deleteProject } = useProjects();
   const { undo, redo, canUndo, canRedo } = useUndo();
+  const { theme, toggle: toggleTheme } = useTheme();
   const [section, setSection] = useState<Section>("project");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [view, setView] = useState<ViewKey>("table");
@@ -192,6 +194,13 @@ const Index = () => {
                 className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-colors"
               >
                 <Redo className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={toggleTheme}
+                title={theme === "dark" ? "Aydınlık tema" : "Karanlık tema"}
+                className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+              >
+                {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
               </button>
             </div>
           </header>
