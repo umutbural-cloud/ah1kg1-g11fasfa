@@ -78,7 +78,7 @@ const SortableRow = ({ task, onUpdate, onDelete, onToggleHidden }: {
   );
 };
 
-const TableView = ({ projectId }: { projectId: string }) => {
+const TableView = ({ projectId, showHabits = false }: { projectId: string; showHabits?: boolean }) => {
   const { tasks, loading, createTask, updateTask, deleteTask, reorderTasks } = useTasks(projectId);
   const [newTitle, setNewTitle] = useState("");
   const [showDone, setShowDone] = useState(false);
