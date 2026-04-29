@@ -171,6 +171,9 @@ const TableView = ({ projectId }: { projectId: string }) => {
         </div>
       )}
 
+      {/* Alışkanlıklar */}
+      <HabitsSection projectId={projectId} />
+
       {/* Tamamlananlar */}
       {doneTasks.length > 0 && (
         <div className="border border-border/60 rounded-sm overflow-hidden">
