@@ -195,6 +195,13 @@ const Index = () => {
               >
                 <Redo className="h-3.5 w-3.5" />
               </button>
+              <button
+                onClick={toggleTheme}
+                title={theme === "dark" ? "Aydınlık tema" : "Karanlık tema"}
+                className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+              >
+                {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              </button>
             </div>
           </header>
 
