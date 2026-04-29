@@ -171,8 +171,8 @@ const TableView = ({ projectId, showHabits = false }: { projectId: string; showH
         </div>
       )}
 
-      {/* Alışkanlıklar */}
-      <HabitsSection projectId={projectId} />
+      {/* Alışkanlıklar — sadece varsayılan projede */}
+      {showHabits && <HabitsSection projectId={projectId} />}
 
       {/* Tamamlananlar */}
       {doneTasks.length > 0 && (
