@@ -222,7 +222,7 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
     setPhase("running");
   };
 
-  // Manual completion: save partial session, then start next phase
+  // Manual completion: save partial session, switch to next phase but DON'T auto-start
   const complete = () => {
     if (phase !== "running" && phase !== "paused") return;
     const ended = new Date();
@@ -236,23 +236,19 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
     playChime();
 
     if (kind === "work") {
-      toast.success("Çalışma kaydedildi. Mola zamanı.");
-      const now = Date.now();
+      toast.success("Çalışma kaydedildi. Mola için başlat'a basın.");
       setKind("break");
       setDurationSec(breakDurationSec);
       setRemainingSec(breakDurationSec);
-      setStartedAt(new Date(now));
-      setEndsAt(now + breakDurationSec * 1000);
-      setPhase("running");
     } else {
       toast.success("Mola bitti.");
       setKind("work");
       setDurationSec(workDurationSec);
       setRemainingSec(workDurationSec);
-      setStartedAt(null);
-      setEndsAt(null);
-      setPhase("idle");
     }
+    setStartedAt(null);
+    setEndsAt(null);
+    setPhase("idle");
   };
 
   const reset = () => {
