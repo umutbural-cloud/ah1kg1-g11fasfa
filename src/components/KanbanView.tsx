@@ -115,7 +115,7 @@ const SortableCard = ({ task, onUpdate, onDelete }: {
             <button
               onClick={handleAdvance}
               title="Sonraki aşamaya geçir"
-              className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground shrink-0 p-1 -m-1"
+              className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground shrink-0 p-1 -m-1"
             >
               <ArrowRight className="h-4 w-4" />
             </button>
