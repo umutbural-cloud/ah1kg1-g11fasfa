@@ -39,26 +39,26 @@ const SortableRow = ({ task, onUpdate, onDelete, onToggleHidden }: {
 
   return (
     <TableRow ref={setNodeRef} style={style} className="group">
-      <TableCell className="py-1 w-8">
-        <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground">
+      <TableCell className="py-1 px-1 sm:px-2 w-7 sm:w-8">
+        <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground touch-none">
           <GripVertical className="h-3.5 w-3.5" />
         </button>
       </TableCell>
-      <TableCell className="py-1 w-10">
+      <TableCell className="py-1 px-1 sm:px-2 w-8 sm:w-10">
         <Checkbox
           checked={task.status === "done"}
           onCheckedChange={(checked) => onUpdate(task.id, { status: checked ? "done" : "todo" })}
         />
       </TableCell>
-      <TableCell className="text-sm font-light">
+      <TableCell className="text-sm font-light px-1 sm:px-2 py-1">
         <Input
           value={task.title}
           onChange={(e) => onUpdate(task.id, { title: e.target.value })}
           className="bg-transparent border-none p-0 h-7 text-sm font-light focus-visible:ring-0"
         />
       </TableCell>
-      <TableCell className="w-16 text-right">
-        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <TableCell className="w-14 sm:w-16 px-1 sm:px-2 py-1 text-right">
+        <div className="flex items-center justify-end gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => onToggleHidden(task.id, !task.hidden)}
             className="text-muted-foreground hover:text-foreground p-1"
@@ -120,7 +120,7 @@ const TableView = ({ projectId, showHabits = false }: { projectId: string; showH
   if (loading) return <div className="text-center text-muted-foreground text-sm py-12">読み込み中...</div>;
 
   return (
-    <div className="space-y-4 max-w-3xl mx-auto">
+    <div className="space-y-4 max-w-3xl mx-auto w-full">
       <h2 className="text-lg tracking-wide font-light">表 — Tablo</h2>
 
       <div className="flex gap-2">
