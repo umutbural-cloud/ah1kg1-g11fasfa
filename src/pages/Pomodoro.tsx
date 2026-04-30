@@ -25,6 +25,28 @@ const Pomodoro = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [editingTime, setEditingTime] = useState(false);
   const [editVal, setEditVal] = useState(formatMMSS(remainingSec));
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission | "unsupported">(
+    typeof Notification === "undefined" ? "unsupported" : Notification.permission
+  );
+
+  const requestNotif = async () => {
+    if (typeof Notification === "undefined") {
+      toast.error("Bu tarayıcı bildirimleri desteklemiyor.");
+      return;
+    }
+    if (Notification.permission === "granted") {
+      toast("Bildirimler zaten açık.");
+      return;
+    }
+    const result = await Notification.requestPermission();
+    setNotifPerm(result);
+    if (result === "granted") {
+      toast.success("Bildirimler açıldı. Pomodoro bittiğinde haber vereceğiz.");
+      try { new Notification("Keikaku", { body: "Bildirimler aktif." }); } catch {}
+    } else {
+      toast.error("Bildirim izni reddedildi.");
+    }
+  };
 
   useEffect(() => {
     if (!editingTime) setEditVal(formatMMSS(remainingSec));
