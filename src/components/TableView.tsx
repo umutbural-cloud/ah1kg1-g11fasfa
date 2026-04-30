@@ -190,22 +190,22 @@ const TableView = ({ projectId, showHabits = false }: { projectId: string; showH
               <TableBody>
                 {doneTasks.map((task) => (
                   <TableRow key={task.id} className="group">
-                    <TableCell className="w-10 py-1">
+                    <TableCell className="w-8 sm:w-10 py-1 px-1 sm:px-2">
                       <Checkbox
                         checked
                         onCheckedChange={() => updateTask(task.id, { status: "todo" })}
                       />
                     </TableCell>
-                    <TableCell className="text-sm font-light text-muted-foreground line-through">{task.title}</TableCell>
-                    <TableCell className="text-[11px] text-muted-foreground/70 font-light text-right whitespace-nowrap">
+                    <TableCell className="text-sm font-light text-muted-foreground line-through px-1 sm:px-2 py-1 break-words">{task.title}</TableCell>
+                    <TableCell className="text-[10px] sm:text-[11px] text-muted-foreground/70 font-light text-right whitespace-nowrap px-1 sm:px-2 py-1">
                       {task.completed_at
-                        ? format(parseISO(task.completed_at), "d MMM yyyy HH:mm:ss", { locale: tr })
+                        ? format(parseISO(task.completed_at), "d MMM HH:mm", { locale: tr })
                         : "—"}
                     </TableCell>
-                    <TableCell className="w-12 text-right">
+                    <TableCell className="w-10 sm:w-12 text-right px-1 sm:px-2 py-1">
                       <button
                         onClick={() => deleteTask(task.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1"
+                        className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -234,8 +234,8 @@ const TableView = ({ projectId, showHabits = false }: { projectId: string; showH
               <TableBody>
                 {hiddenTasks.map((task) => (
                   <TableRow key={task.id} className="group">
-                    <TableCell className="text-sm font-light text-muted-foreground italic">{task.title}</TableCell>
-                    <TableCell className="w-24 text-right">
+                    <TableCell className="text-sm font-light text-muted-foreground italic px-2 py-1 break-words">{task.title}</TableCell>
+                    <TableCell className="w-20 sm:w-24 text-right px-2 py-1">
                       <button
                         onClick={() => updateTask(task.id, { hidden: false })}
                         className="text-muted-foreground hover:text-foreground text-[10px] tracking-wide"
