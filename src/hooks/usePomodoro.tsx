@@ -123,11 +123,13 @@ export const PomodoroProvider = ({ children }: { children: ReactNode }) => {
 
     if (finishedKind === "work") {
       toast.success("Pomodoro tamamlandı! Mola için başlat'a basın.");
+      notify("Pomodoro tamamlandı 🍵", "Mola zamanı. Başlat'a basın.");
       setKind("break");
       setDurationSec(breakDurRef.current);
       setRemainingSec(breakDurRef.current);
     } else {
       toast.success("Mola bitti! Çalışma için başlat'a basın.");
+      notify("Mola bitti ⛩", "Çalışma zamanı. Başlat'a basın.");
       setKind("work");
       setDurationSec(workDurRef.current);
       setRemainingSec(workDurRef.current);
