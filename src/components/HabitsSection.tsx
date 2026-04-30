@@ -54,23 +54,23 @@ const HabitsSection = ({ projectId }: { projectId: string }) => {
             <TableBody>
               {visible.map((habit) => (
                 <TableRow key={habit.id} className="group">
-                  <TableCell className="py-1 w-10">
+                  <TableCell className="py-1 w-8 sm:w-10 px-1 sm:px-2">
                     <Checkbox
                       checked={habit.completed_today}
                       onCheckedChange={() => toggleCompletion(habit)}
                     />
                   </TableCell>
-                  <TableCell className="text-sm font-light">
+                  <TableCell className="text-sm font-light px-1 sm:px-2 py-1">
                     <Input
                       value={habit.title}
                       onChange={(e) => updateHabit(habit.id, { title: e.target.value })}
                       className={`bg-transparent border-none p-0 h-7 text-sm font-light focus-visible:ring-0 ${habit.completed_today ? "line-through text-muted-foreground" : ""}`}
                     />
                   </TableCell>
-                  <TableCell className="w-16 text-right">
+                  <TableCell className="w-12 sm:w-16 text-right px-1 sm:px-2 py-1">
                     <button
                       onClick={() => deleteHabit(habit.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1"
+                      className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
