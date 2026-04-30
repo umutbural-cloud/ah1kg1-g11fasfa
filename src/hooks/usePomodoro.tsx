@@ -28,6 +28,16 @@ const PomodoroContext = createContext<Ctx | null>(null);
 const DEFAULT_WORK = 25 * 60;
 const DEFAULT_BREAK = 5 * 60;
 
+function notify(title: string, body: string) {
+  try {
+    if (typeof Notification === "undefined") return;
+    if (Notification.permission === "granted") {
+      const n = new Notification(title, { body, icon: "/favicon.ico", tag: "keikaku-pomodoro" });
+      n.onclick = () => { window.focus(); n.close(); };
+    }
+  } catch {}
+}
+
 function playChime() {
   try {
     const Ctor = (window as any).AudioContext || (window as any).webkitAudioContext;
