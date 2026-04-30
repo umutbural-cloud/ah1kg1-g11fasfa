@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Plus, Trash2, LogOut, ChevronRight, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash } from "lucide-react";
+import { Plus, Trash2, LogOut, ChevronRight, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash, Settings } from "lucide-react";
+import SettingsDialog from "./SettingsDialog";
 import { Input } from "@/components/ui/input";
 import {
   Sidebar,
@@ -255,6 +256,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
   const [showInput, setShowInput] = useState(false);
   const [addingParentId, setAddingParentId] = useState<string | null>(null);
   const [subName, setSubName] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleCreate = () => {
     if (!newName.trim()) return;
@@ -388,6 +390,15 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                   <span className="tracking-wide">Çöp Kutusu</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setSettingsOpen(true)}
+                  className="text-xs font-light text-muted-foreground"
+                >
+                  <Settings className="h-3 w-3" />
+                  <span className="tracking-wide">Ayarlar</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -403,6 +414,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
           </button>
         </div>
       </SidebarFooter>
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </Sidebar>
   );
 };
