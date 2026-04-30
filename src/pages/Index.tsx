@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { FileText, Table as TableIcon, GanttChart, Kanban, Calendar, Plus, Undo, Redo, Moon, Sun } from "lucide-react";
+import { FileText, Table as TableIcon, GanttChart, Kanban, Calendar, Plus, Undo, Redo, Moon, Sun, LayoutGrid } from "lucide-react";
 import { format } from "date-fns";
 import AppSidebar, { Section } from "@/components/AppSidebar";
 import NotesView from "@/components/NotesView";
@@ -127,63 +127,113 @@ const Index = () => {
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {section === "project" && selectedProject && (
-                <nav className="flex items-center gap-0.5 mr-2">
-                  {VIEWS.filter((v) => projectViews.includes(v.id)).map((v) => {
-                    const Icon = v.icon;
-                    const active = view === v.id;
-                    return (
-                      <button
-                        key={v.id}
-                        onClick={() => setView(v.id)}
-                        title={`${v.jp} ${v.label}`}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs tracking-wide transition-colors ${
-                          active
-                            ? "bg-accent text-accent-foreground"
-                            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                        }`}
-                      >
-                        <Icon className="h-3.5 w-3.5" />
-                        <span className="hidden md:inline">{v.label}</span>
-                      </button>
-                    );
-                  })}
-                  {availableToAdd.length > 0 && (
-                    <Popover>
-                      <PopoverTrigger asChild>
+                <>
+                  {/* Desktop: tüm view sekmeleri */}
+                  <nav className="hidden sm:flex items-center gap-0.5 mr-2">
+                    {VIEWS.filter((v) => projectViews.includes(v.id)).map((v) => {
+                      const Icon = v.icon;
+                      const active = view === v.id;
+                      return (
                         <button
-                          title="Görünüm ekle"
-                          className="flex items-center gap-1 px-1.5 py-1 rounded-sm text-xs text-muted-foreground/70 hover:bg-accent/50 hover:text-foreground transition-colors"
+                          key={v.id}
+                          onClick={() => setView(v.id)}
+                          title={`${v.jp} ${v.label}`}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs tracking-wide transition-colors ${
+                            active
+                              ? "bg-accent text-accent-foreground"
+                              : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                          }`}
                         >
-                          <Plus className="h-3 w-3" />
+                          <Icon className="h-3.5 w-3.5" />
+                          <span className="hidden md:inline">{v.label}</span>
                         </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-44 p-1" align="end">
-                        {availableToAdd.map((v) => {
-                          const Icon = v.icon;
-                          return (
-                            <button
-                              key={v.id}
-                              onClick={() => { addView(v.id); setView(v.id); }}
-                              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent rounded-sm transition-colors"
-                            >
-                              <Icon className="h-3 w-3" />
-                              <span>{v.label}</span>
-                              <span className="text-muted-foreground/60 ml-auto text-[9px]">{v.jp}</span>
-                            </button>
-                          );
-                        })}
-                      </PopoverContent>
-                    </Popover>
-                  )}
-                </nav>
+                      );
+                    })}
+                    {availableToAdd.length > 0 && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            title="Görünüm ekle"
+                            className="flex items-center gap-1 px-1.5 py-1 rounded-sm text-xs text-muted-foreground/70 hover:bg-accent/50 hover:text-foreground transition-colors"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-44 p-1" align="end">
+                          {availableToAdd.map((v) => {
+                            const Icon = v.icon;
+                            return (
+                              <button
+                                key={v.id}
+                                onClick={() => { addView(v.id); setView(v.id); }}
+                                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent rounded-sm transition-colors"
+                              >
+                                <Icon className="h-3 w-3" />
+                                <span>{v.label}</span>
+                                <span className="text-muted-foreground/60 ml-auto text-[9px]">{v.jp}</span>
+                              </button>
+                            );
+                          })}
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                  </nav>
+
+                  {/* Mobil: tek bir görünüm seçici */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        className="sm:hidden flex items-center gap-1.5 px-2 py-1 rounded-sm text-xs bg-accent/60 text-accent-foreground"
+                        title="Görünüm"
+                      >
+                        {(() => {
+                          const cur = VIEWS.find((v) => v.id === view);
+                          const Icon = cur?.icon || LayoutGrid;
+                          return <><Icon className="h-3.5 w-3.5" /><span className="tracking-wide">{cur?.label || "Görünüm"}</span></>;
+                        })()}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-1" align="end">
+                      {VIEWS.filter((v) => projectViews.includes(v.id)).map((v) => {
+                        const Icon = v.icon;
+                        const active = view === v.id;
+                        return (
+                          <button
+                            key={v.id}
+                            onClick={() => setView(v.id)}
+                            className={`w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-sm transition-colors ${active ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"}`}
+                          >
+                            <Icon className="h-3 w-3" />
+                            <span className="flex-1 text-left">{v.label}</span>
+                            <span className="text-muted-foreground/60 text-[9px]">{v.jp}</span>
+                          </button>
+                        );
+                      })}
+                      {availableToAdd.length > 0 && <div className="border-t border-border/60 my-1" />}
+                      {availableToAdd.map((v) => {
+                        const Icon = v.icon;
+                        return (
+                          <button
+                            key={v.id}
+                            onClick={() => { addView(v.id); setView(v.id); }}
+                            className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent rounded-sm transition-colors"
+                          >
+                            <Plus className="h-3 w-3" />
+                            <span>{v.label}</span>
+                          </button>
+                        );
+                      })}
+                    </PopoverContent>
+                  </Popover>
+                </>
               )}
               <button
                 onClick={() => undo()}
                 disabled={!canUndo}
                 title="Geri al (Ctrl/Cmd+Z)"
-                className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-colors"
+                className="hidden sm:inline-flex p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-colors"
               >
                 <Undo className="h-3.5 w-3.5" />
               </button>
@@ -191,14 +241,14 @@ const Index = () => {
                 onClick={() => redo()}
                 disabled={!canRedo}
                 title="Yinele (Ctrl/Cmd+Shift+Z)"
-                className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-colors"
+                className="hidden sm:inline-flex p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-colors"
               >
                 <Redo className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={toggleTheme}
                 title={theme === "dark" ? "Aydınlık tema" : "Karanlık tema"}
-                className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                className="hidden sm:inline-flex p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
               >
                 {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
               </button>
