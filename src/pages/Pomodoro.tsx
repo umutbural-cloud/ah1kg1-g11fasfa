@@ -234,6 +234,14 @@ const Pomodoro = () => {
           </div>
         </div>
 
+        <div
+          className={`mt-12 transition-all duration-700 ease-out ${
+            isRunning ? "opacity-30 hover:opacity-100" : "opacity-100"
+          }`}
+        >
+          <PomodoroTaskList />
+        </div>
+
         <section
           className={`mt-12 transition-all duration-700 ease-out ${
             isRunning ? "opacity-30 hover:opacity-100" : "opacity-100"
