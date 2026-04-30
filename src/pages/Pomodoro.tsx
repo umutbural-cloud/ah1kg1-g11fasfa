@@ -125,6 +125,28 @@ const Pomodoro = () => {
         </button>
         <Clock className="h-4 w-4 text-muted-foreground" />
         <h1 className="text-base font-light tracking-wide">Pomodoro</h1>
+        <div className="ml-auto">
+          {notifPerm !== "granted" && notifPerm !== "unsupported" && (
+            <button
+              onClick={requestNotif}
+              title="Pomodoro bittiğinde bildirim al"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-sm border border-border/60 hover:bg-accent/40"
+            >
+              <Bell className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Bildirimleri aç</span>
+            </button>
+          )}
+          {notifPerm === "granted" && (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground" title="Bildirimler açık">
+              <Bell className="h-3.5 w-3.5" />
+            </span>
+          )}
+          {notifPerm === "denied" && (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground/60" title="Bildirimler engellendi (tarayıcı ayarlarından açın)">
+              <BellOff className="h-3.5 w-3.5" />
+            </span>
+          )}
+        </div>
       </header>
 
       <main className="max-w-3xl mx-auto p-8">
