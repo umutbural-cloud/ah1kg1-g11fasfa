@@ -191,7 +191,7 @@ const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onDeleteTask 
   const hiddenCount = isDoneCol ? Math.max(0, sorted.length - 3) : 0;
 
   return (
-    <div ref={setNodeRef} className="flex-1 min-w-[240px] flex flex-col">
+    <div ref={setNodeRef} className="w-full sm:flex-1 sm:min-w-[240px] flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">{column.jpLabel}</span>
@@ -290,7 +290,7 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
     <div className="space-y-4">
       <h2 className="text-lg tracking-wide font-light">看板 — Kanban</h2>
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex flex-col sm:flex-row gap-4 sm:overflow-x-auto pb-4">
           {COLUMNS.map((col) => (
             <KanbanColumn
               key={col.key}
