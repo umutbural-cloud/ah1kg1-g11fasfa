@@ -96,6 +96,31 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
 
           <div className="border-t border-border/60" />
 
+          {/* Bildirimler */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-light">Bildirimler</div>
+              <div className="text-[10px] text-muted-foreground tracking-wide">
+                {notifPerm === "granted" && "Açık — Pomodoro bittiğinde haber verilir"}
+                {notifPerm === "default" && "Site arka planda olsa bile haber alın"}
+                {notifPerm === "denied" && "Engellendi — Tarayıcı ayarlarından açın"}
+                {notifPerm === "unsupported" && "Bu tarayıcı desteklemiyor"}
+              </div>
+            </div>
+            <button
+              onClick={requestNotif}
+              disabled={notifPerm === "unsupported"}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {notifPerm === "granted" ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
+              <span className="text-xs tracking-wide">
+                {notifPerm === "granted" ? "Açık" : notifPerm === "denied" ? "Engelli" : "Aç"}
+              </span>
+            </button>
+          </div>
+
+          <div className="border-t border-border/60" />
+
           {/* E-posta */}
           <div className="space-y-2">
             <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">E-posta</div>
