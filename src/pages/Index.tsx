@@ -232,7 +232,7 @@ const Index = () => {
               <button
                 onClick={() => undo()}
                 disabled={!canUndo}
-                title="Geri al (Ctrl/Cmd+Z)"
+                title={`Geri al (${typeof navigator !== "undefined" && /Mac/i.test(navigator.platform) ? "⌘Z" : "Ctrl+Z"})`}
                 className="hidden sm:inline-flex p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-colors"
               >
                 <Undo className="h-3.5 w-3.5" />
@@ -240,7 +240,7 @@ const Index = () => {
               <button
                 onClick={() => redo()}
                 disabled={!canRedo}
-                title="Yinele (Ctrl/Cmd+Shift+Z)"
+                title={`Yinele (${typeof navigator !== "undefined" && /Mac/i.test(navigator.platform) ? "⌘⇧Z" : "Ctrl+Shift+Z"})`}
                 className="hidden sm:inline-flex p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-colors"
               >
                 <Redo className="h-3.5 w-3.5" />
