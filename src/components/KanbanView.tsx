@@ -11,7 +11,8 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
-  DragOverEvent,
+  DragStartEvent,
+  DragOverlay,
   closestCorners,
 } from "@dnd-kit/core";
 import {
