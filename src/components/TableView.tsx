@@ -174,21 +174,19 @@ const TableView = ({ projectId, showHabits = false }: { projectId: string; showH
       {/* Alışkanlıklar — sadece varsayılan projede */}
       {showHabits && <HabitsSection projectId={projectId} />}
 
-      {/* Tamamlananlar */}
-      {doneTasks.length > 0 && (
-        <div className="border border-border/60 rounded-sm overflow-hidden">
-          <button
-            onClick={() => setShowDone(!showDone)}
-            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-card/40 transition-colors"
-          >
-            {showDone ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            <span className="tracking-wide">了 — Tamamlananlar</span>
-            <span className="text-muted-foreground/60">{doneTasks.length}</span>
-          </button>
-          {showDone && (
+      {/* Tamamlananlar — varsayılan: son 3, tıklayınca tümü */}
+      {doneTasks.length > 0 && (() => {
+        const visibleDone = showDone ? doneTasks : doneTasks.slice(0, 3);
+        const hiddenCount = Math.max(0, doneTasks.length - 3);
+        return (
+          <div className="border border-border/60 rounded-sm overflow-hidden">
+            <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground bg-card/30">
+              <span className="tracking-wide">了 — Tamamlananlar</span>
+              <span className="text-muted-foreground/60">{doneTasks.length}</span>
+            </div>
             <Table>
               <TableBody>
-                {doneTasks.map((task) => (
+                {visibleDone.map((task) => (
                   <TableRow key={task.id} className="group">
                     <TableCell className="w-8 sm:w-10 py-1 px-1 sm:px-2">
                       <Checkbox
@@ -214,9 +212,17 @@ const TableView = ({ projectId, showHabits = false }: { projectId: string; showH
                 ))}
               </TableBody>
             </Table>
-          )}
-        </div>
-      )}
+            {hiddenCount > 0 && (
+              <button
+                onClick={() => setShowDone(!showDone)}
+                className="w-full text-xs text-muted-foreground hover:text-foreground py-2 tracking-wide transition-colors border-t border-border/40"
+              >
+                {showDone ? "↑ Sadece son 3'ü göster" : `↓ ${hiddenCount} tane daha göster`}
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Gizlenenler */}
       {hiddenTasks.length > 0 && (
