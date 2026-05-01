@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Bell, BellOff } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,32 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
   const [password, setPassword] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission | "unsupported">(
+    typeof Notification === "undefined" ? "unsupported" : Notification.permission
+  );
+
+  const requestNotif = async () => {
+    if (typeof Notification === "undefined") {
+      toast.error("Bu tarayıcı bildirimleri desteklemiyor.");
+      return;
+    }
+    if (Notification.permission === "granted") {
+      toast("Bildirimler zaten açık.");
+      return;
+    }
+    if (Notification.permission === "denied") {
+      toast.error("Bildirimler engellendi. Tarayıcı ayarlarından izin verin.");
+      return;
+    }
+    const result = await Notification.requestPermission();
+    setNotifPerm(result);
+    if (result === "granted") {
+      toast.success("Bildirimler açıldı.");
+      try { new Notification("Keikaku", { body: "Bildirimler aktif." }); } catch {}
+    } else {
+      toast.error("Bildirim izni reddedildi.");
+    }
+  };
 
   const handleEmail = async () => {
     if (!email.trim() || email === user?.email) return;
