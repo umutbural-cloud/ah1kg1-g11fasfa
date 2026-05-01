@@ -6,7 +6,7 @@ import { tr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePomodoro, formatMMSS } from "@/hooks/usePomodoro";
-import PomodoroTaskList from "@/components/PomodoroTaskList";
+import PomodoroTaskBoard from "@/components/PomodoroTaskBoard";
 import { toast } from "sonner";
 
 type Session = {
@@ -239,7 +239,7 @@ const Pomodoro = () => {
             isRunning ? "opacity-30 hover:opacity-100" : "opacity-100"
           }`}
         >
-          <PomodoroTaskList />
+          <PomodoroTaskBoard />
         </div>
 
         <section
