@@ -238,12 +238,19 @@ const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onDeleteTask 
 const KanbanView = ({ projectId }: { projectId: string }) => {
   const { tasks, loading, createTask, updateTask, deleteTask, reorderTasks } = useTasks(projectId);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
 
   const handleCreate = async (title: string, status: TaskStatus) => {
     await createTask({ title, status });
   };
 
+  const handleDragStart = (e: DragStartEvent) => {
+    setActiveId(e.active.id as string);
+  };
+
   const handleDragEnd = async (e: DragEndEvent) => {
+    setActiveId(null);
     const { active, over } = e;
     if (!over) return;
     const activeTask = tasks.find((t) => t.id === active.id);
@@ -290,7 +297,13 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
   return (
     <div className="space-y-4">
       <h2 className="text-lg tracking-wide font-light">看板 — Kanban</h2>
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={() => setActiveId(null)}
+      >
         <div className="flex flex-col sm:flex-row gap-4 sm:overflow-x-auto pb-4">
           {COLUMNS.map((col) => (
             <KanbanColumn
@@ -303,6 +316,26 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
             />
           ))}
         </div>
+        <DragOverlay dropAnimation={null}>
+          {activeTask ? (
+            <div className="border border-border rounded-sm p-3 bg-card shadow-lg cursor-grabbing">
+              <div className="flex items-start gap-2">
+                <GripVertical className="h-3.5 w-3.5 mt-0.5 text-muted-foreground/40 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-light truncate">{activeTask.title}</p>
+                  {activeTask.description && (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{activeTask.description}</p>
+                  )}
+                  {activeTask.start_date && (
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      {activeTask.start_date}{activeTask.end_date && ` → ${activeTask.end_date}`}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
     </div>
   );
