@@ -149,7 +149,7 @@ const Pomodoro = () => {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto p-8">
+      <main className="max-w-5xl mx-auto p-8">
         <div
           className={`text-center transition-all duration-700 ease-out ${
             isRunning ? "py-24" : "py-12"
