@@ -15,6 +15,7 @@ import { useProjects } from "@/hooks/useProjects";
 import { ViewKey } from "@/hooks/useProjectViews";
 import { useUndo } from "@/hooks/useUndo";
 import { useTheme } from "@/hooks/useTheme";
+import { usePageState } from "@/hooks/usePageState";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const VIEWS: { id: ViewKey; label: string; jp: string; icon: any }[] = [
@@ -29,15 +30,13 @@ const Index = () => {
   const { projects, loading, createProject, updateProject, deleteProject } = useProjects();
   const { undo, redo, canUndo, canRedo } = useUndo();
   const { theme, toggle: toggleTheme } = useTheme();
-  const [section, setSection] = useState<Section>("project");
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [view, setView] = useState<ViewKey>("table");
+  const { section, selectedProjectId, view, setSection, setSelectedProjectId, setView } = usePageState();
   const [journalDate, setJournalDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
   const projectViews: ViewKey[] = selectedProject?.enabled_views || ["table", "notes"];
 
-  // İlk yüklemede sabit "Yapılacaklar Listesi" projesinin tablo görünümünü aç
+  // İlk yüklemede sabit "Yapılacaklar Listesi" projesinin ilk görünümünü aç
   useEffect(() => {
     if (loading || selectedProjectId) return;
     const def = projects.find((p) => p.is_default);
@@ -45,7 +44,7 @@ const Index = () => {
       setSelectedProjectId(def.id);
       setSection("project");
       const pvs = (def.enabled_views?.length ? def.enabled_views : ["table", "notes"]) as ViewKey[];
-      setView(pvs.includes("table") ? "table" : pvs[0]);
+      setView(pvs[0]);
     }
   }, [loading, projects, selectedProjectId]);
 
@@ -72,7 +71,7 @@ const Index = () => {
     const project = projects.find((p) => p.id === id);
     const pvs = (project?.enabled_views?.length ? project.enabled_views : ["table", "notes"]) as ViewKey[];
     if (v) setView(v);
-    else setView(pvs.includes("table") ? "table" : (pvs[0] || "table"));
+    else setView(pvs[0] || "table");
   };
 
   const handleDelete = async (id: string) => {
