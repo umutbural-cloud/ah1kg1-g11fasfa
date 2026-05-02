@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, LogOut, ChevronRight, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash, Settings } from "lucide-react";
+import { Plus, Trash2, LogOut, ChevronRight, ChevronUp, ChevronDown, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash, Settings } from "lucide-react";
 import SettingsDialog from "./SettingsDialog";
 import { Input } from "@/components/ui/input";
 import {
@@ -115,6 +115,14 @@ const ProjectItem = ({
 
   const addView = (v: ViewKey) => onUpdateProject(project.id, { enabled_views: [...projectViews, v] });
   const removeView = (v: ViewKey) => onUpdateProject(project.id, { enabled_views: projectViews.filter((x) => x !== v) });
+  const moveView = (v: ViewKey, dir: -1 | 1) => {
+    const idx = projectViews.indexOf(v);
+    const next = idx + dir;
+    if (idx < 0 || next < 0 || next >= projectViews.length) return;
+    const reordered = [...projectViews];
+    [reordered[idx], reordered[next]] = [reordered[next], reordered[idx]];
+    onUpdateProject(project.id, { enabled_views: reordered });
+  };
 
   return (
     <>
