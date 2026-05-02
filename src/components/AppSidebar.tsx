@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, LogOut, ChevronRight, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash, Settings } from "lucide-react";
+import { Plus, Trash2, LogOut, ChevronRight, ChevronUp, ChevronDown, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash, Settings } from "lucide-react";
 import SettingsDialog from "./SettingsDialog";
 import { Input } from "@/components/ui/input";
 import {
@@ -115,6 +115,14 @@ const ProjectItem = ({
 
   const addView = (v: ViewKey) => onUpdateProject(project.id, { enabled_views: [...projectViews, v] });
   const removeView = (v: ViewKey) => onUpdateProject(project.id, { enabled_views: projectViews.filter((x) => x !== v) });
+  const moveView = (v: ViewKey, dir: -1 | 1) => {
+    const idx = projectViews.indexOf(v);
+    const next = idx + dir;
+    if (idx < 0 || next < 0 || next >= projectViews.length) return;
+    const reordered = [...projectViews];
+    [reordered[idx], reordered[next]] = [reordered[next], reordered[idx]];
+    onUpdateProject(project.id, { enabled_views: reordered });
+  };
 
   return (
     <>
@@ -169,10 +177,12 @@ const ProjectItem = ({
       </SidebarMenuItem>
 
       {/* Alt sayfalar (görünümler) */}
-      {expanded && projectViews.map((vk) => {
+      {expanded && projectViews.map((vk, idx) => {
         const meta = VIEW_META[vk];
         const Icon = meta.icon;
         const active = isSelected && selectedView === vk;
+        const isFirst = idx === 0;
+        const isLast = idx === projectViews.length - 1;
         return (
           <SidebarMenuItem key={vk}>
             <SidebarMenuButton
@@ -182,15 +192,33 @@ const ProjectItem = ({
             >
               <Icon className="h-3 w-3 shrink-0" />
               <span className="truncate flex-1">{meta.label}</span>
-              {vk !== "notes" && (
+              <div className="flex items-center gap-0.5 opacity-0 group-hover/view:opacity-100 shrink-0">
                 <button
-                  onClick={(e) => { e.stopPropagation(); removeView(vk); }}
-                  className="opacity-0 group-hover/view:opacity-100 text-muted-foreground hover:text-destructive shrink-0"
-                  title="Bu görünümü kaldır"
+                  onClick={(e) => { e.stopPropagation(); moveView(vk, -1); }}
+                  disabled={isFirst}
+                  className="text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:hover:text-muted-foreground"
+                  title="Yukarı taşı"
                 >
-                  <X className="h-3 w-3" />
+                  <ChevronUp className="h-3 w-3" />
                 </button>
-              )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); moveView(vk, 1); }}
+                  disabled={isLast}
+                  className="text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:hover:text-muted-foreground"
+                  title="Aşağı taşı"
+                >
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+                {vk !== "notes" && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); removeView(vk); }}
+                    className="text-muted-foreground hover:text-destructive"
+                    title="Bu görünümü kaldır"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         );

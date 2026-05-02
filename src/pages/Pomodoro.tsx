@@ -1,12 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Play, Pause, Check, RotateCcw, SkipForward, Clock, Trash2, Bell, BellOff } from "lucide-react";
+import { Play, Pause, Check, RotateCcw, SkipForward, Clock, Trash2, Bell, BellOff, Moon, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO, startOfDay } from "date-fns";
 import { tr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePomodoro, formatMMSS } from "@/hooks/usePomodoro";
+import { useTheme } from "@/hooks/useTheme";
+import { usePageState } from "@/hooks/usePageState";
+import { useProjects } from "@/hooks/useProjects";
 import PomodoroTaskBoard from "@/components/PomodoroTaskBoard";
+import AppSidebar from "@/components/AppSidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import type { ViewKey } from "@/hooks/useProjectViews";
 import { toast } from "sonner";
 
 type Session = {
@@ -21,6 +27,9 @@ type Session = {
 const Pomodoro = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { projects, createProject, updateProject, deleteProject } = useProjects();
+  const { section, selectedProjectId, view, setSection, setSelectedProjectId, setView } = usePageState();
+  const { theme, toggle: toggleTheme } = useTheme();
   const { remainingSec, phase, kind, setDuration, start, pause, resume, complete, reset, skipBreak } = usePomodoro();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [editingTime, setEditingTime] = useState(false);
@@ -112,201 +121,287 @@ const Pomodoro = () => {
     setSessions((arr) => arr.map((s) => (s.id === id ? { ...s, duration_seconds: newDuration, ended_at: newEnd } : s)));
   };
 
+  const updateTimes = async (id: string, startedAt: string, endedAt: string) => {
+    const startMs = parseISO(startedAt).getTime();
+    const endMs = parseISO(endedAt).getTime();
+    if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs <= startMs) {
+      toast.error("Bitiş başlangıçtan sonra olmalı.");
+      return;
+    }
+    const newDuration = Math.max(1, Math.round((endMs - startMs) / 1000));
+    await supabase
+      .from("pomodoro_sessions")
+      .update({ started_at: startedAt, ended_at: endedAt, duration_seconds: newDuration })
+      .eq("id", id);
+    setSessions((arr) =>
+      arr.map((s) => (s.id === id ? { ...s, started_at: startedAt, ended_at: endedAt, duration_seconds: newDuration } : s))
+    );
+  };
+
   const deleteSession = async (id: string) => {
     await supabase.from("pomodoro_sessions").delete().eq("id", id);
     setSessions((arr) => arr.filter((s) => s.id !== id));
   };
 
+  // Sidebar handlers — clicking a project takes us to "/" with that selection
+  const handleSidebarSelect = (id: string, v?: ViewKey) => {
+    setSection("project");
+    setSelectedProjectId(id);
+    const project = projects.find((p) => p.id === id);
+    const pvs = (project?.enabled_views?.length ? project.enabled_views : ["table", "notes"]) as ViewKey[];
+    setView(v || pvs[0] || "table");
+    navigate("/");
+  };
+  const handleSidebarCreate = async (name: string, parentId?: string) => {
+    const p = await createProject(name, parentId);
+    if (p) {
+      setSelectedProjectId(p.id);
+      setSection("project");
+      setView("table");
+      navigate("/");
+    }
+  };
+  const handleSidebarDelete = async (id: string) => {
+    await deleteProject(id);
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="h-12 flex items-center border-b border-border/60 px-4 gap-3">
-        <button onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <Clock className="h-4 w-4 text-muted-foreground" />
-        <h1 className="text-base font-light tracking-wide">Pomodoro</h1>
-        <div className="ml-auto">
-          {notifPerm !== "granted" && notifPerm !== "unsupported" && (
-            <button
-              onClick={requestNotif}
-              title="Pomodoro bittiğinde bildirim al"
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-sm border border-border/60 hover:bg-accent/40"
-            >
-              <Bell className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Bildirimleri aç</span>
-            </button>
-          )}
-          {notifPerm === "granted" && (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground" title="Bildirimler açık">
-              <Bell className="h-3.5 w-3.5" />
-            </span>
-          )}
-          {notifPerm === "denied" && (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground/60" title="Bildirimler engellendi (tarayıcı ayarlarından açın)">
-              <BellOff className="h-3.5 w-3.5" />
-            </span>
-          )}
-        </div>
-      </header>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar
+          projects={projects}
+          selectedId={selectedProjectId}
+          selectedView={view}
+          section={section}
+          onSelect={handleSidebarSelect}
+          onCreate={handleSidebarCreate}
+          onDelete={handleSidebarDelete}
+          onUpdateProject={updateProject}
+          onSelectBacklog={() => { setSection("backlog"); navigate("/"); }}
+          onSelectTrash={() => { setSection("trash"); navigate("/"); }}
+          onSelectJournal={() => { setSection("journal"); navigate("/"); }}
+        />
 
-      <main className="max-w-5xl mx-auto p-8">
-        <div
-          className={`text-center transition-all duration-700 ease-out ${
-            isRunning ? "py-24" : "py-12"
-          }`}
-        >
-          <div
-            className={`text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light mb-4 transition-opacity duration-500 ${
-              isRunning ? "opacity-40" : "opacity-100"
-            }`}
-          >
-            {isBreak ? "Dinlenme" : "Çalışma"}
-          </div>
-
-          {editingTime && isIdle ? (
-            <input
-              value={editVal}
-              onChange={(e) => setEditVal(e.target.value)}
-              onBlur={commitTime}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") commitTime();
-                if (e.key === "Escape") { setEditVal(formatMMSS(remainingSec)); setEditingTime(false); }
-              }}
-              autoFocus
-              className="w-[28rem] max-w-full text-center bg-transparent border-b border-border/60 focus:border-foreground/40 outline-none text-8xl font-extralight tracking-widest tabular-nums mb-8 mx-auto block"
-            />
-          ) : (
-            <button
-              onClick={() => { if (isIdle) { setEditVal(formatMMSS(remainingSec)); setEditingTime(true); } }}
-              disabled={!isIdle}
-              title={isIdle ? "Süreyi düzenlemek için tıkla" : ""}
-              className={`text-8xl font-extralight tracking-widest tabular-nums mb-8 block mx-auto transition-all duration-700 ease-out ${
-                isRunning
-                  ? "scale-110 text-foreground"
-                  : isIdle
-                  ? "hover:text-foreground/80 cursor-text"
-                  : ""
-              }`}
-            >
-              {formatMMSS(remainingSec)}
-            </button>
-          )}
-
-          <div
-            className={`flex items-center justify-center gap-3 transition-all duration-700 ease-out ${
-              isRunning ? "opacity-30 hover:opacity-100 scale-95" : "opacity-100 scale-100"
-            }`}
-          >
-            {isRunning ? (
-              <>
-                <button onClick={pause} className="flex items-center gap-2 px-5 py-2 rounded-sm bg-accent hover:bg-accent/80 text-sm transition-colors">
-                  <Pause className="h-4 w-4" /> Duraklat
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="h-12 flex items-center border-b border-border/60 px-4 gap-3">
+            <SidebarTrigger className="text-muted-foreground" />
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <h1 className="text-base font-light tracking-wide">Pomodoro</h1>
+            <div className="ml-auto flex items-center gap-2">
+              {notifPerm !== "granted" && notifPerm !== "unsupported" && (
+                <button
+                  onClick={requestNotif}
+                  title="Pomodoro bittiğinde bildirim al"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-sm border border-border/60 hover:bg-accent/40"
+                >
+                  <Bell className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Bildirimleri aç</span>
                 </button>
-                {isBreak ? (
-                  <button onClick={skipBreak} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
-                    <SkipForward className="h-4 w-4" /> Atla
-                  </button>
+              )}
+              {notifPerm === "granted" && (
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground" title="Bildirimler açık">
+                  <Bell className="h-3.5 w-3.5" />
+                </span>
+              )}
+              {notifPerm === "denied" && (
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground/60" title="Bildirimler engellendi (tarayıcı ayarlarından açın)">
+                  <BellOff className="h-3.5 w-3.5" />
+                </span>
+              )}
+              <button
+                onClick={toggleTheme}
+                title={theme === "dark" ? "Aydınlık tema" : "Karanlık tema"}
+                className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+              >
+                {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-auto">
+            <div className="max-w-5xl mx-auto p-8">
+              <div
+                className={`text-center transition-all duration-700 ease-out ${
+                  isRunning ? "py-24" : "py-12"
+                }`}
+              >
+                <div
+                  className={`text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light mb-4 transition-opacity duration-500 ${
+                    isRunning ? "opacity-40" : "opacity-100"
+                  }`}
+                >
+                  {isBreak ? "Dinlenme" : "Çalışma"}
+                </div>
+
+                {editingTime && isIdle ? (
+                  <input
+                    value={editVal}
+                    onChange={(e) => setEditVal(e.target.value)}
+                    onBlur={commitTime}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") commitTime();
+                      if (e.key === "Escape") { setEditVal(formatMMSS(remainingSec)); setEditingTime(false); }
+                    }}
+                    autoFocus
+                    className="w-[28rem] max-w-full text-center bg-transparent border-b border-border/60 focus:border-foreground/40 outline-none text-8xl font-extralight tracking-widest tabular-nums mb-8 mx-auto block"
+                  />
                 ) : (
-                  <button onClick={complete} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
-                    <Check className="h-4 w-4" /> Tamamla
+                  <button
+                    onClick={() => { if (isIdle) { setEditVal(formatMMSS(remainingSec)); setEditingTime(true); } }}
+                    disabled={!isIdle}
+                    title={isIdle ? "Süreyi düzenlemek için tıkla" : ""}
+                    className={`text-8xl font-extralight tracking-widest tabular-nums mb-8 block mx-auto transition-all duration-700 ease-out ${
+                      isRunning
+                        ? "scale-110 text-foreground"
+                        : isIdle
+                        ? "hover:text-foreground/80 cursor-text"
+                        : ""
+                    }`}
+                  >
+                    {formatMMSS(remainingSec)}
                   </button>
                 )}
-              </>
-            ) : isPaused ? (
-              <>
-                <button onClick={resume} className="flex items-center gap-2 px-5 py-2 rounded-sm bg-accent hover:bg-accent/80 text-sm transition-colors">
-                  <Play className="h-4 w-4" /> Devam
-                </button>
-                <button onClick={complete} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
-                  <Check className="h-4 w-4" /> Tamamla
-                </button>
-              </>
-            ) : (
-              <>
-                <button onClick={start} className="flex items-center gap-2 px-6 py-2 rounded-sm bg-foreground text-background hover:bg-foreground/90 text-sm transition-colors">
-                  <Play className="h-4 w-4" /> Başlat
-                </button>
-                <button onClick={reset} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
-                  <RotateCcw className="h-4 w-4" /> Sıfırla
-                </button>
-              </>
-            )}
-          </div>
-        </div>
 
-        <div
-          className={`mt-12 transition-all duration-700 ease-out ${
-            isRunning ? "opacity-30 hover:opacity-100" : "opacity-100"
-          }`}
-        >
-          <PomodoroTaskBoard />
-        </div>
+                <div
+                  className={`flex items-center justify-center gap-3 transition-all duration-700 ease-out ${
+                    isRunning ? "opacity-30 hover:opacity-100 scale-95" : "opacity-100 scale-100"
+                  }`}
+                >
+                  {isRunning ? (
+                    <>
+                      <button onClick={pause} className="flex items-center gap-2 px-5 py-2 rounded-sm bg-accent hover:bg-accent/80 text-sm transition-colors">
+                        <Pause className="h-4 w-4" /> Duraklat
+                      </button>
+                      {isBreak ? (
+                        <button onClick={skipBreak} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
+                          <SkipForward className="h-4 w-4" /> Atla
+                        </button>
+                      ) : (
+                        <button onClick={complete} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
+                          <Check className="h-4 w-4" /> Tamamla
+                        </button>
+                      )}
+                    </>
+                  ) : isPaused ? (
+                    <>
+                      <button onClick={resume} className="flex items-center gap-2 px-5 py-2 rounded-sm bg-accent hover:bg-accent/80 text-sm transition-colors">
+                        <Play className="h-4 w-4" /> Devam
+                      </button>
+                      <button onClick={complete} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
+                        <Check className="h-4 w-4" /> Tamamla
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={start} className="flex items-center gap-2 px-6 py-2 rounded-sm bg-foreground text-background hover:bg-foreground/90 text-sm transition-colors">
+                        <Play className="h-4 w-4" /> Başlat
+                      </button>
+                      <button onClick={reset} className="flex items-center gap-2 px-5 py-2 rounded-sm border border-border/60 hover:bg-accent/50 text-sm transition-colors">
+                        <RotateCcw className="h-4 w-4" /> Sıfırla
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
 
-        <section
-          className={`mt-12 transition-all duration-700 ease-out ${
-            isRunning ? "opacity-30 hover:opacity-100" : "opacity-100"
-          }`}
-        >
-          <div className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light mb-4">
-            Çalışma Geçmişi
-          </div>
-          {grouped.length === 0 ? (
-            <div className="text-center text-xs text-muted-foreground py-8">Henüz oturum yok</div>
-          ) : (
-            <div className="space-y-6">
-              {grouped.map(([day, items]) => {
-                const totalSec = items.filter((s) => s.kind === "work").reduce((a, s) => a + s.duration_seconds, 0);
-                const h = Math.floor(totalSec / 3600);
-                const m = Math.floor((totalSec % 3600) / 60);
-                return (
-                  <div key={day} className="border border-border/60 rounded-sm overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2 bg-card/40 border-b border-border/60">
-                      <span className="text-sm font-light">
-                        {format(parseISO(day), "d MMMM yyyy, EEEE", { locale: tr })}
-                      </span>
-                      <span className="text-xs text-muted-foreground tabular-nums">
-                        {h > 0 ? `${h}s ` : ""}{m}d
-                      </span>
-                    </div>
-                    <div className="divide-y divide-border/40">
-                      {items.map((s) => (
-                        <SessionRow
-                          key={s.id}
-                          session={s}
-                          onUpdateNote={updateNote}
-                          onUpdateDuration={updateDuration}
-                          onDelete={deleteSession}
-                        />
-                      ))}
-                    </div>
+              <div
+                className={`mt-12 transition-all duration-700 ease-out ${
+                  isRunning ? "opacity-30 hover:opacity-100" : "opacity-100"
+                }`}
+              >
+                <PomodoroTaskBoard />
+              </div>
+
+              <section
+                className={`mt-12 transition-all duration-700 ease-out ${
+                  isRunning ? "opacity-30 hover:opacity-100" : "opacity-100"
+                }`}
+              >
+                <div className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light mb-4">
+                  Çalışma Geçmişi
+                </div>
+                {grouped.length === 0 ? (
+                  <div className="text-center text-xs text-muted-foreground py-8">Henüz oturum yok</div>
+                ) : (
+                  <div className="space-y-6">
+                    {grouped.map(([day, items]) => {
+                      const totalSec = items.filter((s) => s.kind === "work").reduce((a, s) => a + s.duration_seconds, 0);
+                      const h = Math.floor(totalSec / 3600);
+                      const m = Math.floor((totalSec % 3600) / 60);
+                      return (
+                        <div key={day} className="border border-border/60 rounded-sm overflow-hidden">
+                          <div className="flex items-center justify-between px-3 py-2 bg-card/40 border-b border-border/60">
+                            <span className="text-sm font-light">
+                              {format(parseISO(day), "d MMMM yyyy, EEEE", { locale: tr })}
+                            </span>
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                              {h > 0 ? `${h}s ` : ""}{m}d
+                            </span>
+                          </div>
+                          <div className="divide-y divide-border/40">
+                            {items.map((s) => (
+                              <SessionRow
+                                key={s.id}
+                                session={s}
+                                onUpdateNote={updateNote}
+                                onUpdateDuration={updateDuration}
+                                onUpdateTimes={updateTimes}
+                                onDelete={deleteSession}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                )}
+              </section>
             </div>
-          )}
-        </section>
-      </main>
-    </div>
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 };
 
 const formatDuration = (sec: number) => {
-  const m = Math.floor(sec / 60);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
   const s = sec % 60;
+  if (h > 0) {
+    return m > 0 ? `${h} sa ${m} dk` : `${h} sa`;
+  }
   if (m === 0) return `${s} sn`;
   if (s === 0) return `${m} dk`;
   return `${m} dk ${s} sn`;
+};
+
+// Convert ISO -> "HH:mm" in local timezone for input value
+const isoToTimeInput = (iso: string) => format(parseISO(iso), "HH:mm");
+// Combine date from existing iso + new "HH:mm" -> ISO
+const combineDateTime = (baseIso: string, hhmm: string): string | null => {
+  const m = hhmm.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const hh = parseInt(m[1], 10);
+  const mm = parseInt(m[2], 10);
+  if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+  const d = parseISO(baseIso);
+  const next = new Date(d);
+  next.setHours(hh, mm, 0, 0);
+  return next.toISOString();
 };
 
 const SessionRow = ({
   session,
   onUpdateNote,
   onUpdateDuration,
+  onUpdateTimes,
   onDelete,
 }: {
   session: Session;
   onUpdateNote: (id: string, note: string) => void;
   onUpdateDuration: (id: string, totalSeconds: number) => void;
+  onUpdateTimes: (id: string, startedAt: string, endedAt: string) => void;
   onDelete: (id: string) => void;
 }) => {
   const [note, setNote] = useState(session.note || "");
@@ -318,10 +413,16 @@ const SessionRow = ({
   };
   const [durVal, setDurVal] = useState(initialEditVal());
 
+  const [editingTimes, setEditingTimes] = useState(false);
+  const [startVal, setStartVal] = useState(isoToTimeInput(session.started_at));
+  const [endVal, setEndVal] = useState(isoToTimeInput(session.ended_at));
+
   useEffect(() => {
     setDurVal(initialEditVal());
+    setStartVal(isoToTimeInput(session.started_at));
+    setEndVal(isoToTimeInput(session.ended_at));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session.duration_seconds]);
+  }, [session.duration_seconds, session.started_at, session.ended_at]);
 
   const commitDur = () => {
     const match = durVal.match(/^(\d{1,3}):?(\d{0,2})$/);
@@ -338,6 +439,23 @@ const SessionRow = ({
       setDurVal(initialEditVal());
     }
     setEditingDur(false);
+  };
+
+  const commitTimes = () => {
+    const newStart = combineDateTime(session.started_at, startVal);
+    const newEnd = combineDateTime(session.ended_at, endVal);
+    if (!newStart || !newEnd) {
+      setStartVal(isoToTimeInput(session.started_at));
+      setEndVal(isoToTimeInput(session.ended_at));
+      setEditingTimes(false);
+      return;
+    }
+    if (newStart === session.started_at && newEnd === session.ended_at) {
+      setEditingTimes(false);
+      return;
+    }
+    onUpdateTimes(session.id, newStart, newEnd);
+    setEditingTimes(false);
   };
 
   return (
@@ -362,14 +480,45 @@ const SessionRow = ({
         <button
           onClick={() => setEditingDur(true)}
           title="Süreyi düzenle (dk:sn)"
-          className="tabular-nums w-24 text-left hover:text-foreground/80"
+          className="tabular-nums w-28 text-left hover:text-foreground/80"
         >
           {formatDuration(session.duration_seconds)}
         </button>
       )}
-      <span className="tabular-nums text-muted-foreground w-28">
-        {format(parseISO(session.started_at), "HH:mm")} - {format(parseISO(session.ended_at), "HH:mm")}
-      </span>
+      {editingTimes ? (
+        <div className="flex items-center gap-1 w-40">
+          <input
+            type="time"
+            value={startVal}
+            onChange={(e) => setStartVal(e.target.value)}
+            className="bg-transparent border-b border-border/60 outline-none focus:border-foreground/40 text-xs tabular-nums w-[68px]"
+          />
+          <span className="text-muted-foreground">–</span>
+          <input
+            type="time"
+            value={endVal}
+            onChange={(e) => setEndVal(e.target.value)}
+            onBlur={commitTimes}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitTimes();
+              if (e.key === "Escape") {
+                setStartVal(isoToTimeInput(session.started_at));
+                setEndVal(isoToTimeInput(session.ended_at));
+                setEditingTimes(false);
+              }
+            }}
+            className="bg-transparent border-b border-border/60 outline-none focus:border-foreground/40 text-xs tabular-nums w-[68px]"
+          />
+        </div>
+      ) : (
+        <button
+          onClick={() => setEditingTimes(true)}
+          title="Başlangıç–bitiş saatlerini düzenle"
+          className="tabular-nums text-muted-foreground w-40 text-left hover:text-foreground/80"
+        >
+          {format(parseISO(session.started_at), "HH:mm")} - {format(parseISO(session.ended_at), "HH:mm")}
+        </button>
+      )}
       <input
         value={note}
         onChange={(e) => setNote(e.target.value)}
