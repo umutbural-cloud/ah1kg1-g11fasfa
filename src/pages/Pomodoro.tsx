@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Play, Pause, Check, RotateCcw, SkipForward, Clock, Trash2, Bell, BellOff, Moon, Sun } from "lucide-react";
+import { Play, Pause, Check, RotateCcw, SkipForward, Clock, Trash2, Bell, BellOff, Moon, Sun, Plus, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO, startOfDay } from "date-fns";
 import { tr } from "date-fns/locale";
