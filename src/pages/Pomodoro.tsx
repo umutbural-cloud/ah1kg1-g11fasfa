@@ -317,8 +317,16 @@ const Pomodoro = () => {
                   isRunning ? "opacity-30 hover:opacity-100" : "opacity-100"
                 }`}
               >
-                <div className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light mb-4">
-                  Çalışma Geçmişi
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light">
+                    Çalışma Geçmişi
+                  </div>
+                  <button
+                    onClick={() => navigate("/work-history")}
+                    className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Tümünü gör →
+                  </button>
                 </div>
                 {grouped.length === 0 ? (
                   <div className="text-center text-xs text-muted-foreground py-8">Henüz oturum yok</div>

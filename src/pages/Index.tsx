@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { FileText, Table as TableIcon, GanttChart, Kanban, Calendar, Plus, Undo, Redo, Moon, Sun, LayoutGrid } from "lucide-react";
-import { format } from "date-fns";
 import AppSidebar from "@/components/AppSidebar";
 import NotesView from "@/components/NotesView";
 import TableView from "@/components/TableView";
@@ -30,8 +29,7 @@ const Index = () => {
   const { projects, loading, createProject, updateProject, deleteProject } = useProjects();
   const { undo, redo, canUndo, canRedo } = useUndo();
   const { theme, toggle: toggleTheme } = useTheme();
-  const { section, selectedProjectId, view, setSection, setSelectedProjectId, setView } = usePageState();
-  const [journalDate, setJournalDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+  const { section, selectedProjectId, view, journalDate, setSection, setSelectedProjectId, setView, setJournalDate } = usePageState();
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
   const projectViews: ViewKey[] = selectedProject?.enabled_views || ["table", "notes"];

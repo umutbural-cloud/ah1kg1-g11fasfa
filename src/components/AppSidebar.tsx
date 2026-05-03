@@ -309,7 +309,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
   const getChildren = (parentId: string) => projects.filter((p) => p.parent_id === parentId);
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/60">
+    <Sidebar collapsible="offcanvas" className="border-r border-border/60">
       <SidebarContent>
         {/* Heybe */}
         <SidebarGroup>
