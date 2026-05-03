@@ -30,8 +30,7 @@ const Index = () => {
   const { projects, loading, createProject, updateProject, deleteProject } = useProjects();
   const { undo, redo, canUndo, canRedo } = useUndo();
   const { theme, toggle: toggleTheme } = useTheme();
-  const { section, selectedProjectId, view, setSection, setSelectedProjectId, setView } = usePageState();
-  const [journalDate, setJournalDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+  const { section, selectedProjectId, view, journalDate, setSection, setSelectedProjectId, setView, setJournalDate } = usePageState();
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
   const projectViews: ViewKey[] = selectedProject?.enabled_views || ["table", "notes"];
