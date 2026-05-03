@@ -52,6 +52,7 @@ const App = () => (
               <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/pomodoro" element={<ProtectedRoute><Pomodoro /></ProtectedRoute>} />
+              <Route path="/work-history" element={<ProtectedRoute><WorkHistory /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </PageStateProvider>
