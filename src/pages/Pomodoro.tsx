@@ -148,6 +148,32 @@ const Pomodoro = () => {
     setSessions((arr) => arr.filter((s) => s.id !== id));
   };
 
+  const addManualSession = async () => {
+    if (!user) return;
+    const sm = addStart.match(/^(\d{1,2}):(\d{2})$/);
+    const em = addEnd.match(/^(\d{1,2}):(\d{2})$/);
+    if (!sm || !em) { toast.error("Geçerli saat girin (SS:DD)."); return; }
+    const dm = addDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!dm) { toast.error("Geçerli tarih girin."); return; }
+    const startD = new Date(+dm[1], +dm[2] - 1, +dm[3], +sm[1], +sm[2], 0, 0);
+    const endD = new Date(+dm[1], +dm[2] - 1, +dm[3], +em[1], +em[2], 0, 0);
+    if (endD.getTime() <= startD.getTime()) { toast.error("Bitiş başlangıçtan sonra olmalı."); return; }
+    const dur = Math.round((endD.getTime() - startD.getTime()) / 1000);
+    const { data, error } = await supabase.from("pomodoro_sessions").insert({
+      user_id: user.id,
+      started_at: startD.toISOString(),
+      ended_at: endD.toISOString(),
+      duration_seconds: dur,
+      kind: "work",
+      note: addNote || null,
+    }).select().single();
+    if (error) { toast.error("Eklenemedi."); return; }
+    setSessions((arr) => [data as any, ...arr].sort((a, b) => b.started_at.localeCompare(a.started_at)));
+    setShowAddForm(false);
+    setAddNote("");
+    toast.success("Çalışma eklendi.");
+  };
+
   // Sidebar handlers — clicking a project takes us to "/" with that selection
   const handleSidebarSelect = (id: string, v?: ViewKey) => {
     setSection("project");
