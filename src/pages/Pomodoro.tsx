@@ -34,6 +34,11 @@ const Pomodoro = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [editingTime, setEditingTime] = useState(false);
   const [editVal, setEditVal] = useState(formatMMSS(remainingSec));
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addDate, setAddDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [addStart, setAddStart] = useState("09:00");
+  const [addEnd, setAddEnd] = useState("09:25");
+  const [addNote, setAddNote] = useState("");
   const [notifPerm, setNotifPerm] = useState<NotificationPermission | "unsupported">(
     typeof Notification === "undefined" ? "unsupported" : Notification.permission
   );
