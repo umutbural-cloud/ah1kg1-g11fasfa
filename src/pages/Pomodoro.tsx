@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Play, Pause, Check, RotateCcw, SkipForward, Clock, Trash2, Bell, BellOff, Moon, Sun } from "lucide-react";
+import { Play, Pause, Check, RotateCcw, SkipForward, Clock, Trash2, Bell, BellOff, Moon, Sun, Plus, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO, startOfDay } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -34,6 +34,11 @@ const Pomodoro = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [editingTime, setEditingTime] = useState(false);
   const [editVal, setEditVal] = useState(formatMMSS(remainingSec));
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addDate, setAddDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [addStart, setAddStart] = useState("09:00");
+  const [addEnd, setAddEnd] = useState("09:25");
+  const [addNote, setAddNote] = useState("");
   const [notifPerm, setNotifPerm] = useState<NotificationPermission | "unsupported">(
     typeof Notification === "undefined" ? "unsupported" : Notification.permission
   );
@@ -141,6 +146,32 @@ const Pomodoro = () => {
   const deleteSession = async (id: string) => {
     await supabase.from("pomodoro_sessions").delete().eq("id", id);
     setSessions((arr) => arr.filter((s) => s.id !== id));
+  };
+
+  const addManualSession = async () => {
+    if (!user) return;
+    const sm = addStart.match(/^(\d{1,2}):(\d{2})$/);
+    const em = addEnd.match(/^(\d{1,2}):(\d{2})$/);
+    if (!sm || !em) { toast.error("Geçerli saat girin (SS:DD)."); return; }
+    const dm = addDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!dm) { toast.error("Geçerli tarih girin."); return; }
+    const startD = new Date(+dm[1], +dm[2] - 1, +dm[3], +sm[1], +sm[2], 0, 0);
+    const endD = new Date(+dm[1], +dm[2] - 1, +dm[3], +em[1], +em[2], 0, 0);
+    if (endD.getTime() <= startD.getTime()) { toast.error("Bitiş başlangıçtan sonra olmalı."); return; }
+    const dur = Math.round((endD.getTime() - startD.getTime()) / 1000);
+    const { data, error } = await supabase.from("pomodoro_sessions").insert({
+      user_id: user.id,
+      started_at: startD.toISOString(),
+      ended_at: endD.toISOString(),
+      duration_seconds: dur,
+      kind: "work",
+      note: addNote || null,
+    }).select().single();
+    if (error) { toast.error("Eklenemedi."); return; }
+    setSessions((arr) => [data as any, ...arr].sort((a, b) => b.started_at.localeCompare(a.started_at)));
+    setShowAddForm(false);
+    setAddNote("");
+    toast.success("Çalışma eklendi.");
   };
 
   // Sidebar handlers — clicking a project takes us to "/" with that selection
@@ -318,8 +349,17 @@ const Pomodoro = () => {
                 }`}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light">
-                    Çalışma Geçmişi
+                  <div className="flex items-center gap-2">
+                    <div className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light">
+                      Çalışma Geçmişi
+                    </div>
+                    <button
+                      onClick={() => setShowAddForm((v) => !v)}
+                      title="Geçmiş çalışma ekle"
+                      className="p-0.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                    >
+                      {showAddForm ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                    </button>
                   </div>
                   <button
                     onClick={() => navigate("/work-history")}
@@ -328,6 +368,62 @@ const Pomodoro = () => {
                     Tümünü gör →
                   </button>
                 </div>
+
+                {showAddForm && (
+                  <div className="mb-4 border border-border/60 rounded-sm p-3 bg-card/40 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Tarih</label>
+                        <input
+                          type="date"
+                          value={addDate}
+                          onChange={(e) => setAddDate(e.target.value)}
+                          className="bg-background border border-border/60 rounded-sm px-2 py-1 text-xs"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Başlangıç</label>
+                        <input
+                          type="time"
+                          value={addStart}
+                          onChange={(e) => setAddStart(e.target.value)}
+                          className="bg-background border border-border/60 rounded-sm px-2 py-1 text-xs tabular-nums"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Bitiş</label>
+                        <input
+                          type="time"
+                          value={addEnd}
+                          onChange={(e) => setAddEnd(e.target.value)}
+                          className="bg-background border border-border/60 rounded-sm px-2 py-1 text-xs tabular-nums"
+                        />
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      value={addNote}
+                      onChange={(e) => setAddNote(e.target.value)}
+                      placeholder="Not (opsiyonel)"
+                      className="w-full bg-background border border-border/60 rounded-sm px-2 py-1 text-xs"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => setShowAddForm(false)}
+                        className="px-3 py-1 text-xs rounded-sm border border-border/60 hover:bg-accent/50 transition-colors"
+                      >
+                        İptal
+                      </button>
+                      <button
+                        onClick={addManualSession}
+                        className="px-3 py-1 text-xs rounded-sm bg-foreground text-background hover:bg-foreground/90 transition-colors"
+                      >
+                        Ekle
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {grouped.length === 0 ? (
                   <div className="text-center text-xs text-muted-foreground py-8">Henüz oturum yok</div>
                 ) : (
