@@ -10,6 +10,7 @@ import { PageStateProvider } from "@/hooks/usePageState";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Pomodoro from "./pages/Pomodoro";
+import WorkHistory from "./pages/WorkHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
