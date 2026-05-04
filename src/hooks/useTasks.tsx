@@ -5,6 +5,8 @@ import { useUndo } from "./useUndo";
 import type { Database } from "@/integrations/supabase/types";
 
 export type TaskStatus = Database["public"]["Enums"]["task_status"];
+export type TaskColor = "gray" | "yellow" | "red" | "blue" | "green";
+export type TaskKind = "task" | "timebox";
 
 export type Task = {
   id: string;
@@ -22,6 +24,9 @@ export type Task = {
   deleted_at: string | null;
   created_at: string;
   completed_at: string | null;
+  color: TaskColor;
+  kind: TaskKind;
+  parent_block_id: string | null;
 };
 
 export const useTasks = (projectId: string | null) => {
