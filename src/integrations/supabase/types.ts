@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       backlog_tasks: {
         Row: {
+          color: string
           created_at: string
           deleted_at: string | null
           description: string | null
@@ -29,6 +30,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          color?: string
           created_at?: string
           deleted_at?: string | null
           description?: string | null
@@ -42,6 +44,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          color?: string
           created_at?: string
           deleted_at?: string | null
           description?: string | null
@@ -274,6 +277,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          color: string
           completed_at: string | null
           created_at: string
           deleted_at: string | null
@@ -282,6 +286,8 @@ export type Database = {
           end_time: string | null
           hidden: boolean
           id: string
+          kind: string
+          parent_block_id: string | null
           position: number
           project_id: string
           start_date: string | null
@@ -291,6 +297,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          color?: string
           completed_at?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -299,6 +306,8 @@ export type Database = {
           end_time?: string | null
           hidden?: boolean
           id?: string
+          kind?: string
+          parent_block_id?: string | null
           position?: number
           project_id: string
           start_date?: string | null
@@ -308,6 +317,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          color?: string
           completed_at?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -316,6 +326,8 @@ export type Database = {
           end_time?: string | null
           hidden?: boolean
           id?: string
+          kind?: string
+          parent_block_id?: string | null
           position?: number
           project_id?: string
           start_date?: string | null
