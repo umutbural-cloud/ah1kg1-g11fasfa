@@ -299,7 +299,7 @@ const BacklogView = () => {
         </div>
       ) : (
         <div className="border border-border/60 rounded-sm overflow-hidden">
-          <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-2 px-3 py-2 border-b border-border/60 text-[10px] tracking-wide uppercase text-muted-foreground bg-card/30">
+          <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-2 px-3 py-2 border-b border-border/60 text-[10px] tracking-wide uppercase text-muted-foreground bg-card/30">
             <HeaderCell label="Başlık" sortKey="title" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
             <HeaderCell
               label="Öncelik"
