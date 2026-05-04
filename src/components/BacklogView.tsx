@@ -55,49 +55,101 @@ const BacklogRow = ({ item, projects, onUpdate, onDelete, onMove }: {
   onMove: (id: string, projectId: string) => void;
 }) => {
   return (
-    <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-2 px-3 py-2 border-b border-border/40 hover:bg-card/40 transition-colors">
-      <Input
-        value={item.title}
-        onChange={(e) => onUpdate(item.id, { title: e.target.value })}
-        className="bg-transparent border-none p-0 h-7 text-sm font-light focus-visible:ring-0"
-      />
-      <Select value={item.priority} onValueChange={(v) => onUpdate(item.id, { priority: v as Priority })}>
-        <SelectTrigger className="h-7 w-24 text-xs bg-transparent border-none">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {(["high","medium","low"] as Priority[]).map((p) => (
-            <SelectItem key={p} value={p}><span className={priorityMeta[p].color}>{priorityMeta[p].label}</span></SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={item.urgency} onValueChange={(v) => onUpdate(item.id, { urgency: v as Urgency })}>
-        <SelectTrigger className="h-7 w-24 text-xs bg-transparent border-none">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {(["today","this_week","someday"] as Urgency[]).map((u) => (
-            <SelectItem key={u} value={u}>{urgencyMeta[u].label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Input
-        type="date"
-        value={item.due_date || ""}
-        onChange={(e) => onUpdate(item.id, { due_date: e.target.value || null })}
-        className="h-7 w-32 text-xs bg-transparent border-none p-0"
-      />
-      <div className="flex items-center gap-1">
-        <MoveMenu projects={projects} onMove={(pid) => onMove(item.id, pid)} />
-        <button
-          onClick={() => onDelete(item.id)}
-          className="text-muted-foreground hover:text-destructive p-1"
-          title="Sil"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+    <>
+      {/* Desktop / tablet row */}
+      <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-2 px-3 py-2 border-b border-border/40 hover:bg-card/40 transition-colors">
+        <Input
+          value={item.title}
+          onChange={(e) => onUpdate(item.id, { title: e.target.value })}
+          className="bg-transparent border-none p-0 h-7 text-sm font-light focus-visible:ring-0"
+        />
+        <Select value={item.priority} onValueChange={(v) => onUpdate(item.id, { priority: v as Priority })}>
+          <SelectTrigger className="h-7 w-24 text-xs bg-transparent border-none">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(["high","medium","low"] as Priority[]).map((p) => (
+              <SelectItem key={p} value={p}><span className={priorityMeta[p].color}>{priorityMeta[p].label}</span></SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={item.urgency} onValueChange={(v) => onUpdate(item.id, { urgency: v as Urgency })}>
+          <SelectTrigger className="h-7 w-24 text-xs bg-transparent border-none">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(["today","this_week","someday"] as Urgency[]).map((u) => (
+              <SelectItem key={u} value={u}>{urgencyMeta[u].label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          type="date"
+          value={item.due_date || ""}
+          onChange={(e) => onUpdate(item.id, { due_date: e.target.value || null })}
+          className="h-7 w-32 text-xs bg-transparent border-none p-0"
+        />
+        <div className="flex items-center gap-1">
+          <MoveMenu projects={projects} onMove={(pid) => onMove(item.id, pid)} />
+          <button
+            onClick={() => onDelete(item.id)}
+            className="text-muted-foreground hover:text-destructive p-1"
+            title="Sil"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* Mobile card */}
+      <div className="md:hidden px-3 py-2.5 border-b border-border/40 hover:bg-card/40 transition-colors space-y-2">
+        <Input
+          value={item.title}
+          onChange={(e) => onUpdate(item.id, { title: e.target.value })}
+          placeholder="Başlık..."
+          className="bg-transparent border-none p-0 h-7 text-sm font-light focus-visible:ring-0"
+        />
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Select value={item.priority} onValueChange={(v) => onUpdate(item.id, { priority: v as Priority })}>
+            <SelectTrigger className="h-7 w-[88px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(["high","medium","low"] as Priority[]).map((p) => (
+                <SelectItem key={p} value={p}><span className={priorityMeta[p].color}>{priorityMeta[p].label}</span></SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={item.urgency} onValueChange={(v) => onUpdate(item.id, { urgency: v as Urgency })}>
+            <SelectTrigger className="h-7 w-[96px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(["today","this_week","someday"] as Urgency[]).map((u) => (
+                <SelectItem key={u} value={u}>{urgencyMeta[u].label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            type="date"
+            value={item.due_date || ""}
+            onChange={(e) => onUpdate(item.id, { due_date: e.target.value || null })}
+            className="h-7 w-[140px] text-xs"
+          />
+          <div className="ml-auto flex items-center gap-1">
+            <MoveMenu projects={projects} onMove={(pid) => onMove(item.id, pid)} />
+            <button
+              onClick={() => onDelete(item.id)}
+              className="text-muted-foreground hover:text-destructive p-1.5 rounded-sm hover:bg-destructive/10"
+              title="Sil"
+              aria-label="Görevi sil"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 };
 
