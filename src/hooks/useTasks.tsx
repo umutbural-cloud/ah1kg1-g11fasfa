@@ -57,6 +57,9 @@ export const useTasks = (projectId: string | null) => {
     end_date?: string;
     start_time?: string;
     end_time?: string;
+    color?: TaskColor;
+    kind?: TaskKind;
+    parent_block_id?: string | null;
   }) => {
     if (!user || !projectId) return null;
     const maxPos = tasks.reduce((m, t) => Math.max(m, t.position || 0), 0);
