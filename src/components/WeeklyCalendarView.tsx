@@ -67,6 +67,10 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
   const [dragging, setDragging] = useState<{ day: Date; startHour: number; currentHour: number } | null>(null);
   const dragRef = useRef<{ day: Date; startHour: number; moved: boolean } | null>(null);
 
+  // Move-existing-block state
+  const [movingTask, setMovingTask] = useState<{ id: string; day: Date; hour: number; durationHrs: number } | null>(null);
+  const moveRef = useRef<{ id: string; durationHrs: number; pointerOffsetHrs: number; lastDay: Date; lastHour: number; moved: boolean } | null>(null);
+
   const days = useMemo(() => {
     if (mode === "week") {
       const start = startOfWeek(current, { weekStartsOn: 1 });
@@ -140,8 +144,22 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    // Moving existing block?
+    if (moveRef.current) {
+      const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+      const slot = el?.closest("[data-slot-key]") as HTMLElement | null;
+      if (!slot) return;
+      const [dayStr, hourStr] = slot.dataset.slotKey!.split("|");
+      const day = parseISO(dayStr);
+      const hour = parseInt(hourStr, 10);
+      moveRef.current.moved = true;
+      moveRef.current.lastDay = day;
+      moveRef.current.lastHour = hour;
+      setMovingTask({ id: moveRef.current.id, day, hour, durationHrs: moveRef.current.durationHrs });
+      return;
+    }
+
     if (!dragRef.current) return;
-    // Hit-test the element under the pointer
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
     const slot = el?.closest("[data-slot-key]") as HTMLElement | null;
     if (!slot) return;
@@ -156,6 +174,25 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
   };
 
   const handlePointerUp = () => {
+    // Finish moving existing block
+    if (moveRef.current) {
+      const m = moveRef.current;
+      if (m.moved) {
+        const newStartH = Math.max(0, Math.min(23, m.lastHour));
+        const newEndH = Math.min(24, newStartH + Math.max(1, Math.round(m.durationHrs)));
+        const dateStr = format(m.lastDay, "yyyy-MM-dd");
+        updateTask(m.id, {
+          start_date: dateStr,
+          end_date: dateStr,
+          start_time: `${String(newStartH).padStart(2, "0")}:00`,
+          end_time: `${String(newEndH).padStart(2, "0")}:00`,
+        });
+      }
+      moveRef.current = null;
+      setMovingTask(null);
+      return;
+    }
+
     if (dragging && dragRef.current) {
       const startHour = Math.min(dragging.startHour, dragging.currentHour);
       const endHour = Math.max(dragging.startHour, dragging.currentHour) + 1;
@@ -165,9 +202,23 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
     setDragging(null);
   };
 
+  const startMoveTask = (e: React.PointerEvent, t: Task) => {
+    if (!t.start_time || !t.start_date) return;
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    const [sh] = t.start_time.split(":").map(Number);
+    const [eh] = (t.end_time || t.start_time).split(":").map(Number);
+    const dur = Math.max(1, eh - sh);
+    moveRef.current = {
+      id: t.id, durationHrs: dur, pointerOffsetHrs: 0,
+      lastDay: parseISO(t.start_date), lastHour: sh, moved: false,
+    };
+    setMovingTask({ id: t.id, day: parseISO(t.start_date), hour: sh, durationHrs: dur });
+  };
+
   // Cancel any stuck drag if pointer leaves the page
   useEffect(() => {
-    const cancel = () => { dragRef.current = null; setDragging(null); };
+    const cancel = () => { dragRef.current = null; setDragging(null); moveRef.current = null; setMovingTask(null); };
     window.addEventListener("pointercancel", cancel);
     return () => window.removeEventListener("pointercancel", cancel);
   }, []);
