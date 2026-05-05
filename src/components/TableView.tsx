@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, GripVertical, EyeOff, Eye, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,26 @@ const SortableRow = ({ task, onUpdate, onDelete, onToggleHidden }: {
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // Local title state — prevents cursor-jump and dropped chars while typing
+  const [title, setTitle] = useState(task.title);
+  const focusedRef = useRef(false);
+  const debounceRef = useRef<number | null>(null);
+
+  // Sync from upstream only when input is not focused (avoids overwriting user input mid-typing)
+  useEffect(() => {
+    if (!focusedRef.current) setTitle(task.title);
+  }, [task.title]);
+
+  const flush = (val: string) => {
+    if (val !== task.title) onUpdate(task.id, { title: val });
+  };
+
+  const handleChange = (v: string) => {
+    setTitle(v);
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => flush(v), 500);
+  };
+
   return (
     <TableRow ref={setNodeRef} style={style} className="group">
       <TableCell className="py-1 px-1 sm:px-2 w-7 sm:w-8">
@@ -52,8 +72,14 @@ const SortableRow = ({ task, onUpdate, onDelete, onToggleHidden }: {
       </TableCell>
       <TableCell className="text-sm font-light px-1 sm:px-2 py-1">
         <Input
-          value={task.title}
-          onChange={(e) => onUpdate(task.id, { title: e.target.value })}
+          value={title}
+          onFocus={() => { focusedRef.current = true; }}
+          onBlur={() => {
+            focusedRef.current = false;
+            if (debounceRef.current) { window.clearTimeout(debounceRef.current); debounceRef.current = null; }
+            flush(title);
+          }}
+          onChange={(e) => handleChange(e.target.value)}
           className="bg-transparent border-none p-0 h-7 text-sm font-light focus-visible:ring-0"
         />
       </TableCell>
