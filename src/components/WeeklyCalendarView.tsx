@@ -350,29 +350,56 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                         isDraggingThis ? "bg-foreground/15" : "hover:bg-card/40"
                       }`}
                     >
-                      {timedTasks.map((t) => {
+                      {/* Timeboxes (background, full width, lower z) */}
+                      {timedTasks.filter(isTimebox).map((t) => {
                         const [sh, sm] = t.start_time!.split(":").map(Number);
                         const [eh, em] = (t.end_time || t.start_time!).split(":").map(Number);
                         const heightHrs = Math.max(0.5, (eh + em / 60) - (sh + sm / 60));
-                        const tb = isTimebox(t);
                         return (
                           <div
                             key={t.id}
-                            onPointerDown={(e) => e.stopPropagation()}
+                            onPointerDown={(e) => startMoveTask(e, t)}
                             onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
-                            className={`absolute left-0.5 right-0.5 px-1.5 py-1 rounded-sm border-l-2 text-[10px] font-light truncate cursor-pointer z-10 ${colorClasses(t.color)} ${tb ? "border-dashed border" : ""}`}
-                            style={{ top: 1, height: `${heightHrs * SLOT_HEIGHT - 2}px` }}
+                            title={t.title}
+                            className={`absolute inset-x-0 px-1.5 py-1 rounded-sm border border-dashed text-[10px] font-light cursor-grab active:cursor-grabbing z-0 ${colorClasses(t.color)}`}
+                            style={{ top: 1, height: `${heightHrs * SLOT_HEIGHT - 2}px`, opacity: 0.55 }}
                           >
                             <div className="flex items-center gap-1 truncate">
-                              {tb && <Timer className="h-2.5 w-2.5 opacity-70 shrink-0" />}
+                              <Timer className="h-2.5 w-2.5 opacity-70 shrink-0" />
                               <span className="truncate">{t.title}</span>
                             </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Regular tasks (left-aligned, leave room on right for pomodoro/timebox edge) */}
+                      {timedTasks.filter((t) => !isTimebox(t)).map((t) => {
+                        const [sh, sm] = t.start_time!.split(":").map(Number);
+                        const [eh, em] = (t.end_time || t.start_time!).split(":").map(Number);
+                        const heightHrs = Math.max(0.5, (eh + em / 60) - (sh + sm / 60));
+                        return (
+                          <div
+                            key={t.id}
+                            onPointerDown={(e) => startMoveTask(e, t)}
+                            onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
+                            className={`absolute left-0.5 px-1.5 py-1 rounded-sm border-l-2 text-[10px] font-light truncate cursor-grab active:cursor-grabbing z-10 ${colorClasses(t.color)}`}
+                            style={{ top: 1, right: "28%", height: `${heightHrs * SLOT_HEIGHT - 2}px` }}
+                          >
+                            <div className="truncate">{t.title}</div>
                             <div className="text-[9px] opacity-70">{t.start_time?.slice(0,5)}{t.end_time && `–${t.end_time.slice(0,5)}`}</div>
                           </div>
                         );
                       })}
 
-                      {/* Pomodoro session badges (compact, on right edge) */}
+                      {/* Move ghost */}
+                      {movingTask && isSameDay(movingTask.day, day) && movingTask.hour === hour && (
+                        <div
+                          className="absolute inset-x-0 rounded-sm border border-dashed border-foreground/50 bg-foreground/10 z-20 pointer-events-none"
+                          style={{ top: 1, height: `${movingTask.durationHrs * SLOT_HEIGHT - 2}px` }}
+                        />
+                      )}
+
+                      {/* Pomodoro session bars — thicker, with popover */}
                       {hourSessions.map((s) => {
                         const sd = parseISO(s.started_at);
                         const ed = parseISO(s.ended_at);
@@ -380,15 +407,33 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                         const totalMins = (ed.getTime() - sd.getTime()) / 60000;
                         const heightHrs = Math.max(0.25, totalMins / 60);
                         const topPx = (startMins / 60) * SLOT_HEIGHT;
+                        const hrs = Math.floor(totalMins / 60);
+                        const mins = Math.round(totalMins % 60);
+                        const durLabel = hrs > 0 ? `${hrs} sa ${mins} dk` : `${mins} dk`;
                         return (
-                          <div
-                            key={s.id}
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onClick={(e) => e.stopPropagation()}
-                            title={`Pomodoro · ${Math.round(totalMins)} dk${s.note ? ` · ${s.note}` : ""}`}
-                            className="absolute right-0 w-1.5 rounded-sm bg-rose-400/80 dark:bg-rose-500/80"
-                            style={{ top: topPx + 1, height: `${heightHrs * SLOT_HEIGHT - 2}px` }}
-                          />
+                          <Popover key={s.id}>
+                            <PopoverTrigger asChild>
+                              <button
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute right-0.5 w-3 rounded-sm bg-rose-400/90 hover:bg-rose-500 dark:bg-rose-500/90 dark:hover:bg-rose-400 z-20 transition-colors"
+                                style={{ top: topPx + 1, height: `${heightHrs * SLOT_HEIGHT - 2}px` }}
+                                aria-label="Pomodoro detayı"
+                              />
+                            </PopoverTrigger>
+                            <PopoverContent side="left" align="start" className="w-56 p-3 text-xs">
+                              <div className="font-medium tracking-wide mb-1">Pomodoro</div>
+                              <div className="text-muted-foreground">
+                                {format(sd, "HH:mm")} – {format(ed, "HH:mm")}
+                              </div>
+                              <div className="text-muted-foreground">Süre: {durLabel}</div>
+                              {s.note && (
+                                <div className="mt-2 pt-2 border-t border-border/40 text-foreground/80 whitespace-pre-wrap">
+                                  {s.note}
+                                </div>
+                              )}
+                            </PopoverContent>
+                          </Popover>
                         );
                       })}
                     </div>
