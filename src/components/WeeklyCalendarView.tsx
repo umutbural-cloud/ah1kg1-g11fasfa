@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 07:00 - 20:00
 const SLOT_HEIGHT = 44; // px per hour slot
