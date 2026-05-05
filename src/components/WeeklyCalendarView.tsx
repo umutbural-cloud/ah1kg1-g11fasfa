@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 07:00 - 20:00
 const SLOT_HEIGHT = 44; // px per hour slot
@@ -65,6 +66,10 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
   // Drag-to-create state (mouse + touch)
   const [dragging, setDragging] = useState<{ day: Date; startHour: number; currentHour: number } | null>(null);
   const dragRef = useRef<{ day: Date; startHour: number; moved: boolean } | null>(null);
+
+  // Move-existing-block state
+  const [movingTask, setMovingTask] = useState<{ id: string; day: Date; hour: number; durationHrs: number } | null>(null);
+  const moveRef = useRef<{ id: string; durationHrs: number; pointerOffsetHrs: number; lastDay: Date; lastHour: number; moved: boolean } | null>(null);
 
   const days = useMemo(() => {
     if (mode === "week") {
@@ -139,8 +144,22 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    // Moving existing block?
+    if (moveRef.current) {
+      const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+      const slot = el?.closest("[data-slot-key]") as HTMLElement | null;
+      if (!slot) return;
+      const [dayStr, hourStr] = slot.dataset.slotKey!.split("|");
+      const day = parseISO(dayStr);
+      const hour = parseInt(hourStr, 10);
+      moveRef.current.moved = true;
+      moveRef.current.lastDay = day;
+      moveRef.current.lastHour = hour;
+      setMovingTask({ id: moveRef.current.id, day, hour, durationHrs: moveRef.current.durationHrs });
+      return;
+    }
+
     if (!dragRef.current) return;
-    // Hit-test the element under the pointer
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
     const slot = el?.closest("[data-slot-key]") as HTMLElement | null;
     if (!slot) return;
@@ -155,6 +174,25 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
   };
 
   const handlePointerUp = () => {
+    // Finish moving existing block
+    if (moveRef.current) {
+      const m = moveRef.current;
+      if (m.moved) {
+        const newStartH = Math.max(0, Math.min(23, m.lastHour));
+        const newEndH = Math.min(24, newStartH + Math.max(1, Math.round(m.durationHrs)));
+        const dateStr = format(m.lastDay, "yyyy-MM-dd");
+        updateTask(m.id, {
+          start_date: dateStr,
+          end_date: dateStr,
+          start_time: `${String(newStartH).padStart(2, "0")}:00`,
+          end_time: `${String(newEndH).padStart(2, "0")}:00`,
+        });
+      }
+      moveRef.current = null;
+      setMovingTask(null);
+      return;
+    }
+
     if (dragging && dragRef.current) {
       const startHour = Math.min(dragging.startHour, dragging.currentHour);
       const endHour = Math.max(dragging.startHour, dragging.currentHour) + 1;
@@ -164,9 +202,23 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
     setDragging(null);
   };
 
+  const startMoveTask = (e: React.PointerEvent, t: Task) => {
+    if (!t.start_time || !t.start_date) return;
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    const [sh] = t.start_time.split(":").map(Number);
+    const [eh] = (t.end_time || t.start_time).split(":").map(Number);
+    const dur = Math.max(1, eh - sh);
+    moveRef.current = {
+      id: t.id, durationHrs: dur, pointerOffsetHrs: 0,
+      lastDay: parseISO(t.start_date), lastHour: sh, moved: false,
+    };
+    setMovingTask({ id: t.id, day: parseISO(t.start_date), hour: sh, durationHrs: dur });
+  };
+
   // Cancel any stuck drag if pointer leaves the page
   useEffect(() => {
-    const cancel = () => { dragRef.current = null; setDragging(null); };
+    const cancel = () => { dragRef.current = null; setDragging(null); moveRef.current = null; setMovingTask(null); };
     window.addEventListener("pointercancel", cancel);
     return () => window.removeEventListener("pointercancel", cancel);
   }, []);
@@ -298,29 +350,56 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                         isDraggingThis ? "bg-foreground/15" : "hover:bg-card/40"
                       }`}
                     >
-                      {timedTasks.map((t) => {
+                      {/* Timeboxes (background, full width, lower z) */}
+                      {timedTasks.filter(isTimebox).map((t) => {
                         const [sh, sm] = t.start_time!.split(":").map(Number);
                         const [eh, em] = (t.end_time || t.start_time!).split(":").map(Number);
                         const heightHrs = Math.max(0.5, (eh + em / 60) - (sh + sm / 60));
-                        const tb = isTimebox(t);
                         return (
                           <div
                             key={t.id}
-                            onPointerDown={(e) => e.stopPropagation()}
+                            onPointerDown={(e) => startMoveTask(e, t)}
                             onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
-                            className={`absolute left-0.5 right-0.5 px-1.5 py-1 rounded-sm border-l-2 text-[10px] font-light truncate cursor-pointer z-10 ${colorClasses(t.color)} ${tb ? "border-dashed border" : ""}`}
-                            style={{ top: 1, height: `${heightHrs * SLOT_HEIGHT - 2}px` }}
+                            title={t.title}
+                            className={`absolute inset-x-0 px-1.5 py-1 rounded-sm border border-dashed text-[10px] font-light cursor-grab active:cursor-grabbing z-0 ${colorClasses(t.color)}`}
+                            style={{ top: 1, height: `${heightHrs * SLOT_HEIGHT - 2}px`, opacity: 0.55 }}
                           >
                             <div className="flex items-center gap-1 truncate">
-                              {tb && <Timer className="h-2.5 w-2.5 opacity-70 shrink-0" />}
+                              <Timer className="h-2.5 w-2.5 opacity-70 shrink-0" />
                               <span className="truncate">{t.title}</span>
                             </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Regular tasks (left-aligned, leave room on right for pomodoro/timebox edge) */}
+                      {timedTasks.filter((t) => !isTimebox(t)).map((t) => {
+                        const [sh, sm] = t.start_time!.split(":").map(Number);
+                        const [eh, em] = (t.end_time || t.start_time!).split(":").map(Number);
+                        const heightHrs = Math.max(0.5, (eh + em / 60) - (sh + sm / 60));
+                        return (
+                          <div
+                            key={t.id}
+                            onPointerDown={(e) => startMoveTask(e, t)}
+                            onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
+                            className={`absolute left-0.5 px-1.5 py-1 rounded-sm border-l-2 text-[10px] font-light truncate cursor-grab active:cursor-grabbing z-10 ${colorClasses(t.color)}`}
+                            style={{ top: 1, right: "28%", height: `${heightHrs * SLOT_HEIGHT - 2}px` }}
+                          >
+                            <div className="truncate">{t.title}</div>
                             <div className="text-[9px] opacity-70">{t.start_time?.slice(0,5)}{t.end_time && `–${t.end_time.slice(0,5)}`}</div>
                           </div>
                         );
                       })}
 
-                      {/* Pomodoro session badges (compact, on right edge) */}
+                      {/* Move ghost */}
+                      {movingTask && isSameDay(movingTask.day, day) && movingTask.hour === hour && (
+                        <div
+                          className="absolute inset-x-0 rounded-sm border border-dashed border-foreground/50 bg-foreground/10 z-20 pointer-events-none"
+                          style={{ top: 1, height: `${movingTask.durationHrs * SLOT_HEIGHT - 2}px` }}
+                        />
+                      )}
+
+                      {/* Pomodoro session bars — thicker, with popover */}
                       {hourSessions.map((s) => {
                         const sd = parseISO(s.started_at);
                         const ed = parseISO(s.ended_at);
@@ -328,15 +407,33 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                         const totalMins = (ed.getTime() - sd.getTime()) / 60000;
                         const heightHrs = Math.max(0.25, totalMins / 60);
                         const topPx = (startMins / 60) * SLOT_HEIGHT;
+                        const hrs = Math.floor(totalMins / 60);
+                        const mins = Math.round(totalMins % 60);
+                        const durLabel = hrs > 0 ? `${hrs} sa ${mins} dk` : `${mins} dk`;
                         return (
-                          <div
-                            key={s.id}
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onClick={(e) => e.stopPropagation()}
-                            title={`Pomodoro · ${Math.round(totalMins)} dk${s.note ? ` · ${s.note}` : ""}`}
-                            className="absolute right-0 w-1.5 rounded-sm bg-rose-400/80 dark:bg-rose-500/80"
-                            style={{ top: topPx + 1, height: `${heightHrs * SLOT_HEIGHT - 2}px` }}
-                          />
+                          <Popover key={s.id}>
+                            <PopoverTrigger asChild>
+                              <button
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute right-0.5 w-3 rounded-sm bg-rose-400/90 hover:bg-rose-500 dark:bg-rose-500/90 dark:hover:bg-rose-400 z-20 transition-colors"
+                                style={{ top: topPx + 1, height: `${heightHrs * SLOT_HEIGHT - 2}px` }}
+                                aria-label="Pomodoro detayı"
+                              />
+                            </PopoverTrigger>
+                            <PopoverContent side="left" align="start" className="w-56 p-3 text-xs">
+                              <div className="font-medium tracking-wide mb-1">Pomodoro</div>
+                              <div className="text-muted-foreground">
+                                {format(sd, "HH:mm")} – {format(ed, "HH:mm")}
+                              </div>
+                              <div className="text-muted-foreground">Süre: {durLabel}</div>
+                              {s.note && (
+                                <div className="mt-2 pt-2 border-t border-border/40 text-foreground/80 whitespace-pre-wrap">
+                                  {s.note}
+                                </div>
+                              )}
+                            </PopoverContent>
+                          </Popover>
                         );
                       })}
                     </div>
@@ -349,8 +446,8 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
           {/* Legend */}
           <div className="flex items-center gap-3 px-3 py-1.5 border-t border-border/40 text-[10px] text-muted-foreground bg-card/20">
             <div className="flex items-center gap-1">
-              <span className="inline-block w-1.5 h-3 rounded-sm bg-rose-400/80" />
-              <span>Pomodoro</span>
+              <span className="inline-block w-2.5 h-3 rounded-sm bg-rose-400/90" />
+              <span>Pomodoro (üzerine gel/tıkla)</span>
             </div>
             <div className="flex items-center gap-1">
               <Timer className="h-2.5 w-2.5" />
