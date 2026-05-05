@@ -446,8 +446,8 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
           {/* Legend */}
           <div className="flex items-center gap-3 px-3 py-1.5 border-t border-border/40 text-[10px] text-muted-foreground bg-card/20">
             <div className="flex items-center gap-1">
-              <span className="inline-block w-1.5 h-3 rounded-sm bg-rose-400/80" />
-              <span>Pomodoro</span>
+              <span className="inline-block w-2.5 h-3 rounded-sm bg-rose-400/90" />
+              <span>Pomodoro (üzerine gel/tıkla)</span>
             </div>
             <div className="flex items-center gap-1">
               <Timer className="h-2.5 w-2.5" />
