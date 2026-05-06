@@ -385,17 +385,96 @@ const Pomodoro = () => {
                   isRunning ? "opacity-30 hover:opacity-100" : "opacity-100"
                 }`}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <div className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light">
                       Çalışma Geçmişi
                     </div>
+                    <span className="text-[10px] text-muted-foreground/60">(son 3 gün)</span>
                     <button
                       onClick={() => setShowAddForm((v) => !v)}
                       title="Geçmiş çalışma ekle"
                       className="p-0.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                     >
                       {showAddForm ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                    </button>
+
+                    {/* Filter by category */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          title="Kategoriye göre filtrele"
+                          className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors"
+                        >
+                          <Filter className="h-3 w-3" />
+                          {filterCategoryId === "all"
+                            ? "Tümü"
+                            : filterCategoryId === "__none__"
+                            ? "Kategorisiz"
+                            : categories.find((c) => c.id === filterCategoryId)?.name || "Filtre"}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="w-48 p-1">
+                        <button
+                          onClick={() => setFilterCategoryId("all")}
+                          className={`w-full text-left px-2 py-1 text-xs rounded-sm hover:bg-accent ${filterCategoryId === "all" ? "bg-accent" : ""}`}
+                        >
+                          Tümü
+                        </button>
+                        <button
+                          onClick={() => setFilterCategoryId("__none__")}
+                          className={`w-full text-left px-2 py-1 text-xs rounded-sm hover:bg-accent ${filterCategoryId === "__none__" ? "bg-accent" : ""}`}
+                        >
+                          Kategorisiz
+                        </button>
+                        {categories.map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => setFilterCategoryId(c.id)}
+                            className={`w-full flex items-center gap-2 text-left px-2 py-1 text-xs rounded-sm hover:bg-accent ${filterCategoryId === c.id ? "bg-accent" : ""}`}
+                          >
+                            <span className={`h-2.5 w-2.5 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                            {c.name}
+                          </button>
+                        ))}
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Sort */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          title="Sırala"
+                          className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors"
+                        >
+                          <ArrowUpDown className="h-3 w-3" />
+                          Sırala
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="w-56 p-1">
+                        {([
+                          ["started_desc", "Başlangıç (yeni → eski)"],
+                          ["started_asc", "Başlangıç (eski → yeni)"],
+                          ["dur_desc", "Süre (uzun → kısa)"],
+                          ["dur_asc", "Süre (kısa → uzun)"],
+                        ] as const).map(([k, l]) => (
+                          <button
+                            key={k}
+                            onClick={() => setSortBy(k)}
+                            className={`w-full text-left px-2 py-1 text-xs rounded-sm hover:bg-accent ${sortBy === k ? "bg-accent" : ""}`}
+                          >
+                            {l}
+                          </button>
+                        ))}
+                      </PopoverContent>
+                    </Popover>
+
+                    <button
+                      onClick={() => setShowCategoriesDialog(true)}
+                      title="Kategorileri yönet"
+                      className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors"
+                    >
+                      <Tags className="h-3 w-3" /> Kategoriler
                     </button>
                   </div>
                   <button
