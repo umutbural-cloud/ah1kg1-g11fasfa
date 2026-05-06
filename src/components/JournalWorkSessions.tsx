@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Clock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronRight, Clock, Filter, ArrowUpDown } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePomodoroCategories, PomodoroCategory } from "@/hooks/usePomodoroCategories";
+import { colorClasses, TaskColor } from "@/lib/taskColors";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 
 type Session = {
@@ -12,6 +15,7 @@ type Session = {
   duration_seconds: number;
   kind: "work" | "break";
   note: string | null;
+  category_id: string | null;
 };
 
 const isoToTimeInput = (iso: string) => format(parseISO(iso), "HH:mm");
@@ -23,11 +27,16 @@ const combineDateTime = (iso: string, hhmm: string) => {
   return d.toISOString();
 };
 
+type SortBy = "started_desc" | "started_asc" | "dur_desc" | "dur_asc";
+
 const JournalWorkSessions = ({ date }: { date: string }) => {
   const { user } = useAuth();
+  const { categories } = usePomodoroCategories();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [filterCat, setFilterCat] = useState<string | "all">("all");
+  const [sortBy, setSortBy] = useState<SortBy>("started_desc");
 
   const load = async () => {
     if (!user) return;
@@ -54,7 +63,22 @@ const JournalWorkSessions = ({ date }: { date: string }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, date]);
 
-  const totalSec = sessions.reduce((a, s) => a + s.duration_seconds, 0);
+  const visible = useMemo(() => {
+    let arr = sessions;
+    if (filterCat !== "all") {
+      arr = arr.filter((s) => (filterCat === "__none__" ? !s.category_id : s.category_id === filterCat));
+    }
+    return [...arr].sort((a, b) => {
+      switch (sortBy) {
+        case "started_asc": return a.started_at.localeCompare(b.started_at);
+        case "dur_desc": return b.duration_seconds - a.duration_seconds;
+        case "dur_asc": return a.duration_seconds - b.duration_seconds;
+        default: return b.started_at.localeCompare(a.started_at);
+      }
+    });
+  }, [sessions, filterCat, sortBy]);
+
+  const totalSec = visible.reduce((a, s) => a + s.duration_seconds, 0);
   const totalH = Math.floor(totalSec / 3600);
   const totalM = Math.floor((totalSec % 3600) / 60);
 
@@ -74,6 +98,11 @@ const JournalWorkSessions = ({ date }: { date: string }) => {
       : s)));
   };
 
+  const updateCategory = async (id: string, category_id: string | null) => {
+    setSessions((arr) => arr.map((s) => (s.id === id ? { ...s, category_id } : s)));
+    await supabase.from("pomodoro_sessions").update({ category_id } as any).eq("id", id);
+  };
+
   return (
     <div className="border border-border/60 rounded-sm overflow-hidden mt-8">
       <button
@@ -88,30 +117,78 @@ const JournalWorkSessions = ({ date }: { date: string }) => {
         </span>
       </button>
       {open && (
-        <div className="divide-y divide-border/40">
-          {loading ? (
-            <div className="px-3 py-3 text-xs text-muted-foreground">読み込み中...</div>
-          ) : sessions.length === 0 ? (
-            <div className="px-3 py-4 text-xs text-muted-foreground text-center">
-              <p>空 — Bugün hiç çalışma kaydı yok</p>
-            </div>
-          ) : (
-            sessions.map((s) => (
-              <Row key={s.id} session={s} onUpdateNote={updateNote} onUpdateTimes={updateTimes} />
-            ))
-          )}
-        </div>
+        <>
+          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/40 bg-card/20">
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded-sm border border-border/60 hover:bg-accent/50">
+                  <Filter className="h-3 w-3" />
+                  {filterCat === "all" ? "Tümü" : filterCat === "__none__" ? "Kategorisiz" : categories.find((c) => c.id === filterCat)?.name || "Filtre"}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-44 p-1">
+                <button onClick={() => setFilterCat("all")} className={`w-full text-left px-2 py-1 text-xs rounded-sm hover:bg-accent ${filterCat === "all" ? "bg-accent" : ""}`}>Tümü</button>
+                <button onClick={() => setFilterCat("__none__")} className={`w-full text-left px-2 py-1 text-xs rounded-sm hover:bg-accent ${filterCat === "__none__" ? "bg-accent" : ""}`}>Kategorisiz</button>
+                {categories.map((c) => (
+                  <button key={c.id} onClick={() => setFilterCat(c.id)} className={`w-full flex items-center gap-2 text-left px-2 py-1 text-xs rounded-sm hover:bg-accent ${filterCat === c.id ? "bg-accent" : ""}`}>
+                    <span className={`h-2.5 w-2.5 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                    {c.name}
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded-sm border border-border/60 hover:bg-accent/50">
+                  <ArrowUpDown className="h-3 w-3" /> Sırala
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-56 p-1">
+                {([
+                  ["started_desc", "Başlangıç (yeni → eski)"],
+                  ["started_asc", "Başlangıç (eski → yeni)"],
+                  ["dur_desc", "Süre (uzun → kısa)"],
+                  ["dur_asc", "Süre (kısa → uzun)"],
+                ] as const).map(([k, l]) => (
+                  <button key={k} onClick={() => setSortBy(k)} className={`w-full text-left px-2 py-1 text-xs rounded-sm hover:bg-accent ${sortBy === k ? "bg-accent" : ""}`}>{l}</button>
+                ))}
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="divide-y divide-border/40">
+            {loading ? (
+              <div className="px-3 py-3 text-xs text-muted-foreground">読み込み中...</div>
+            ) : visible.length === 0 ? (
+              <div className="px-3 py-4 text-xs text-muted-foreground text-center">
+                <p>空 — Bu filtreyle çalışma kaydı yok</p>
+              </div>
+            ) : (
+              visible.map((s) => (
+                <Row
+                  key={s.id}
+                  session={s}
+                  categories={categories}
+                  onUpdateNote={updateNote}
+                  onUpdateTimes={updateTimes}
+                  onUpdateCategory={updateCategory}
+                />
+              ))
+            )}
+          </div>
+        </>
       )}
     </div>
   );
 };
 
 const Row = ({
-  session, onUpdateNote, onUpdateTimes,
+  session, categories, onUpdateNote, onUpdateTimes, onUpdateCategory,
 }: {
   session: Session;
+  categories: PomodoroCategory[];
   onUpdateNote: (id: string, note: string) => void;
   onUpdateTimes: (id: string, startedAt: string, endedAt: string) => void;
+  onUpdateCategory: (id: string, category_id: string | null) => void;
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [note, setNote] = useState(session.note || "");
@@ -125,6 +202,7 @@ const Row = ({
   }, [session.started_at, session.ended_at, session.note]);
 
   const mins = Math.round(session.duration_seconds / 60);
+  const cat = categories.find((c) => c.id === session.category_id);
 
   const commitTimes = () => {
     const newStart = combineDateTime(session.started_at, startVal);
@@ -140,6 +218,33 @@ const Row = ({
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-3 text-left text-xs hover:bg-card/40 transition-colors cursor-pointer"
       >
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="w-20 flex items-center gap-1 text-[10px] uppercase tracking-wider hover:text-foreground/80"
+              title="Kategori"
+            >
+              {cat ? (
+                <>
+                  <span className={`h-2 w-2 rounded-full ${colorClasses(cat.color as TaskColor, "dot")}`} />
+                  <span className="truncate">{cat.name}</span>
+                </>
+              ) : (
+                <span className="text-muted-foreground/60">— kategori</span>
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-44 p-1" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => onUpdateCategory(session.id, null)} className="w-full text-left px-2 py-1 text-xs rounded-sm hover:bg-accent">Kategorisiz</button>
+            {categories.map((c) => (
+              <button key={c.id} onClick={() => onUpdateCategory(session.id, c.id)} className="w-full flex items-center gap-2 text-left px-2 py-1 text-xs rounded-sm hover:bg-accent">
+                <span className={`h-2.5 w-2.5 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                {c.name}
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
         <span className="tabular-nums w-16">{mins} Dakika</span>
         {!expanded ? (
           <span className="tabular-nums text-muted-foreground w-24">
