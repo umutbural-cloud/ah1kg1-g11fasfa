@@ -315,7 +315,7 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                   {dayTasks.map((t) => (
                     <div
                       key={t.id}
-                      onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
+                      onClick={(e) => handleTaskClick(e, t)}
                       className={`text-[10px] font-light truncate px-1.5 py-1 rounded-sm border-l-2 transition-colors ${colorClasses(t.color)}`}
                     >
                       {t.title}
@@ -368,7 +368,7 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                           <div
                             key={t.id}
                             onPointerDown={(e) => startMoveTask(e, t)}
-                            onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
+                            onClick={(e) => handleTaskClick(e, t)}
                             title={t.title}
                             className={`absolute inset-x-0 px-1.5 py-1 rounded-sm border border-dashed text-[10px] font-light cursor-grab active:cursor-grabbing z-0 ${colorClasses(t.color)}`}
                             style={{ top: 1, height: `${heightHrs * SLOT_HEIGHT - 2}px`, opacity: 0.55 }}
@@ -390,7 +390,7 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                           <div
                             key={t.id}
                             onPointerDown={(e) => startMoveTask(e, t)}
-                            onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
+                            onClick={(e) => handleTaskClick(e, t)}
                             className={`absolute left-0.5 px-1.5 py-1 rounded-sm border-l-2 text-[10px] font-light truncate cursor-grab active:cursor-grabbing z-10 ${colorClasses(t.color)}`}
                             style={{ top: 1, right: "28%", height: `${heightHrs * SLOT_HEIGHT - 2}px` }}
                           >
@@ -495,7 +495,7 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                     {dayTasks.slice(0, 3).map((t) => (
                       <div
                         key={t.id}
-                        onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
+                        onClick={(e) => handleTaskClick(e, t)}
                         className={`text-[10px] font-light truncate px-1 py-0.5 rounded-sm border-l-2 ${colorClasses(t.color)}`}
                       >
                         {t.title}
