@@ -595,6 +595,15 @@ const SessionRow = ({
             type="time"
             value={startVal}
             onChange={(e) => setStartVal(e.target.value)}
+            onBlur={commitTimes}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitTimes();
+              if (e.key === "Escape") {
+                setStartVal(isoToTimeInput(session.started_at));
+                setEndVal(isoToTimeInput(session.ended_at));
+                setEditingTimes(false);
+              }
+            }}
             className="bg-transparent border-b border-border/60 outline-none focus:border-foreground/40 text-xs tabular-nums w-[68px]"
           />
           <span className="text-muted-foreground">–</span>
