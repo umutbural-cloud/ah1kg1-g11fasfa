@@ -107,16 +107,36 @@ const Pomodoro = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // Last 3 distinct days, with category filtering and sorting
   const grouped = useMemo(() => {
+    const cutoff = startOfDay(subDays(new Date(), 2)); // today, yesterday, day-before
+    let filtered = sessions.filter((s) => parseISO(s.started_at) >= cutoff);
+    if (filterCategoryId !== "all") {
+      filtered = filtered.filter((s) =>
+        filterCategoryId === "__none__" ? !s.category_id : s.category_id === filterCategoryId
+      );
+    }
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "started_asc": return a.started_at.localeCompare(b.started_at);
+        case "dur_desc": return b.duration_seconds - a.duration_seconds;
+        case "dur_asc": return a.duration_seconds - b.duration_seconds;
+        default: return b.started_at.localeCompare(a.started_at);
+      }
+    });
     const map = new Map<string, Session[]>();
-    sessions.forEach((s) => {
+    sorted.forEach((s) => {
       const key = format(startOfDay(parseISO(s.started_at)), "yyyy-MM-dd");
       const arr = map.get(key) || [];
       arr.push(s);
       map.set(key, arr);
     });
-    return Array.from(map.entries());
-  }, [sessions]);
+    // Order day groups by most recent (or by sortBy if asc time)
+    const entries = Array.from(map.entries());
+    if (sortBy === "started_asc") entries.sort((a, b) => a[0].localeCompare(b[0]));
+    else entries.sort((a, b) => b[0].localeCompare(a[0]));
+    return entries;
+  }, [sessions, filterCategoryId, sortBy]);
 
   const isRunning = phase === "running";
   const isPaused = phase === "paused";
