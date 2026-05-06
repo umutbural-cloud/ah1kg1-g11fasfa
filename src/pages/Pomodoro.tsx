@@ -37,6 +37,7 @@ const Pomodoro = () => {
   const { section, selectedProjectId, view, setSection, setSelectedProjectId, setView } = usePageState();
   const { theme, toggle: toggleTheme } = useTheme();
   const { remainingSec, phase, kind, setDuration, start, pause, resume, complete, reset, skipBreak } = usePomodoro();
+  const { categories, create: createCategory, update: updateCategory, remove: removeCategory } = usePomodoroCategories();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [editingTime, setEditingTime] = useState(false);
   const [editVal, setEditVal] = useState(formatMMSS(remainingSec));
@@ -45,6 +46,10 @@ const Pomodoro = () => {
   const [addStart, setAddStart] = useState("09:00");
   const [addEnd, setAddEnd] = useState("09:25");
   const [addNote, setAddNote] = useState("");
+  const [addCategoryId, setAddCategoryId] = useState<string | null>(null);
+  const [filterCategoryId, setFilterCategoryId] = useState<string | "all">("all");
+  const [sortBy, setSortBy] = useState<"started_desc" | "started_asc" | "dur_desc" | "dur_asc">("started_desc");
+  const [showCategoriesDialog, setShowCategoriesDialog] = useState(false);
   const [notifPerm, setNotifPerm] = useState<NotificationPermission | "unsupported">(
     typeof Notification === "undefined" ? "unsupported" : Notification.permission
   );
