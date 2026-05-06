@@ -62,6 +62,7 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
   const [openTask, setOpenTask] = useState<Task | null>(null);
+  const [editDraft, setEditDraft] = useState<Task | null>(null);
 
   // Drag-to-create state (mouse + touch)
   const [dragging, setDragging] = useState<{ day: Date; startHour: number; currentHour: number } | null>(null);
