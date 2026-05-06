@@ -174,6 +174,11 @@ const Pomodoro = () => {
     );
   };
 
+  const updateSessionCategory = async (id: string, category_id: string | null) => {
+    setSessions((arr) => arr.map((s) => (s.id === id ? { ...s, category_id } : s)));
+    await supabase.from("pomodoro_sessions").update({ category_id } as any).eq("id", id);
+  };
+
   const deleteSession = async (id: string) => {
     await supabase.from("pomodoro_sessions").delete().eq("id", id);
     setSessions((arr) => arr.filter((s) => s.id !== id));
@@ -197,7 +202,8 @@ const Pomodoro = () => {
       duration_seconds: dur,
       kind: "work",
       note: addNote || null,
-    }).select().single();
+      category_id: addCategoryId,
+    } as any).select().single();
     if (error) { toast.error("Eklenemedi."); return; }
     setSessions((arr) => [data as any, ...arr].sort((a, b) => b.started_at.localeCompare(a.started_at)));
     setShowAddForm(false);
