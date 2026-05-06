@@ -634,15 +634,19 @@ const combineDateTime = (baseIso: string, hhmm: string): string | null => {
 
 const SessionRow = ({
   session,
+  categories,
   onUpdateNote,
   onUpdateDuration,
   onUpdateTimes,
+  onUpdateCategory,
   onDelete,
 }: {
   session: Session;
+  categories: PomodoroCategory[];
   onUpdateNote: (id: string, note: string) => void;
   onUpdateDuration: (id: string, totalSeconds: number) => void;
   onUpdateTimes: (id: string, startedAt: string, endedAt: string) => void;
+  onUpdateCategory: (id: string, category_id: string | null) => void;
   onDelete: (id: string) => void;
 }) => {
   const [note, setNote] = useState(session.note || "");
