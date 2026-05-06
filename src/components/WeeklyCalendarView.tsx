@@ -216,6 +216,14 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
     setMovingTask({ id: t.id, day: parseISO(t.start_date), hour: sh, durationHrs: dur });
   };
 
+  // Helper: a click handler for task block — only opens dialog if drag did NOT happen
+  const handleTaskClick = (e: React.MouseEvent, t: Task) => {
+    e.stopPropagation();
+    if (moveRef.current?.moved) return;
+    setOpenTask(t);
+    setEditDraft(t);
+  };
+
   // Cancel any stuck drag if pointer leaves the page
   useEffect(() => {
     const cancel = () => { dragRef.current = null; setDragging(null); moveRef.current = null; setMovingTask(null); };
