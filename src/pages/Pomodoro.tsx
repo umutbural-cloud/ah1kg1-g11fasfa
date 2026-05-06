@@ -523,6 +523,25 @@ const Pomodoro = () => {
                       placeholder="Not (opsiyonel)"
                       className="w-full bg-background border border-border/60 rounded-sm px-2 py-1 text-xs"
                     />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Kategori:</span>
+                      <button
+                        onClick={() => setAddCategoryId(null)}
+                        className={`text-[10px] px-2 py-0.5 rounded-sm border ${addCategoryId === null ? "bg-accent border-foreground/30" : "border-border/60 hover:bg-accent/50"}`}
+                      >
+                        Yok
+                      </button>
+                      {categories.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => setAddCategoryId(c.id)}
+                          className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm border ${addCategoryId === c.id ? "bg-accent border-foreground/30" : "border-border/60 hover:bg-accent/50"}`}
+                        >
+                          <span className={`h-2 w-2 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                          {c.name}
+                        </button>
+                      ))}
+                    </div>
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => setShowAddForm(false)}
