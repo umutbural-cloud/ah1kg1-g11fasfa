@@ -703,11 +703,49 @@ const SessionRow = ({
     setEditingTimes(false);
   };
 
+  const cat = categories.find((c) => c.id === session.category_id);
+
   return (
     <div className="group flex items-center gap-3 px-3 py-2 text-xs">
-      <span className={`text-[10px] uppercase tracking-wider w-16 ${session.kind === "break" ? "text-muted-foreground" : "text-foreground"}`}>
-        {session.kind === "work" ? "Çalışma" : "Mola"}
-      </span>
+      {session.kind === "break" ? (
+        <span className="text-[10px] uppercase tracking-wider w-20 text-muted-foreground">Mola</span>
+      ) : (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              className="w-20 text-left flex items-center gap-1 text-[10px] uppercase tracking-wider hover:text-foreground/80"
+              title="Kategori seç"
+            >
+              {cat ? (
+                <>
+                  <span className={`h-2 w-2 rounded-full ${colorClasses(cat.color as TaskColor, "dot")}`} />
+                  <span className="truncate">{cat.name}</span>
+                </>
+              ) : (
+                <span className="text-muted-foreground/60">— kategori</span>
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-44 p-1">
+            <button
+              onClick={() => onUpdateCategory(session.id, null)}
+              className="w-full text-left px-2 py-1 text-xs rounded-sm hover:bg-accent"
+            >
+              Kategorisiz
+            </button>
+            {categories.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => onUpdateCategory(session.id, c.id)}
+                className="w-full flex items-center gap-2 text-left px-2 py-1 text-xs rounded-sm hover:bg-accent"
+              >
+                <span className={`h-2.5 w-2.5 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                {c.name}
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
+      )}
       {editingDur ? (
         <input
           value={durVal}
