@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Play, Pause, Check, RotateCcw, SkipForward, Clock, Trash2, Bell, BellOff, Moon, Sun, Plus, X } from "lucide-react";
+import { Play, Pause, Check, RotateCcw, SkipForward, Clock, Trash2, Bell, BellOff, Moon, Sun, Plus, X, Filter, ArrowUpDown, Tags, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { format, parseISO, startOfDay } from "date-fns";
+import { format, parseISO, startOfDay, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,9 +9,13 @@ import { usePomodoro, formatMMSS } from "@/hooks/usePomodoro";
 import { useTheme } from "@/hooks/useTheme";
 import { usePageState } from "@/hooks/usePageState";
 import { useProjects } from "@/hooks/useProjects";
+import { usePomodoroCategories, PomodoroCategory } from "@/hooks/usePomodoroCategories";
+import { TASK_COLORS, colorClasses, TaskColor } from "@/lib/taskColors";
 import PomodoroTaskBoard from "@/components/PomodoroTaskBoard";
 import AppSidebar from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import type { ViewKey } from "@/hooks/useProjectViews";
 import { toast } from "sonner";
 
@@ -22,7 +26,9 @@ type Session = {
   duration_seconds: number;
   kind: "work" | "break";
   note: string | null;
+  category_id: string | null;
 };
+
 
 const Pomodoro = () => {
   const navigate = useNavigate();
@@ -31,6 +37,7 @@ const Pomodoro = () => {
   const { section, selectedProjectId, view, setSection, setSelectedProjectId, setView } = usePageState();
   const { theme, toggle: toggleTheme } = useTheme();
   const { remainingSec, phase, kind, setDuration, start, pause, resume, complete, reset, skipBreak } = usePomodoro();
+  const { categories, create: createCategory, update: updateCategory, remove: removeCategory } = usePomodoroCategories();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [editingTime, setEditingTime] = useState(false);
   const [editVal, setEditVal] = useState(formatMMSS(remainingSec));
@@ -39,6 +46,10 @@ const Pomodoro = () => {
   const [addStart, setAddStart] = useState("09:00");
   const [addEnd, setAddEnd] = useState("09:25");
   const [addNote, setAddNote] = useState("");
+  const [addCategoryId, setAddCategoryId] = useState<string | null>(null);
+  const [filterCategoryId, setFilterCategoryId] = useState<string | "all">("all");
+  const [sortBy, setSortBy] = useState<"started_desc" | "started_asc" | "dur_desc" | "dur_asc">("started_desc");
+  const [showCategoriesDialog, setShowCategoriesDialog] = useState(false);
   const [notifPerm, setNotifPerm] = useState<NotificationPermission | "unsupported">(
     typeof Notification === "undefined" ? "unsupported" : Notification.permission
   );
@@ -96,16 +107,36 @@ const Pomodoro = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // Last 3 distinct days, with category filtering and sorting
   const grouped = useMemo(() => {
+    const cutoff = startOfDay(subDays(new Date(), 2)); // today, yesterday, day-before
+    let filtered = sessions.filter((s) => parseISO(s.started_at) >= cutoff);
+    if (filterCategoryId !== "all") {
+      filtered = filtered.filter((s) =>
+        filterCategoryId === "__none__" ? !s.category_id : s.category_id === filterCategoryId
+      );
+    }
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "started_asc": return a.started_at.localeCompare(b.started_at);
+        case "dur_desc": return b.duration_seconds - a.duration_seconds;
+        case "dur_asc": return a.duration_seconds - b.duration_seconds;
+        default: return b.started_at.localeCompare(a.started_at);
+      }
+    });
     const map = new Map<string, Session[]>();
-    sessions.forEach((s) => {
+    sorted.forEach((s) => {
       const key = format(startOfDay(parseISO(s.started_at)), "yyyy-MM-dd");
       const arr = map.get(key) || [];
       arr.push(s);
       map.set(key, arr);
     });
-    return Array.from(map.entries());
-  }, [sessions]);
+    // Order day groups by most recent (or by sortBy if asc time)
+    const entries = Array.from(map.entries());
+    if (sortBy === "started_asc") entries.sort((a, b) => a[0].localeCompare(b[0]));
+    else entries.sort((a, b) => b[0].localeCompare(a[0]));
+    return entries;
+  }, [sessions, filterCategoryId, sortBy]);
 
   const isRunning = phase === "running";
   const isPaused = phase === "paused";
@@ -143,6 +174,11 @@ const Pomodoro = () => {
     );
   };
 
+  const updateSessionCategory = async (id: string, category_id: string | null) => {
+    setSessions((arr) => arr.map((s) => (s.id === id ? { ...s, category_id } : s)));
+    await supabase.from("pomodoro_sessions").update({ category_id } as any).eq("id", id);
+  };
+
   const deleteSession = async (id: string) => {
     await supabase.from("pomodoro_sessions").delete().eq("id", id);
     setSessions((arr) => arr.filter((s) => s.id !== id));
@@ -166,7 +202,8 @@ const Pomodoro = () => {
       duration_seconds: dur,
       kind: "work",
       note: addNote || null,
-    }).select().single();
+      category_id: addCategoryId,
+    } as any).select().single();
     if (error) { toast.error("Eklenemedi."); return; }
     setSessions((arr) => [data as any, ...arr].sort((a, b) => b.started_at.localeCompare(a.started_at)));
     setShowAddForm(false);
@@ -348,17 +385,96 @@ const Pomodoro = () => {
                   isRunning ? "opacity-30 hover:opacity-100" : "opacity-100"
                 }`}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <div className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground font-light">
                       Çalışma Geçmişi
                     </div>
+                    <span className="text-[10px] text-muted-foreground/60">(son 3 gün)</span>
                     <button
                       onClick={() => setShowAddForm((v) => !v)}
                       title="Geçmiş çalışma ekle"
                       className="p-0.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                     >
                       {showAddForm ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                    </button>
+
+                    {/* Filter by category */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          title="Kategoriye göre filtrele"
+                          className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors"
+                        >
+                          <Filter className="h-3 w-3" />
+                          {filterCategoryId === "all"
+                            ? "Tümü"
+                            : filterCategoryId === "__none__"
+                            ? "Kategorisiz"
+                            : categories.find((c) => c.id === filterCategoryId)?.name || "Filtre"}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="w-48 p-1">
+                        <button
+                          onClick={() => setFilterCategoryId("all")}
+                          className={`w-full text-left px-2 py-1 text-xs rounded-sm hover:bg-accent ${filterCategoryId === "all" ? "bg-accent" : ""}`}
+                        >
+                          Tümü
+                        </button>
+                        <button
+                          onClick={() => setFilterCategoryId("__none__")}
+                          className={`w-full text-left px-2 py-1 text-xs rounded-sm hover:bg-accent ${filterCategoryId === "__none__" ? "bg-accent" : ""}`}
+                        >
+                          Kategorisiz
+                        </button>
+                        {categories.map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => setFilterCategoryId(c.id)}
+                            className={`w-full flex items-center gap-2 text-left px-2 py-1 text-xs rounded-sm hover:bg-accent ${filterCategoryId === c.id ? "bg-accent" : ""}`}
+                          >
+                            <span className={`h-2.5 w-2.5 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                            {c.name}
+                          </button>
+                        ))}
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Sort */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          title="Sırala"
+                          className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors"
+                        >
+                          <ArrowUpDown className="h-3 w-3" />
+                          Sırala
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="w-56 p-1">
+                        {([
+                          ["started_desc", "Başlangıç (yeni → eski)"],
+                          ["started_asc", "Başlangıç (eski → yeni)"],
+                          ["dur_desc", "Süre (uzun → kısa)"],
+                          ["dur_asc", "Süre (kısa → uzun)"],
+                        ] as const).map(([k, l]) => (
+                          <button
+                            key={k}
+                            onClick={() => setSortBy(k)}
+                            className={`w-full text-left px-2 py-1 text-xs rounded-sm hover:bg-accent ${sortBy === k ? "bg-accent" : ""}`}
+                          >
+                            {l}
+                          </button>
+                        ))}
+                      </PopoverContent>
+                    </Popover>
+
+                    <button
+                      onClick={() => setShowCategoriesDialog(true)}
+                      title="Kategorileri yönet"
+                      className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors"
+                    >
+                      <Tags className="h-3 w-3" /> Kategoriler
                     </button>
                   </div>
                   <button
@@ -407,6 +523,25 @@ const Pomodoro = () => {
                       placeholder="Not (opsiyonel)"
                       className="w-full bg-background border border-border/60 rounded-sm px-2 py-1 text-xs"
                     />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Kategori:</span>
+                      <button
+                        onClick={() => setAddCategoryId(null)}
+                        className={`text-[10px] px-2 py-0.5 rounded-sm border ${addCategoryId === null ? "bg-accent border-foreground/30" : "border-border/60 hover:bg-accent/50"}`}
+                      >
+                        Yok
+                      </button>
+                      {categories.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => setAddCategoryId(c.id)}
+                          className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm border ${addCategoryId === c.id ? "bg-accent border-foreground/30" : "border-border/60 hover:bg-accent/50"}`}
+                        >
+                          <span className={`h-2 w-2 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                          {c.name}
+                        </button>
+                      ))}
+                    </div>
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => setShowAddForm(false)}
@@ -447,9 +582,11 @@ const Pomodoro = () => {
                               <SessionRow
                                 key={s.id}
                                 session={s}
+                                categories={categories}
                                 onUpdateNote={updateNote}
                                 onUpdateDuration={updateDuration}
                                 onUpdateTimes={updateTimes}
+                                onUpdateCategory={updateSessionCategory}
                                 onDelete={deleteSession}
                               />
                             ))}
@@ -464,7 +601,96 @@ const Pomodoro = () => {
           </main>
         </div>
       </div>
+
+      {/* Categories management dialog */}
+      <Dialog open={showCategoriesDialog} onOpenChange={setShowCategoriesDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-light tracking-wide">Kategoriler</DialogTitle>
+            <DialogDescription className="text-xs">Adı ve rengi düzenle, ekle veya sil</DialogDescription>
+          </DialogHeader>
+          <CategoriesEditor
+            categories={categories}
+            onCreate={createCategory}
+            onUpdate={updateCategory}
+            onRemove={removeCategory}
+          />
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
+  );
+};
+
+const CategoriesEditor = ({
+  categories,
+  onCreate,
+  onUpdate,
+  onRemove,
+}: {
+  categories: PomodoroCategory[];
+  onCreate: (name: string, color?: string) => Promise<void> | void;
+  onUpdate: (id: string, patch: Partial<{ name: string; color: string }>) => Promise<void> | void;
+  onRemove: (id: string) => Promise<void> | void;
+}) => {
+  const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState<string>("gray");
+  return (
+    <div className="space-y-3">
+      <div className="space-y-2 max-h-72 overflow-auto">
+        {categories.map((c) => (
+          <div key={c.id} className="flex items-center gap-2">
+            <input
+              defaultValue={c.name}
+              onBlur={(e) => e.target.value !== c.name && onUpdate(c.id, { name: e.target.value })}
+              className="flex-1 bg-transparent border-b border-border/60 outline-none focus:border-foreground/40 text-xs px-1 py-1"
+            />
+            <div className="flex gap-1">
+              {TASK_COLORS.map((tc) => (
+                <button
+                  key={tc.value}
+                  onClick={() => onUpdate(c.id, { color: tc.value })}
+                  className={`h-4 w-4 rounded-full border ${colorClasses(tc.value, "swatch")} ${
+                    c.color === tc.value ? "ring-2 ring-foreground/50 ring-offset-1 ring-offset-background" : "opacity-70"
+                  }`}
+                />
+              ))}
+            </div>
+            <button onClick={() => onRemove(c.id)} className="text-muted-foreground hover:text-destructive">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-border/60 pt-3 flex items-center gap-2">
+        <input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="Yeni kategori"
+          className="flex-1 bg-transparent border-b border-border/60 outline-none focus:border-foreground/40 text-xs px-1 py-1"
+        />
+        <div className="flex gap-1">
+          {TASK_COLORS.map((tc) => (
+            <button
+              key={tc.value}
+              onClick={() => setNewColor(tc.value)}
+              className={`h-4 w-4 rounded-full border ${colorClasses(tc.value, "swatch")} ${
+                newColor === tc.value ? "ring-2 ring-foreground/50 ring-offset-1 ring-offset-background" : "opacity-70"
+              }`}
+            />
+          ))}
+        </div>
+        <button
+          onClick={async () => {
+            if (!newName.trim()) return;
+            await onCreate(newName.trim(), newColor);
+            setNewName("");
+          }}
+          className="px-2 py-1 text-xs rounded-sm bg-foreground text-background hover:bg-foreground/90"
+        >
+          Ekle
+        </button>
+      </div>
+    </div>
   );
 };
 
@@ -497,15 +723,19 @@ const combineDateTime = (baseIso: string, hhmm: string): string | null => {
 
 const SessionRow = ({
   session,
+  categories,
   onUpdateNote,
   onUpdateDuration,
   onUpdateTimes,
+  onUpdateCategory,
   onDelete,
 }: {
   session: Session;
+  categories: PomodoroCategory[];
   onUpdateNote: (id: string, note: string) => void;
   onUpdateDuration: (id: string, totalSeconds: number) => void;
   onUpdateTimes: (id: string, startedAt: string, endedAt: string) => void;
+  onUpdateCategory: (id: string, category_id: string | null) => void;
   onDelete: (id: string) => void;
 }) => {
   const [note, setNote] = useState(session.note || "");
@@ -562,11 +792,49 @@ const SessionRow = ({
     setEditingTimes(false);
   };
 
+  const cat = categories.find((c) => c.id === session.category_id);
+
   return (
     <div className="group flex items-center gap-3 px-3 py-2 text-xs">
-      <span className={`text-[10px] uppercase tracking-wider w-16 ${session.kind === "break" ? "text-muted-foreground" : "text-foreground"}`}>
-        {session.kind === "work" ? "Çalışma" : "Mola"}
-      </span>
+      {session.kind === "break" ? (
+        <span className="text-[10px] uppercase tracking-wider w-20 text-muted-foreground">Mola</span>
+      ) : (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              className="w-20 text-left flex items-center gap-1 text-[10px] uppercase tracking-wider hover:text-foreground/80"
+              title="Kategori seç"
+            >
+              {cat ? (
+                <>
+                  <span className={`h-2 w-2 rounded-full ${colorClasses(cat.color as TaskColor, "dot")}`} />
+                  <span className="truncate">{cat.name}</span>
+                </>
+              ) : (
+                <span className="text-muted-foreground/60">— kategori</span>
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-44 p-1">
+            <button
+              onClick={() => onUpdateCategory(session.id, null)}
+              className="w-full text-left px-2 py-1 text-xs rounded-sm hover:bg-accent"
+            >
+              Kategorisiz
+            </button>
+            {categories.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => onUpdateCategory(session.id, c.id)}
+                className="w-full flex items-center gap-2 text-left px-2 py-1 text-xs rounded-sm hover:bg-accent"
+              >
+                <span className={`h-2.5 w-2.5 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                {c.name}
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
+      )}
       {editingDur ? (
         <input
           value={durVal}
@@ -595,6 +863,15 @@ const SessionRow = ({
             type="time"
             value={startVal}
             onChange={(e) => setStartVal(e.target.value)}
+            onBlur={commitTimes}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitTimes();
+              if (e.key === "Escape") {
+                setStartVal(isoToTimeInput(session.started_at));
+                setEndVal(isoToTimeInput(session.ended_at));
+                setEditingTimes(false);
+              }
+            }}
             className="bg-transparent border-b border-border/60 outline-none focus:border-foreground/40 text-xs tabular-nums w-[68px]"
           />
           <span className="text-muted-foreground">–</span>

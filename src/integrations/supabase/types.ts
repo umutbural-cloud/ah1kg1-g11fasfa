@@ -195,8 +195,39 @@ export type Database = {
           },
         ]
       }
+      pomodoro_categories: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pomodoro_sessions: {
         Row: {
+          category_id: string | null
           created_at: string
           duration_seconds: number
           ended_at: string
@@ -208,6 +239,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category_id?: string | null
           created_at?: string
           duration_seconds: number
           ended_at: string
@@ -219,6 +251,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category_id?: string | null
           created_at?: string
           duration_seconds?: number
           ended_at?: string
@@ -229,7 +262,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pomodoro_sessions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "pomodoro_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       projects: {
         Row: {

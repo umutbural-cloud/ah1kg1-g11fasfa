@@ -62,6 +62,7 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
   const [openTask, setOpenTask] = useState<Task | null>(null);
+  const [editDraft, setEditDraft] = useState<Task | null>(null);
 
   // Drag-to-create state (mouse + touch)
   const [dragging, setDragging] = useState<{ day: Date; startHour: number; currentHour: number } | null>(null);
@@ -216,6 +217,14 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
     setMovingTask({ id: t.id, day: parseISO(t.start_date), hour: sh, durationHrs: dur });
   };
 
+  // Helper: a click handler for task block — only opens dialog if drag did NOT happen
+  const handleTaskClick = (e: React.MouseEvent, t: Task) => {
+    e.stopPropagation();
+    if (moveRef.current?.moved) return;
+    setOpenTask(t);
+    setEditDraft(t);
+  };
+
   // Cancel any stuck drag if pointer leaves the page
   useEffect(() => {
     const cancel = () => { dragRef.current = null; setDragging(null); moveRef.current = null; setMovingTask(null); };
@@ -306,7 +315,7 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                   {dayTasks.map((t) => (
                     <div
                       key={t.id}
-                      onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
+                      onClick={(e) => handleTaskClick(e, t)}
                       className={`text-[10px] font-light truncate px-1.5 py-1 rounded-sm border-l-2 transition-colors ${colorClasses(t.color)}`}
                     >
                       {t.title}
@@ -359,7 +368,7 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                           <div
                             key={t.id}
                             onPointerDown={(e) => startMoveTask(e, t)}
-                            onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
+                            onClick={(e) => handleTaskClick(e, t)}
                             title={t.title}
                             className={`absolute inset-x-0 px-1.5 py-1 rounded-sm border border-dashed text-[10px] font-light cursor-grab active:cursor-grabbing z-0 ${colorClasses(t.color)}`}
                             style={{ top: 1, height: `${heightHrs * SLOT_HEIGHT - 2}px`, opacity: 0.55 }}
@@ -381,7 +390,7 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                           <div
                             key={t.id}
                             onPointerDown={(e) => startMoveTask(e, t)}
-                            onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
+                            onClick={(e) => handleTaskClick(e, t)}
                             className={`absolute left-0.5 px-1.5 py-1 rounded-sm border-l-2 text-[10px] font-light truncate cursor-grab active:cursor-grabbing z-10 ${colorClasses(t.color)}`}
                             style={{ top: 1, right: "28%", height: `${heightHrs * SLOT_HEIGHT - 2}px` }}
                           >
@@ -486,7 +495,7 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                     {dayTasks.slice(0, 3).map((t) => (
                       <div
                         key={t.id}
-                        onClick={(e) => { e.stopPropagation(); setOpenTask(t); }}
+                        onClick={(e) => handleTaskClick(e, t)}
                         className={`text-[10px] font-light truncate px-1 py-0.5 rounded-sm border-l-2 ${colorClasses(t.color)}`}
                       >
                         {t.title}
@@ -562,24 +571,27 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Task detail dialog */}
-      <Dialog open={!!openTask} onOpenChange={(o) => { if (!o) setOpenTask(null); }}>
+      {/* Task detail dialog — explicit Save */}
+      <Dialog
+        open={!!openTask}
+        onOpenChange={(o) => {
+          if (!o) { setOpenTask(null); setEditDraft(null); }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="sr-only">Görev detayı</DialogTitle>
+            <DialogTitle className="text-base font-light tracking-wide">
+              {editDraft?.kind === "timebox" ? "Time-box düzenle" : "Görev düzenle"}
+            </DialogTitle>
             <DialogDescription className="sr-only">Görevi düzenleyin veya silin</DialogDescription>
           </DialogHeader>
-          {openTask && (
+          {editDraft && openTask && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                {openTask.kind === "timebox" && <Timer className="h-4 w-4 text-muted-foreground" />}
+                {editDraft.kind === "timebox" && <Timer className="h-4 w-4 text-muted-foreground" />}
                 <Input
-                  value={openTask.title}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setOpenTask({ ...openTask, title: v });
-                    updateTask(openTask.id, { title: v });
-                  }}
+                  value={editDraft.title}
+                  onChange={(e) => setEditDraft({ ...editDraft, title: e.target.value })}
                   className="bg-transparent border-none p-0 h-auto text-lg font-light tracking-wide focus-visible:ring-0"
                 />
               </div>
@@ -588,13 +600,12 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                   <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Başlangıç</div>
                   <Input
                     type="date"
-                    value={openTask.start_date || ""}
+                    value={editDraft.start_date || ""}
                     onChange={(e) => {
                       const v = e.target.value;
-                      const updates: any = { start_date: v || null };
-                      if (v && openTask.end_date && v > openTask.end_date) updates.end_date = v;
-                      setOpenTask({ ...openTask, ...updates });
-                      updateTask(openTask.id, updates);
+                      const next: any = { ...editDraft, start_date: v || null };
+                      if (v && editDraft.end_date && v > editDraft.end_date) next.end_date = v;
+                      setEditDraft(next);
                     }}
                     className="bg-transparent h-8 text-xs"
                   />
@@ -603,14 +614,9 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                   <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Bitiş</div>
                   <Input
                     type="date"
-                    value={openTask.end_date || ""}
-                    min={openTask.start_date || undefined}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      if (v && openTask.start_date && v < openTask.start_date) return;
-                      setOpenTask({ ...openTask, end_date: v || null });
-                      updateTask(openTask.id, { end_date: v || null });
-                    }}
+                    value={editDraft.end_date || ""}
+                    min={editDraft.start_date || undefined}
+                    onChange={(e) => setEditDraft({ ...editDraft, end_date: e.target.value || null })}
                     className="bg-transparent h-8 text-xs"
                   />
                 </div>
@@ -620,12 +626,8 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                   <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Başlangıç saati</div>
                   <Input
                     type="time"
-                    value={openTask.start_time?.slice(0,5) || ""}
-                    onChange={(e) => {
-                      const v = e.target.value || null;
-                      setOpenTask({ ...openTask, start_time: v });
-                      updateTask(openTask.id, { start_time: v });
-                    }}
+                    value={editDraft.start_time?.slice(0,5) || ""}
+                    onChange={(e) => setEditDraft({ ...editDraft, start_time: e.target.value || null })}
                     className="bg-transparent h-8 text-xs"
                   />
                 </div>
@@ -633,13 +635,9 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
                   <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Bitiş saati</div>
                   <Input
                     type="time"
-                    value={openTask.end_time?.slice(0,5) || ""}
-                    min={openTask.start_time?.slice(0,5)}
-                    onChange={(e) => {
-                      const v = e.target.value || null;
-                      setOpenTask({ ...openTask, end_time: v });
-                      updateTask(openTask.id, { end_time: v });
-                    }}
+                    value={editDraft.end_time?.slice(0,5) || ""}
+                    min={editDraft.start_time?.slice(0,5)}
+                    onChange={(e) => setEditDraft({ ...editDraft, end_time: e.target.value || null })}
                     className="bg-transparent h-8 text-xs"
                   />
                 </div>
@@ -648,22 +646,47 @@ const WeeklyCalendarView = ({ projectId }: { projectId: string }) => {
               <div>
                 <div className="text-[10px] text-muted-foreground mb-1.5 tracking-wide">Renk</div>
                 <ColorPicker
-                  value={(openTask.color || "gray") as TaskColor}
-                  onChange={(c) => {
-                    setOpenTask({ ...openTask, color: c });
-                    updateTask(openTask.id, { color: c });
-                  }}
+                  value={(editDraft.color || "gray") as TaskColor}
+                  onChange={(c) => setEditDraft({ ...editDraft, color: c })}
                 />
               </div>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive w-full justify-start"
-                onClick={() => { deleteTask(openTask.id); setOpenTask(null); }}
-              >
-                <Trash2 className="h-3.5 w-3.5 mr-2" /> Sil
-              </Button>
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/40">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => { deleteTask(openTask.id); setOpenTask(null); setEditDraft(null); }}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Sil
+                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setOpenTask(null); setEditDraft(null); }}
+                  >
+                    İptal
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      updateTask(openTask.id, {
+                        title: editDraft.title,
+                        start_date: editDraft.start_date,
+                        end_date: editDraft.end_date,
+                        start_time: editDraft.start_time,
+                        end_time: editDraft.end_time,
+                        color: editDraft.color,
+                      });
+                      setOpenTask(null);
+                      setEditDraft(null);
+                    }}
+                  >
+                    Kaydet
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>
