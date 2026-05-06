@@ -601,6 +601,22 @@ const Pomodoro = () => {
           </main>
         </div>
       </div>
+
+      {/* Categories management dialog */}
+      <Dialog open={showCategoriesDialog} onOpenChange={setShowCategoriesDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-light tracking-wide">Kategoriler</DialogTitle>
+            <DialogDescription className="text-xs">Adı ve rengi düzenle, ekle veya sil</DialogDescription>
+          </DialogHeader>
+          <CategoriesEditor
+            categories={categories}
+            onCreate={createCategory}
+            onUpdate={updateCategory}
+            onRemove={removeCategory}
+          />
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 };
