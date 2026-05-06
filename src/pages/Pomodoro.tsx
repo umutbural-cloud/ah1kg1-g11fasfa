@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Play, Pause, Check, RotateCcw, SkipForward, Clock, Trash2, Bell, BellOff, Moon, Sun, Plus, X } from "lucide-react";
+import { Play, Pause, Check, RotateCcw, SkipForward, Clock, Trash2, Bell, BellOff, Moon, Sun, Plus, X, Filter, ArrowUpDown, Tags, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { format, parseISO, startOfDay } from "date-fns";
+import { format, parseISO, startOfDay, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,9 +9,13 @@ import { usePomodoro, formatMMSS } from "@/hooks/usePomodoro";
 import { useTheme } from "@/hooks/useTheme";
 import { usePageState } from "@/hooks/usePageState";
 import { useProjects } from "@/hooks/useProjects";
+import { usePomodoroCategories, PomodoroCategory } from "@/hooks/usePomodoroCategories";
+import { TASK_COLORS, colorClasses, TaskColor } from "@/lib/taskColors";
 import PomodoroTaskBoard from "@/components/PomodoroTaskBoard";
 import AppSidebar from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import type { ViewKey } from "@/hooks/useProjectViews";
 import { toast } from "sonner";
 
@@ -22,7 +26,9 @@ type Session = {
   duration_seconds: number;
   kind: "work" | "break";
   note: string | null;
+  category_id: string | null;
 };
+
 
 const Pomodoro = () => {
   const navigate = useNavigate();
