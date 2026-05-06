@@ -582,9 +582,11 @@ const Pomodoro = () => {
                               <SessionRow
                                 key={s.id}
                                 session={s}
+                                categories={categories}
                                 onUpdateNote={updateNote}
                                 onUpdateDuration={updateDuration}
                                 onUpdateTimes={updateTimes}
+                                onUpdateCategory={updateSessionCategory}
                                 onDelete={deleteSession}
                               />
                             ))}
