@@ -621,6 +621,79 @@ const Pomodoro = () => {
   );
 };
 
+const CategoriesEditor = ({
+  categories,
+  onCreate,
+  onUpdate,
+  onRemove,
+}: {
+  categories: PomodoroCategory[];
+  onCreate: (name: string, color?: string) => Promise<void> | void;
+  onUpdate: (id: string, patch: Partial<{ name: string; color: string }>) => Promise<void> | void;
+  onRemove: (id: string) => Promise<void> | void;
+}) => {
+  const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState<string>("gray");
+  return (
+    <div className="space-y-3">
+      <div className="space-y-2 max-h-72 overflow-auto">
+        {categories.map((c) => (
+          <div key={c.id} className="flex items-center gap-2">
+            <input
+              defaultValue={c.name}
+              onBlur={(e) => e.target.value !== c.name && onUpdate(c.id, { name: e.target.value })}
+              className="flex-1 bg-transparent border-b border-border/60 outline-none focus:border-foreground/40 text-xs px-1 py-1"
+            />
+            <div className="flex gap-1">
+              {TASK_COLORS.map((tc) => (
+                <button
+                  key={tc.value}
+                  onClick={() => onUpdate(c.id, { color: tc.value })}
+                  className={`h-4 w-4 rounded-full border ${colorClasses(tc.value, "swatch")} ${
+                    c.color === tc.value ? "ring-2 ring-foreground/50 ring-offset-1 ring-offset-background" : "opacity-70"
+                  }`}
+                />
+              ))}
+            </div>
+            <button onClick={() => onRemove(c.id)} className="text-muted-foreground hover:text-destructive">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-border/60 pt-3 flex items-center gap-2">
+        <input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="Yeni kategori"
+          className="flex-1 bg-transparent border-b border-border/60 outline-none focus:border-foreground/40 text-xs px-1 py-1"
+        />
+        <div className="flex gap-1">
+          {TASK_COLORS.map((tc) => (
+            <button
+              key={tc.value}
+              onClick={() => setNewColor(tc.value)}
+              className={`h-4 w-4 rounded-full border ${colorClasses(tc.value, "swatch")} ${
+                newColor === tc.value ? "ring-2 ring-foreground/50 ring-offset-1 ring-offset-background" : "opacity-70"
+              }`}
+            />
+          ))}
+        </div>
+        <button
+          onClick={async () => {
+            if (!newName.trim()) return;
+            await onCreate(newName.trim(), newColor);
+            setNewName("");
+          }}
+          className="px-2 py-1 text-xs rounded-sm bg-foreground text-background hover:bg-foreground/90"
+        >
+          Ekle
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const formatDuration = (sec: number) => {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
