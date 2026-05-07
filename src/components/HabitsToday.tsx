@@ -16,9 +16,11 @@ const HabitsToday = () => {
 
   const last7 = useMemo(() => Array.from({ length: 7 }, (_, i) => subDays(todayDate, 6 - i)), [today]);
 
-  const visible = habits.filter((h) =>
-    isHabitScheduledOn(h, todayDate) && (filter === "all" || h.time_of_day === filter || (filter !== "all" && h.time_of_day === "any"))
-  );
+  const visible = habits.filter((h) => {
+    if (!isHabitScheduledOn(h, todayDate)) return false;
+    if (filter === "all") return true;
+    return h.time_of_day === filter || h.time_of_day === "any";
+  });
 
   return (
     <div className="space-y-4">
