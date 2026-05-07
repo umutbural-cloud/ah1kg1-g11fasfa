@@ -51,26 +51,107 @@ type Props = {
   onSelectHabits: () => void;
 };
 
-const EmojiPicker = ({ current, onSelect }: { current: string; onSelect: (emoji: string) => void }) => (
-  <Popover>
-    <PopoverTrigger asChild>
-      <button onClick={(e) => e.stopPropagation()} className="text-sm hover:scale-110 transition-transform shrink-0">{current}</button>
-    </PopoverTrigger>
-    <PopoverContent className="w-48 p-2" align="start" onClick={(e) => e.stopPropagation()}>
-      <div className="grid grid-cols-5 gap-1">
-        {EMOJIS.map((e) => (
-          <button
-            key={e}
-            onClick={() => onSelect(e)}
-            className="text-base p-1 hover:bg-accent rounded-sm transition-colors"
-          >
-            {e}
-          </button>
-        ))}
-      </div>
-    </PopoverContent>
-  </Popover>
-);
+const ProjectIconPicker = ({
+  emoji,
+  icon,
+  iconColor,
+  onChange,
+}: {
+  emoji: string;
+  icon: string | null;
+  iconColor: string | null;
+  onChange: (updates: { emoji?: string; icon?: string | null; icon_color?: string | null }) => void;
+}) => {
+  const [search, setSearch] = useState("");
+  const Current = icon ? getHabitIcon(icon) : null;
+  const tint = iconColor ? colorHex(iconColor) : undefined;
+  const ql = search.trim().toLowerCase();
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          onClick={(e) => e.stopPropagation()}
+          className="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-sm hover:bg-accent/40 transition-colors"
+          title="İkon değiştir"
+        >
+          {Current ? (
+            <Current className="h-4 w-4" strokeWidth={1.5} style={{ color: tint }} />
+          ) : (
+            <span className="text-sm">{emoji}</span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-2 max-h-[60vh] overflow-y-auto" align="start" onClick={(e) => e.stopPropagation()}>
+        <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70 font-light mb-1 px-1">Emoji</div>
+        <div className="grid grid-cols-10 gap-0.5 mb-3">
+          {EMOJIS.map((e) => (
+            <button
+              key={e}
+              onClick={() => onChange({ emoji: e, icon: null, icon_color: null })}
+              className={`text-base p-1 hover:bg-accent rounded-sm transition-colors ${!icon && emoji === e ? "bg-accent" : ""}`}
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+        <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70 font-light mb-1 px-1">Renk</div>
+        <div className="flex flex-wrap gap-1 mb-2 px-1">
+          {CATEGORY_COLORS.map((c) => {
+            const active = c.key === iconColor;
+            return (
+              <button
+                key={c.key}
+                onClick={() => onChange({ icon_color: c.key })}
+                title={c.label}
+                className="w-5 h-5 rounded-full flex items-center justify-center border border-border/40 transition-transform hover:scale-110"
+                style={{ background: c.hex }}
+              >
+                {active && <Check className="h-3 w-3 text-white" strokeWidth={2.5} />}
+              </button>
+            );
+          })}
+        </div>
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="İkon ara..."
+          className="h-8 text-xs mb-2"
+        />
+        {HABIT_ICON_GROUPS.map((g) => {
+          const filtered = ql
+            ? g.icons.filter((i) => i.label.toLowerCase().includes(ql) || i.name.includes(ql))
+            : g.icons;
+          if (filtered.length === 0) return null;
+          return (
+            <div key={g.label} className="mb-2">
+              <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70 font-light mb-1 px-1">{g.label}</div>
+              <div className="grid grid-cols-7 gap-0.5">
+                {filtered.map((i) => {
+                  const Icon = i.icon;
+                  const active = i.name === icon;
+                  return (
+                    <button
+                      key={i.name}
+                      onClick={() => onChange({ icon: i.name, icon_color: iconColor || "stone" })}
+                      title={i.label}
+                      className={`flex items-center justify-center w-8 h-8 rounded-sm transition-colors ${
+                        active ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                      }`}
+                      style={active && tint ? { color: tint } : undefined}
+                    >
+                      <Icon className="h-4 w-4" strokeWidth={1.5} />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const ProjectItem = ({
   project,
