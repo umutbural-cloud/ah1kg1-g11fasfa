@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { FileText, Table as TableIcon, GanttChart, Kanban, Calendar, Plus, Undo, Redo, Moon, Sun, LayoutGrid } from "lucide-react";
-import AppSidebar from "@/components/AppSidebar";
+import AppSidebar, { ProjectIconPicker } from "@/components/AppSidebar";
 import NotesView from "@/components/NotesView";
 import TableView from "@/components/TableView";
 import GanttView from "@/components/GanttView";
@@ -120,8 +120,12 @@ const Index = () => {
             <div className="flex items-center gap-3 min-w-0">
               <SidebarTrigger className="text-muted-foreground" />
               {section === "project" && selectedProject && (
-                <h1 className="text-base tracking-wide truncate font-light">
-                  <span className="mr-2">{selectedProject.emoji}</span>
+                <h1 className="text-base tracking-wide truncate font-light flex items-center gap-2">
+                  <ProjectIconPicker
+                    icon={selectedProject.icon}
+                    iconColor={selectedProject.icon_color}
+                    onChange={(updates) => updateProject(selectedProject.id, updates)}
+                  />
                   {selectedProject.name}
                 </h1>
               )}
