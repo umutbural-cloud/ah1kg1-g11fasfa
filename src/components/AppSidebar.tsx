@@ -25,7 +25,7 @@ import { Project } from "@/hooks/useProjects";
 import type { ViewKey } from "@/hooks/useProjectViews";
 import PomodoroSidebarWidget from "./PomodoroSidebarWidget";
 
-const EMOJIS = ["📁", "🎯", "💼", "🚀", "📝", "🎨", "💡", "🔧", "📊", "🌟", "🎵", "📚", "🏠", "⚡", "🌱", "🔥", "❤️", "🧩", "🎮", "🍀"];
+
 
 const VIEW_META: Record<ViewKey, { label: string; jp: string; icon: any }> = {
   notes: { label: "Notlar", jp: "ノート", icon: FileText },
@@ -54,18 +54,16 @@ type Props = {
 };
 
 const ProjectIconPicker = ({
-  emoji,
   icon,
   iconColor,
   onChange,
 }: {
-  emoji: string;
   icon: string | null;
   iconColor: string | null;
-  onChange: (updates: { emoji?: string; icon?: string | null; icon_color?: string | null }) => void;
+  onChange: (updates: { icon?: string | null; icon_color?: string | null }) => void;
 }) => {
   const [search, setSearch] = useState("");
-  const Current = icon ? getHabitIcon(icon) : null;
+  const Current = getHabitIcon(icon || "folder");
   const tint = iconColor ? colorHex(iconColor) : undefined;
   const ql = search.trim().toLowerCase();
 
@@ -77,26 +75,10 @@ const ProjectIconPicker = ({
           className="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-sm hover:bg-accent/40 transition-colors"
           title="İkon değiştir"
         >
-          {Current ? (
-            <Current className="h-4 w-4" strokeWidth={1.5} style={{ color: tint }} />
-          ) : (
-            <span className="text-sm">{emoji}</span>
-          )}
+          <Current className="h-4 w-4" strokeWidth={1.5} style={{ color: tint }} />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-72 p-2 max-h-[60vh] overflow-y-auto" align="start" onClick={(e) => e.stopPropagation()}>
-        <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70 font-light mb-1 px-1">Emoji</div>
-        <div className="grid grid-cols-10 gap-0.5 mb-3">
-          {EMOJIS.map((e) => (
-            <button
-              key={e}
-              onClick={() => onChange({ emoji: e, icon: null, icon_color: null })}
-              className={`text-base p-1 hover:bg-accent rounded-sm transition-colors ${!icon && emoji === e ? "bg-accent" : ""}`}
-            >
-              {e}
-            </button>
-          ))}
-        </div>
         <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70 font-light mb-1 px-1">Renk</div>
         <div className="flex flex-wrap gap-1 mb-2 px-1">
           {CATEGORY_COLORS.map((c) => {
