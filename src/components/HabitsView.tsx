@@ -1,39 +1,51 @@
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import HabitsToday from "./HabitsToday";
 import HabitsBoard from "./HabitsBoard";
 import HabitsStats from "./HabitsStats";
+import { ChevronDown, ChevronRight } from "lucide-react";
+
+const Section = ({
+  jp,
+  title,
+  defaultOpen = true,
+  children,
+}: {
+  jp: string;
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="space-y-4">
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className="group flex items-center gap-2 w-full text-left border-b border-border/60 pb-2"
+      >
+        {open ? (
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
+        <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">{jp}</span>
+        <span className="text-sm font-light tracking-wide">{title}</span>
+      </button>
+      {open && <div>{children}</div>}
+    </section>
+  );
+};
 
 const HabitsView = () => {
-  const [tab, setTab] = useState("today");
-
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-10">
       <div>
         <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">習慣</div>
         <h1 className="text-2xl font-light tracking-wide">Alışkanlıklar</h1>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="bg-transparent p-0 h-auto gap-1 border-b border-border/60 rounded-none w-full justify-start">
-          <TabsTrigger
-            value="today"
-            className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground data-[state=active]:border-b data-[state=active]:border-foreground rounded-none text-xs tracking-wide font-light px-3 py-2 -mb-px"
-          >Bugün</TabsTrigger>
-          <TabsTrigger
-            value="master"
-            className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground data-[state=active]:border-b data-[state=active]:border-foreground rounded-none text-xs tracking-wide font-light px-3 py-2 -mb-px"
-          >Master</TabsTrigger>
-          <TabsTrigger
-            value="stats"
-            className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground data-[state=active]:border-b data-[state=active]:border-foreground rounded-none text-xs tracking-wide font-light px-3 py-2 -mb-px"
-          >İstatistik</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="today" className="mt-6"><HabitsToday /></TabsContent>
-        <TabsContent value="master" className="mt-6"><HabitsBoard /></TabsContent>
-        <TabsContent value="stats" className="mt-6"><HabitsStats /></TabsContent>
-      </Tabs>
+      <Section jp="今日" title="Bugün" defaultOpen><HabitsToday /></Section>
+      <Section jp="全て" title="Tümü" defaultOpen><HabitsBoard /></Section>
+      <Section jp="統計" title="İstatistik" defaultOpen={false}><HabitsStats /></Section>
     </div>
   );
 };
