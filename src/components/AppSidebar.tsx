@@ -34,7 +34,7 @@ const VIEW_META: Record<ViewKey, { label: string; jp: string; icon: any }> = {
 };
 const ALL_VIEW_KEYS: ViewKey[] = ["notes", "table", "gantt", "kanban", "calendar"];
 
-export type Section = "project" | "backlog" | "trash" | "journal";
+export type Section = "project" | "backlog" | "trash" | "journal" | "habits";
 
 type Props = {
   projects: Project[];
@@ -48,6 +48,7 @@ type Props = {
   onSelectBacklog: () => void;
   onSelectTrash: () => void;
   onSelectJournal: () => void;
+  onSelectHabits: () => void;
 };
 
 const EmojiPicker = ({ current, onSelect }: { current: string; onSelect: (emoji: string) => void }) => (
@@ -278,7 +279,7 @@ const ProjectItem = ({
   );
 };
 
-const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onCreate, onDelete, onUpdateProject, onSelectBacklog, onSelectTrash, onSelectJournal }: Props) => {
+const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onCreate, onDelete, onUpdateProject, onSelectBacklog, onSelectTrash, onSelectJournal, onSelectHabits }: Props) => {
   const { signOut, user } = useAuth();
   const [newName, setNewName] = useState("");
   const [showInput, setShowInput] = useState(false);
@@ -331,6 +332,15 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                 >
                   <FileText className="h-3.5 w-3.5" />
                   <span className="tracking-wide">Günlük</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={onSelectHabits}
+                  className={`text-sm font-light ${section === "habits" ? "bg-accent text-accent-foreground" : ""}`}
+                >
+                  <Repeat className="h-3.5 w-3.5" />
+                  <span className="tracking-wide">Alışkanlıklar</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
