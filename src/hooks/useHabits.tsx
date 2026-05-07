@@ -10,6 +10,7 @@ export type Habit = {
   id: string;
   user_id: string;
   project_id: string | null;
+  category_id: string | null;
   title: string;
   description: string | null;
   icon: string;
@@ -75,6 +76,7 @@ export const useHabits = (projectId?: string | null) => {
     const payload: any = {
       user_id: user.id,
       project_id: input.project_id ?? projectId ?? null,
+      category_id: input.category_id ?? null,
       title: input.title.trim(),
       description: input.description ?? null,
       icon: input.icon ?? "circle",
