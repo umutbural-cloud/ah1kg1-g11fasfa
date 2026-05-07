@@ -222,7 +222,12 @@ const ProjectItem = ({
           >
             <ChevronRight className={`h-3 w-3 transition-transform ${expanded ? "rotate-90" : ""}`} />
           </button>
-          <EmojiPicker current={project.emoji} onSelect={(emoji) => onUpdateProject(project.id, { emoji })} />
+          <ProjectIconPicker
+            emoji={project.emoji}
+            icon={project.icon}
+            iconColor={project.icon_color}
+            onChange={(updates) => onUpdateProject(project.id, updates)}
+          />
           {renaming ? (
             <Input
               value={renameValue}
