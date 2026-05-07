@@ -44,7 +44,6 @@ export const HABIT_ICON_GROUPS: HabitIconGroup[] = [
       { name: "stethoscope", label: "Sağlık", icon: Stethoscope },
       { name: "bath", label: "Banyo", icon: Bath },
       { name: "shower", label: "Duş", icon: ShowerHead },
-      { name: "soap", label: "Sabun", icon: Soap },
       { name: "trophy", label: "Kupa", icon: Trophy },
       { name: "medal", label: "Madalya", icon: Medal },
       { name: "award", label: "Ödül", icon: Award },
