@@ -326,6 +326,8 @@ export type Database = {
           deleted_at: string | null
           emoji: string
           enabled_views: Json
+          icon: string | null
+          icon_color: string | null
           id: string
           is_default: boolean
           name: string
@@ -337,6 +339,8 @@ export type Database = {
           deleted_at?: string | null
           emoji?: string
           enabled_views?: Json
+          icon?: string | null
+          icon_color?: string | null
           id?: string
           is_default?: boolean
           name: string
@@ -348,6 +352,8 @@ export type Database = {
           deleted_at?: string | null
           emoji?: string
           enabled_views?: Json
+          icon?: string | null
+          icon_color?: string | null
           id?: string
           is_default?: boolean
           name?: string
