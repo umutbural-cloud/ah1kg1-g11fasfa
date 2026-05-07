@@ -196,9 +196,6 @@ const TableView = ({ projectId }: { projectId: string }) => {
         </div>
       )}
 
-      {/* Alışkanlıklar — sadece varsayılan projede */}
-      {showHabits && <HabitsSection projectId={projectId} />}
-
       {/* Tamamlananlar — varsayılan: son 3, tıklayınca tümü */}
       {doneTasks.length > 0 && (() => {
         const visibleDone = showDone ? doneTasks : doneTasks.slice(0, 3);

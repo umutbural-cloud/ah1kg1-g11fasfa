@@ -274,7 +274,7 @@ const Index = () => {
               ) : (
                 <>
                   {view === "notes" && <NotesView key={selectedProject.id} projectId={selectedProject.id} />}
-                  {view === "table" && <TableView projectId={selectedProject.id} showHabits={!!selectedProject.is_default} />}
+                  {view === "table" && <TableView projectId={selectedProject.id} />}
                   {view === "gantt" && <GanttView projectId={selectedProject.id} />}
                   {view === "kanban" && <KanbanView projectId={selectedProject.id} />}
                   {view === "calendar" && <WeeklyCalendarView projectId={selectedProject.id} />}
