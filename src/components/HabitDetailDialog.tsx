@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import HabitIconPicker from "./HabitIconPicker";
 import type { Habit, FrequencyType } from "@/hooks/useHabits";
 import { TIME_OF_DAY_OPTIONS, type TimeOfDay } from "@/lib/timeOfDay";
+import { useHabitCategories, colorHex } from "@/hooks/useHabitCategories";
 
 const WEEK_DAYS = [
   { i: 1, l: "Pzt" }, { i: 2, l: "Sal" }, { i: 3, l: "Çar" }, { i: 4, l: "Per" },
@@ -24,12 +25,14 @@ type Props = {
 
 const HabitDetailDialog = ({ open, habit, onClose, onSave, onDelete }: Props) => {
   const [draft, setDraft] = useState<Partial<Habit>>({});
+  const { categories } = useHabitCategories();
 
   useEffect(() => {
     if (habit) setDraft({
       title: habit.title,
       description: habit.description || "",
       icon: habit.icon,
+      category_id: habit.category_id,
       frequency_type: habit.frequency_type,
       frequency_days: habit.frequency_days || [],
       time_of_day: habit.time_of_day,
