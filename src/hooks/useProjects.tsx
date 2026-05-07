@@ -9,6 +9,8 @@ export type Project = {
   id: string;
   name: string;
   emoji: string;
+  icon: string | null;
+  icon_color: string | null;
   parent_id: string | null;
   user_id: string;
   created_at: string;
@@ -67,7 +69,7 @@ export const useProjects = () => {
     return data as Project | null;
   };
 
-  const updateProject = async (id: string, updates: Partial<Pick<Project, "name" | "emoji" | "enabled_views">>) => {
+  const updateProject = async (id: string, updates: Partial<Pick<Project, "name" | "emoji" | "icon" | "icon_color" | "enabled_views">>) => {
     const before = projects.find((p) => p.id === id);
     const { data, error } = await supabase.from("projects").update(updates as any).eq("id", id).select().single();
     if (!error && data) {
