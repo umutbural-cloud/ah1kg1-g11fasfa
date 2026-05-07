@@ -1,49 +1,72 @@
+## Alışkanlıklar Modülü
 
-# 計画 — Keikaku Planlama Arayüzü
+Tabloların altındaki alışkanlıklar bölümünü kaldırıp, sidebar'da "Günlük" altında yer alan bağımsız bir "Alışkanlıklar" (習慣) modülü oluşturacağız. Modül kendi içinde 4 alt görünüm barındıracak: **Bugün**, **Master**, **İstatistik** ve alışkanlığa tıklayınca açılan **Detay** dialog'u.
 
-## Tasarım Felsefesi
-Japon minimalizmi (Washi kağıdı tarzı): Açık, sıcak tonlar (`#f7f5f0` arka plan), ince çizgiler, geniş boşluklar, hafif tipografi. Stone renk paleti. Tracking-wide başlıklar.
+### 1. Veri Modeli (Migration)
 
-## Kimlik Doğrulama
-- E-posta + şifre ile giriş/kayıt sayfası (Lovable Cloud Auth)
-- Profil tablosu yok, sadece `auth.users` kullanılacak
-- Korumalı rotalar — giriş yapmadan erişim yok
+`habits` tablosunu yeni alanlarla genişleteceğiz (mevcut veriler korunur):
 
-## Veritabanı (Supabase)
-**Projeler tablosu** (`projects`): id, user_id, name, created_at  
-**Görevler tablosu** (`tasks`): id, project_id, user_id, title, description, status (todo/in_progress/done), start_date, end_date, created_at  
-**Notlar tablosu** (`notes`): id, project_id, user_id, content, created_at, updated_at  
+- `frequency_type` text — `daily` | `weekdays` | `weekly` | `monthly` (default: `daily`)
+- `frequency_days` int[] — haftanın günleri (0=Paz..6=Cmt) ya da ayın günleri
+- `time_of_day` text — `morning` | `afternoon` | `evening` | `night` | `any` (default: `any`)
+- `icon` text — Lucide ikon adı (default: `circle`)
+- `description` text — opsiyonel açıklama
+- `project_id` nullable yapılacak (artık projeye bağlı değil; mevcut kayıtlar varsayılan projede kalır ama UI proje bağı göstermeyecek)
 
-Tüm tablolarda RLS: kullanıcı sadece kendi verilerini görebilir.
+Günün dilimi sınırları kodda sabit:
+- Sabah: 04:00–12:00
+- Öğleden Sonra: 12:01–18:00
+- Akşam: 18:01–22:00
+- Gece: 22:01–04:00
 
-## 4 Ana Görünüm (Sekmeler)
+### 2. Sidebar Entegrasyonu
 
-### 1. Notlar (ノート)
-- Minimal metin editörü — markdown destekli basit not alma
-- Proje bazlı notlar listesi
-- Oluştur, düzenle, sil
+`AppSidebar.tsx` ve `Section` tipi: `"habits"` eklenecek. "Günlük" satırının hemen altına **Alışkanlıklar** (習慣) menü ögesi gelecek. `usePageState` ve `Index.tsx` route'lanacak.
 
-### 2. Tablo (表)
-- Görevlerin tablo görünümü: Başlık, Durum, Başlangıç, Bitiş
-- Satır içi düzenleme
-- Durum filtresi (Yapılacak / Devam ediyor / Tamamlandı)
+### 3. Yeni Sayfa: `HabitsView` (`src/components/HabitsView.tsx`)
 
-### 3. Gantt (ガント)
-- Basit yatay çubuk grafik — görevlerin tarih aralıklarını gösterir
-- Haftalık/aylık zaman çizelgesi
-- Sade, çizgisel tasarım
+Üst kısımda 3 sekme: **Bugün** · **Master** · **İstatistik**.
 
-### 4. Takvim (暦)
-- Aylık takvim görünümü
-- Görevlerin başlangıç/bitiş tarihlerini gösterir
-- Gün üzerine tıklayarak görev ekleme
+#### a) Bugün sekmesi (varsayılan)
+- Günün dilimi filtreleri: **Tümü · Sabah · Öğleden Sonra · Akşam · Gece** (şu anki dilim varsayılan seçili).
+- Liste sade tablo: ikon · isim · son 7 günün durumu (boş daire ○ / dolu daire ●, en sağda bugün) · bugün için tıklama checkbox'ı.
+- Yalnızca o günün sıklığına uygun alışkanlıklar gösterilir (haftanın günü/ay günü filtresi).
+- Satıra tıklama → Detay dialog'u.
 
-## Sayfa Yapısı
-- **Sol kenar çubuğu**: Proje listesi + yeni proje oluşturma
-- **Üst kısım**: Proje adı + 4 sekme (Notlar, Tablo, Gantt, Takvim)
-- **Ana alan**: Seçili sekmenin içeriği
+#### b) Master sekmesi (planlama)
+- Heybe tarzı tablo: İkon · Ad · Sıklık · Günün Dilimi · işlemler (sil).
+- "+ Yeni alışkanlık" satırı; inline düzenleme (ad, sıklık dropdown, dilim dropdown, ikon picker).
 
-## Genel UX
-- Geçişlerde yumuşak animasyonlar
-- Boş durum mesajları Japonca ve Türkçe karışık
-- Sıfır gereksiz renk — sadece stone paleti ve ince vurgular
+#### c) İstatistik sekmesi
+- Üstte zaman aralığı seçici: **Hafta · Ay · Yıl**.
+- Her alışkanlık için: tamamlanma oranı %, en uzun seri, toplam tamamlama, basit heatmap/bar.
+- `habit_completions`'tan client-side aggregate.
+
+### 4. Detay/Düzenleme Dialog'u
+
+Hem Bugün hem Master sekmesinden açılır. Düzenlenebilir alanlar: ad, ikon, sıklık (tip + günler), günün dilimi, açıklama. "Kaydet" / "İptal" butonları (auto-save değil).
+
+### 5. İkon Arşivi (`src/lib/habitIcons.ts`)
+
+Lucide'den ~60 anlamlı ikondan oluşan, tematik gruplanmış (Sağlık, Spor, Çalışma, Kişisel, Yemek, Uyku, Sosyal, Yaratıcılık, Evrensel) zengin liste. Picker grid + grup başlıkları + arama. Tüm ikonlar `text-muted-foreground` ile gri tonlamalı render edilecek.
+
+### 6. Mevcut Yerden Kaldırma
+
+`TableView.tsx` içindeki `HabitsSection` render'ı kaldırılacak. `HabitsSection.tsx` dosyası silinecek (yerini `HabitsView` alıyor). `Index.tsx`'te `showHabits` prop'u kalkacak.
+
+### 7. Hook
+
+`useHabits.tsx` projeye bağlılıktan ayrılacak: `useHabits()` artık kullanıcının tüm alışkanlıklarını çeker. Yeni alanlar (`frequency_type`, `frequency_days`, `time_of_day`, `icon`, `description`) CRUD'a dahil edilecek. `getCompletionsRange(start, end)` yardımcısı eklenecek (son 7 gün ve istatistik için).
+
+### Teknik Detaylar
+
+- Günün dilimini hesaplama: `Date().getHours()` ile `morning/afternoon/evening/night` map'i.
+- Sıklık match'i (bir alışkanlık X gününde gösterilir mi?): `daily` → her zaman; `weekdays` → `frequency_days` içinde gün varsa; `weekly` → haftanın o günü `frequency_days`'te; `monthly` → ayın günü `frequency_days`'te.
+- Son 7 gün serisi: tek sorguda `habit_completions` `completion_date >= today-6` çekilip `Map<habit_id, Set<date>>` ile render edilecek.
+
+### Etkilenen / Yeni Dosyalar
+
+- **Migration**: `habits` tablosuna alanlar, `project_id` nullable.
+- **Yeni**: `src/components/HabitsView.tsx`, `src/components/HabitsBoard.tsx` (Master tablosu), `src/components/HabitsToday.tsx`, `src/components/HabitsStats.tsx`, `src/components/HabitDetailDialog.tsx`, `src/components/HabitIconPicker.tsx`, `src/lib/habitIcons.ts`, `src/lib/timeOfDay.ts`.
+- **Düzenlenecek**: `src/hooks/useHabits.tsx`, `src/hooks/usePageState.tsx`, `src/components/AppSidebar.tsx`, `src/pages/Index.tsx`, `src/components/TableView.tsx`.
+- **Silinecek**: `src/components/HabitsSection.tsx`.

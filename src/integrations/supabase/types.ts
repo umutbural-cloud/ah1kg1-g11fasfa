@@ -95,30 +95,45 @@ export type Database = {
         Row: {
           created_at: string
           deleted_at: string | null
+          description: string | null
+          frequency_days: number[]
+          frequency_type: string
           hidden: boolean
+          icon: string
           id: string
           position: number
-          project_id: string
+          project_id: string | null
+          time_of_day: string
           title: string
           user_id: string
         }
         Insert: {
           created_at?: string
           deleted_at?: string | null
+          description?: string | null
+          frequency_days?: number[]
+          frequency_type?: string
           hidden?: boolean
+          icon?: string
           id?: string
           position?: number
-          project_id: string
+          project_id?: string | null
+          time_of_day?: string
           title: string
           user_id: string
         }
         Update: {
           created_at?: string
           deleted_at?: string | null
+          description?: string | null
+          frequency_days?: number[]
+          frequency_type?: string
           hidden?: boolean
+          icon?: string
           id?: string
           position?: number
-          project_id?: string
+          project_id?: string | null
+          time_of_day?: string
           title?: string
           user_id?: string
         }
