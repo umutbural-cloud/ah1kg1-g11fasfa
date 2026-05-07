@@ -121,7 +121,22 @@ export const useHabits = (projectId?: string | null) => {
     }
   };
 
-  return { habits, loading, completionsMap, today, createHabit, updateHabit, deleteHabit, toggleCompletion };
+  const reorderHabits = async (orderedIds: string[]) => {
+    const newMap = new Map(orderedIds.map((id, i) => [id, i + 1]));
+    setHabits((prev) => [...prev].sort((a, b) => (newMap.get(a.id) ?? 0) - (newMap.get(b.id) ?? 0)).map((h) => ({ ...h, position: newMap.get(h.id) ?? h.position })));
+    await Promise.all(orderedIds.map((id, i) => supabase.from("habits").update({ position: i + 1 }).eq("id", id)));
+  };
+
+  const moveHabit = (id: string, dir: -1 | 1) => {
+    const ids = [...habits].sort((a, b) => a.position - b.position).map((h) => h.id);
+    const idx = ids.indexOf(id);
+    const j = idx + dir;
+    if (idx < 0 || j < 0 || j >= ids.length) return;
+    [ids[idx], ids[j]] = [ids[j], ids[idx]];
+    reorderHabits(ids);
+  };
+
+  return { habits, loading, completionsMap, today, createHabit, updateHabit, deleteHabit, toggleCompletion, reorderHabits, moveHabit };
 };
 
 // Returns true if the habit is scheduled for the given date
