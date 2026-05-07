@@ -6,7 +6,7 @@ import { useHabitCategories, colorHex } from "@/hooks/useHabitCategories";
 import { getHabitIcon } from "@/lib/habitIcons";
 import { TIME_OF_DAY_OPTIONS, currentTimeOfDay, type TimeOfDay } from "@/lib/timeOfDay";
 import HabitDetailDialog from "./HabitDetailDialog";
-import { Circle, CircleDot, ChevronUp, ChevronDown } from "lucide-react";
+import { Circle, CheckCircle2, ChevronUp, ChevronDown } from "lucide-react";
 
 const HabitsToday = () => {
   const { habits, completionsMap, today, toggleCompletion, updateHabit, deleteHabit } = useHabits();
@@ -100,7 +100,7 @@ const HabitsToday = () => {
                   className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
                   title={completedToday ? "İşareti kaldır" : "Tamamlandı"}
                 >
-                  {completedToday ? <CircleDot className="h-5 w-5 text-foreground" strokeWidth={1.5} /> : <Circle className="h-5 w-5" strokeWidth={1.5} />}
+                  {completedToday ? <CheckCircle2 className="h-5 w-5 text-foreground" strokeWidth={1.5} /> : <Circle className="h-5 w-5" strokeWidth={1.5} />}
                 </button>
                 <button
                   onClick={() => setOpenHabit(h)}
@@ -126,7 +126,7 @@ const HabitsToday = () => {
                           {format(d, "EEEEEE", { locale: tr })}
                         </span>
                         {done
-                          ? <CircleDot className="h-3 w-3 text-foreground" strokeWidth={1.5} />
+                          ? <CheckCircle2 className="h-3 w-3 text-foreground" strokeWidth={1.5} />
                           : <Circle className="h-3 w-3 text-muted-foreground/50" strokeWidth={1.5} />
                         }
                       </div>
