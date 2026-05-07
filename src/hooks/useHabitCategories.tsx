@@ -46,8 +46,13 @@ export const useHabitCategories = () => {
     let rows = (data as any as HabitCategory[]) || [];
     if (rows.length === 0) {
       const payload = DEFAULTS.map((d, i) => ({ user_id: user.id, name: d.name, color: d.color, position: i }));
-      const { data: ins } = await supabase.from("habit_categories" as any).insert(payload).select();
-      rows = (ins as any as HabitCategory[]) || [];
+      await supabase.from("habit_categories" as any).upsert(payload, { onConflict: "user_id,name", ignoreDuplicates: true });
+      const { data: refetched } = await supabase
+        .from("habit_categories" as any)
+        .select("*")
+        .eq("user_id", user.id)
+        .order("position", { ascending: true });
+      rows = (refetched as any as HabitCategory[]) || [];
     }
     setCategories(rows);
     setLoading(false);
