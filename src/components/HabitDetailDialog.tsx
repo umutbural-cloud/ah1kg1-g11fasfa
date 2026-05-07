@@ -97,7 +97,7 @@ const HabitDetailDialog = ({ open, habit, onClose, onSave, onDelete }: Props) =>
               </SelectContent>
             </Select>
           </div>
-
+          <div>
             <Label className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">Sıklık</Label>
             <Select value={draft.frequency_type} onValueChange={(v: FrequencyType) => setDraft({ ...draft, frequency_type: v })}>
               <SelectTrigger className="h-9 text-sm mt-1"><SelectValue /></SelectTrigger>
