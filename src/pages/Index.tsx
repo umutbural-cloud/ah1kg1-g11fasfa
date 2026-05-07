@@ -10,6 +10,7 @@ import WeeklyCalendarView from "@/components/WeeklyCalendarView";
 import JournalView from "@/components/JournalView";
 import BacklogView from "@/components/BacklogView";
 import TrashView from "@/components/TrashView";
+import HabitsView from "@/components/HabitsView";
 import { useProjects } from "@/hooks/useProjects";
 import { ViewKey } from "@/hooks/useProjectViews";
 import { useUndo } from "@/hooks/useUndo";
@@ -260,6 +261,7 @@ const Index = () => {
             {section === "journal" && (
               <JournalView key={journalDate} date={journalDate} onDateChange={setJournalDate} />
             )}
+            {section === "habits" && <HabitsView />}
             {section === "project" && (
               !selectedProject ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
