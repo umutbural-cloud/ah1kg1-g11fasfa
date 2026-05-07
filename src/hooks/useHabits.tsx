@@ -1,13 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
+import type { TimeOfDay } from "@/lib/timeOfDay";
+
+export type FrequencyType = "daily" | "weekdays" | "weekly" | "monthly";
 
 export type Habit = {
   id: string;
-  project_id: string;
   user_id: string;
+  project_id: string | null;
   title: string;
+  description: string | null;
+  icon: string;
+  frequency_type: FrequencyType;
+  frequency_days: number[];
+  time_of_day: TimeOfDay;
   position: number;
   hidden: boolean;
   created_at: string;
@@ -16,59 +24,72 @@ export type Habit = {
 
 const todayStr = () => format(new Date(), "yyyy-MM-dd");
 
-export const useHabits = (projectId: string | null) => {
+export const useHabits = (projectId?: string | null) => {
   const { user } = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [today, setToday] = useState(todayStr());
+  // habit_id -> Set<yyyy-MM-dd>
+  const [completionsMap, setCompletionsMap] = useState<Record<string, Set<string>>>({});
 
-  // Watch for date change (midnight rollover)
   useEffect(() => {
-    const interval = setInterval(() => {
+    const i = setInterval(() => {
       const d = todayStr();
       if (d !== today) setToday(d);
-    }, 30000); // check every 30s
-    return () => clearInterval(interval);
+    }, 30000);
+    return () => clearInterval(i);
   }, [today]);
 
-  const fetchHabits = async () => {
-    if (!user || !projectId) { setHabits([]); setLoading(false); return; }
-    const { data: rows } = await supabase
-      .from("habits")
-      .select("*")
-      .eq("project_id", projectId)
-      .is("deleted_at", null)
-      .order("position", { ascending: true });
+  const fetchHabits = useCallback(async () => {
+    if (!user) { setHabits([]); setLoading(false); return; }
+    let q = supabase.from("habits").select("*").eq("user_id", user.id).is("deleted_at", null).order("position", { ascending: true });
+    if (projectId) q = q.eq("project_id", projectId);
+    const { data: rows } = await q;
     if (!rows) { setHabits([]); setLoading(false); return; }
     const ids = rows.map((r: any) => r.id);
-    let completedSet = new Set<string>();
+    let cmap: Record<string, Set<string>> = {};
+    let todaySet = new Set<string>();
     if (ids.length) {
+      const since = format(subDays(new Date(), 365), "yyyy-MM-dd");
       const { data: comps } = await supabase
         .from("habit_completions")
-        .select("habit_id")
+        .select("habit_id, completion_date")
         .in("habit_id", ids)
-        .eq("completion_date", today);
-      completedSet = new Set((comps || []).map((c: any) => c.habit_id));
+        .gte("completion_date", since);
+      (comps || []).forEach((c: any) => {
+        if (!cmap[c.habit_id]) cmap[c.habit_id] = new Set();
+        cmap[c.habit_id].add(c.completion_date);
+        if (c.completion_date === today) todaySet.add(c.habit_id);
+      });
     }
-    setHabits(rows.map((r: any) => ({ ...r, completed_today: completedSet.has(r.id) })));
+    setCompletionsMap(cmap);
+    setHabits(rows.map((r: any) => ({ ...r, completed_today: todaySet.has(r.id) })));
     setLoading(false);
-  };
+  }, [user, projectId, today]);
 
-  useEffect(() => { fetchHabits(); }, [user, projectId, today]);
+  useEffect(() => { fetchHabits(); }, [fetchHabits]);
 
-  const createHabit = async (title: string) => {
-    if (!user || !projectId || !title.trim()) return;
+  const createHabit = async (input: Partial<Habit> & { title: string }) => {
+    if (!user || !input.title.trim()) return null;
     const maxPos = habits.reduce((m, h) => Math.max(m, h.position || 0), 0);
-    const { data } = await supabase
-      .from("habits")
-      .insert({ user_id: user.id, project_id: projectId, title: title.trim(), position: maxPos + 1 })
-      .select()
-      .single();
+    const payload: any = {
+      user_id: user.id,
+      project_id: input.project_id ?? projectId ?? null,
+      title: input.title.trim(),
+      description: input.description ?? null,
+      icon: input.icon ?? "circle",
+      frequency_type: input.frequency_type ?? "daily",
+      frequency_days: input.frequency_days ?? [],
+      time_of_day: input.time_of_day ?? "any",
+      position: maxPos + 1,
+    };
+    const { data } = await supabase.from("habits").insert(payload).select().single();
     if (data) setHabits((prev) => [...prev, { ...(data as any), completed_today: false }]);
+    return data;
   };
 
-  const updateHabit = async (id: string, updates: Partial<Pick<Habit, "title" | "hidden">>) => {
-    const { data } = await supabase.from("habits").update(updates).eq("id", id).select().single();
+  const updateHabit = async (id: string, updates: Partial<Habit>) => {
+    const { data } = await supabase.from("habits").update(updates as any).eq("id", id).select().single();
     if (data) setHabits((prev) => prev.map((h) => h.id === id ? { ...h, ...(data as any) } : h));
   };
 
@@ -77,22 +98,41 @@ export const useHabits = (projectId: string | null) => {
     setHabits((prev) => prev.filter((h) => h.id !== id));
   };
 
-  const toggleCompletion = async (habit: Habit) => {
+  const toggleCompletion = async (habit: Habit, date?: string) => {
     if (!user) return;
-    if (habit.completed_today) {
-      await supabase
-        .from("habit_completions")
-        .delete()
-        .eq("habit_id", habit.id)
-        .eq("completion_date", today);
-      setHabits((prev) => prev.map((h) => h.id === habit.id ? { ...h, completed_today: false } : h));
+    const d = date || today;
+    const has = completionsMap[habit.id]?.has(d) ?? false;
+    if (has) {
+      await supabase.from("habit_completions").delete().eq("habit_id", habit.id).eq("completion_date", d);
+      setCompletionsMap((m) => {
+        const s = new Set(m[habit.id] || []); s.delete(d);
+        return { ...m, [habit.id]: s };
+      });
+      if (d === today) setHabits((prev) => prev.map((h) => h.id === habit.id ? { ...h, completed_today: false } : h));
     } else {
-      await supabase
-        .from("habit_completions")
-        .insert({ habit_id: habit.id, user_id: user.id, completion_date: today });
-      setHabits((prev) => prev.map((h) => h.id === habit.id ? { ...h, completed_today: true } : h));
+      await supabase.from("habit_completions").insert({ habit_id: habit.id, user_id: user.id, completion_date: d });
+      setCompletionsMap((m) => {
+        const s = new Set(m[habit.id] || []); s.add(d);
+        return { ...m, [habit.id]: s };
+      });
+      if (d === today) setHabits((prev) => prev.map((h) => h.id === habit.id ? { ...h, completed_today: true } : h));
     }
   };
 
-  return { habits, loading, createHabit, updateHabit, deleteHabit, toggleCompletion };
+  return { habits, loading, completionsMap, today, createHabit, updateHabit, deleteHabit, toggleCompletion };
+};
+
+// Returns true if the habit is scheduled for the given date
+export const isHabitScheduledOn = (habit: Pick<Habit, "frequency_type" | "frequency_days">, date: Date): boolean => {
+  switch (habit.frequency_type) {
+    case "daily":
+      return true;
+    case "weekdays":
+    case "weekly":
+      return habit.frequency_days.length === 0 ? true : habit.frequency_days.includes(date.getDay());
+    case "monthly":
+      return habit.frequency_days.length === 0 ? date.getDate() === 1 : habit.frequency_days.includes(date.getDate());
+    default:
+      return true;
+  }
 };
