@@ -46,12 +46,13 @@ const HabitsStats = () => {
     };
 
     // category aggregates within selected range
-    const byCategory = categories.map((c) => {
+    const byCategory = categories.flatMap((c) => {
       const hs = stats.filter((s) => s.habit.category_id === c.id);
+      if (hs.length === 0) return [];
       const completed = hs.reduce((a, s) => a + s.completed, 0);
       const total = hs.reduce((a, s) => a + s.total, 0);
       const rate = total === 0 ? 0 : Math.round((completed / total) * 100);
-      return { category: c, completed, total, rate, count: hs.length };
+      return [{ category: c, completed, total, rate, count: hs.length }];
     });
     const uncatHs = stats.filter((s) => !s.habit.category_id);
     if (uncatHs.length) {
