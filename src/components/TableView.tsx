@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTasks, Task } from "@/hooks/useTasks";
-import HabitsSection from "./HabitsSection";
 import { format, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
 import {
@@ -104,7 +103,7 @@ const SortableRow = ({ task, onUpdate, onDelete, onToggleHidden }: {
   );
 };
 
-const TableView = ({ projectId, showHabits = false }: { projectId: string; showHabits?: boolean }) => {
+const TableView = ({ projectId }: { projectId: string }) => {
   const { tasks, loading, createTask, updateTask, deleteTask, reorderTasks } = useTasks(projectId);
   const [newTitle, setNewTitle] = useState("");
   const [showDone, setShowDone] = useState(false);
