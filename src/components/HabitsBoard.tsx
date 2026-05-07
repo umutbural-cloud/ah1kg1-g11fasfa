@@ -74,7 +74,13 @@ const HabitsBoard = () => {
                     </button>
                   </TableCell>
                   <TableCell className="px-1 sm:px-2 py-1 hidden sm:table-cell">
-                    <Select value={h.frequency_type} onValueChange={(v: FrequencyType) => updateHabit(h.id, { frequency_type: v })}>
+                    <Select value={h.frequency_type} onValueChange={(v: FrequencyType) => {
+                      const updates: Partial<Habit> = { frequency_type: v };
+                      if (v === "weekdays" && (!h.frequency_days || h.frequency_days.length === 0)) {
+                        updates.frequency_days = [1, 2, 3, 4, 5];
+                      }
+                      updateHabit(h.id, updates);
+                    }}>
                       <SelectTrigger className="h-8 text-xs border-none bg-transparent shadow-none focus:ring-0 px-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="daily">{FREQ_LABEL.daily}</SelectItem>
@@ -83,6 +89,31 @@ const HabitsBoard = () => {
                         <SelectItem value="monthly">{FREQ_LABEL.monthly}</SelectItem>
                       </SelectContent>
                     </Select>
+                    {h.frequency_type === "weekdays" && (
+                      <div className="flex gap-0.5 mt-1 px-1">
+                        {[
+                          { i: 1, l: "P" }, { i: 2, l: "S" }, { i: 3, l: "Ç" }, { i: 4, l: "P" },
+                          { i: 5, l: "C" }, { i: 6, l: "C" }, { i: 0, l: "P" },
+                        ].map((d) => {
+                          const sel = (h.frequency_days || []).includes(d.i);
+                          return (
+                            <button
+                              key={d.i}
+                              type="button"
+                              title={["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"][d.i]}
+                              onClick={() => {
+                                const cur = new Set(h.frequency_days || []);
+                                if (cur.has(d.i)) cur.delete(d.i); else cur.add(d.i);
+                                updateHabit(h.id, { frequency_days: Array.from(cur).sort((a, b) => a - b) });
+                              }}
+                              className={`flex-1 h-5 text-[10px] rounded-sm border transition-colors ${
+                                sel ? "bg-accent text-foreground border-accent" : "border-border/60 text-muted-foreground hover:bg-accent/30"
+                              }`}
+                            >{d.l}</button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="px-1 sm:px-2 py-1 hidden md:table-cell">
                     <Select value={h.time_of_day} onValueChange={(v: TimeOfDay) => updateHabit(h.id, { time_of_day: v })}>
