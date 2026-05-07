@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, LogOut, ChevronRight, ChevronUp, ChevronDown, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash, Settings } from "lucide-react";
+import { Plus, Trash2, LogOut, ChevronRight, ChevronUp, ChevronDown, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash, Settings, Repeat } from "lucide-react";
 import SettingsDialog from "./SettingsDialog";
 import { Input } from "@/components/ui/input";
 import {
