@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import HabitIconPicker from "./HabitIconPicker";
 import type { Habit, FrequencyType } from "@/hooks/useHabits";
 import { TIME_OF_DAY_OPTIONS, type TimeOfDay } from "@/lib/timeOfDay";
+import { useHabitCategories, colorHex } from "@/hooks/useHabitCategories";
 
 const WEEK_DAYS = [
   { i: 1, l: "Pzt" }, { i: 2, l: "Sal" }, { i: 3, l: "Çar" }, { i: 4, l: "Per" },
@@ -24,12 +25,14 @@ type Props = {
 
 const HabitDetailDialog = ({ open, habit, onClose, onSave, onDelete }: Props) => {
   const [draft, setDraft] = useState<Partial<Habit>>({});
+  const { categories } = useHabitCategories();
 
   useEffect(() => {
     if (habit) setDraft({
       title: habit.title,
       description: habit.description || "",
       icon: habit.icon,
+      category_id: habit.category_id,
       frequency_type: habit.frequency_type,
       frequency_days: habit.frequency_days || [],
       time_of_day: habit.time_of_day,
@@ -74,6 +77,26 @@ const HabitDetailDialog = ({ open, habit, onClose, onSave, onDelete }: Props) =>
             </div>
           </div>
 
+          <div>
+            <Label className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">Kategori</Label>
+            <Select
+              value={draft.category_id ?? "__none__"}
+              onValueChange={(v) => setDraft({ ...draft, category_id: v === "__none__" ? null : v })}
+            >
+              <SelectTrigger className="h-9 text-sm mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">—</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full" style={{ background: colorHex(c.color) }} />
+                      {c.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <Label className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">Sıklık</Label>
             <Select value={draft.frequency_type} onValueChange={(v: FrequencyType) => setDraft({ ...draft, frequency_type: v })}>
