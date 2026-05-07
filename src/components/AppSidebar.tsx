@@ -44,7 +44,7 @@ type Props = {
   onSelect: (id: string, view?: ViewKey) => void;
   onCreate: (name: string, parentId?: string) => void;
   onDelete: (id: string) => void;
-  onUpdateProject: (id: string, updates: { name?: string; emoji?: string; enabled_views?: ViewKey[] }) => void;
+  onUpdateProject: (id: string, updates: { name?: string; emoji?: string; icon?: string | null; icon_color?: string | null; enabled_views?: ViewKey[] }) => void;
   onSelectBacklog: () => void;
   onSelectTrash: () => void;
   onSelectJournal: () => void;
@@ -91,7 +91,7 @@ const ProjectItem = ({
   section: Section;
   onSelect: (id: string, view?: ViewKey) => void;
   onDelete: (id: string) => void;
-  onUpdateProject: (id: string, updates: { name?: string; emoji?: string; enabled_views?: ViewKey[] }) => void;
+  onUpdateProject: (id: string, updates: { name?: string; emoji?: string; icon?: string | null; icon_color?: string | null; enabled_views?: ViewKey[] }) => void;
   onAddSub: (parentId: string) => void;
   depth?: number;
 }) => {
