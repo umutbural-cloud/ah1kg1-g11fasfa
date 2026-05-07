@@ -11,14 +11,26 @@ export type HabitCategory = {
 };
 
 export const CATEGORY_COLORS: { key: string; hex: string; label: string }[] = [
+  { key: "black", hex: "#111827", label: "Siyah" },
   { key: "gray", hex: "#9ca3af", label: "Gri" },
   { key: "stone", hex: "#a8a29e", label: "Taş" },
-  { key: "rose", hex: "#fb7185", label: "Gül" },
-  { key: "amber", hex: "#f59e0b", label: "Kehribar" },
-  { key: "emerald", hex: "#10b981", label: "Zümrüt" },
-  { key: "sky", hex: "#0ea5e9", label: "Gök" },
-  { key: "violet", hex: "#8b5cf6", label: "Mor" },
   { key: "slate", hex: "#64748b", label: "Çelik" },
+  { key: "red", hex: "#ef4444", label: "Kırmızı" },
+  { key: "rose", hex: "#fb7185", label: "Gül" },
+  { key: "pink", hex: "#ec4899", label: "Pembe" },
+  { key: "fuchsia", hex: "#d946ef", label: "Fuşya" },
+  { key: "violet", hex: "#8b5cf6", label: "Mor" },
+  { key: "indigo", hex: "#6366f1", label: "İndigo" },
+  { key: "blue", hex: "#3b82f6", label: "Mavi" },
+  { key: "sky", hex: "#0ea5e9", label: "Gök" },
+  { key: "cyan", hex: "#06b6d4", label: "Camgöbeği" },
+  { key: "teal", hex: "#14b8a6", label: "Çamur" },
+  { key: "emerald", hex: "#10b981", label: "Zümrüt" },
+  { key: "green", hex: "#22c55e", label: "Yeşil" },
+  { key: "lime", hex: "#84cc16", label: "Misket" },
+  { key: "yellow", hex: "#eab308", label: "Sarı" },
+  { key: "amber", hex: "#f59e0b", label: "Kehribar" },
+  { key: "orange", hex: "#f97316", label: "Turuncu" },
 ];
 
 export const colorHex = (key?: string | null) =>

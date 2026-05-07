@@ -53,7 +53,7 @@ type Props = {
   onSelectHabits: () => void;
 };
 
-const ProjectIconPicker = ({
+export const ProjectIconPicker = ({
   icon,
   iconColor,
   onChange,
