@@ -248,6 +248,7 @@ const Pomodoro = () => {
           onSelectBacklog={() => { setSection("backlog"); navigate("/"); }}
           onSelectTrash={() => { setSection("trash"); navigate("/"); }}
           onSelectJournal={() => { setSection("journal"); navigate("/"); }}
+          onSelectHabits={() => { setSection("habits"); navigate("/"); }}
         />
 
         <div className="flex-1 flex flex-col min-w-0">

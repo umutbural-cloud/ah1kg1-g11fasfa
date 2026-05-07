@@ -10,6 +10,7 @@ import WeeklyCalendarView from "@/components/WeeklyCalendarView";
 import JournalView from "@/components/JournalView";
 import BacklogView from "@/components/BacklogView";
 import TrashView from "@/components/TrashView";
+import HabitsView from "@/components/HabitsView";
 import { useProjects } from "@/hooks/useProjects";
 import { ViewKey } from "@/hooks/useProjectViews";
 import { useUndo } from "@/hooks/useUndo";
@@ -111,6 +112,7 @@ const Index = () => {
           onSelectBacklog={() => setSection("backlog")}
           onSelectTrash={() => setSection("trash")}
           onSelectJournal={() => setSection("journal")}
+          onSelectHabits={() => setSection("habits")}
         />
 
         <div className="flex-1 flex flex-col min-w-0">
@@ -259,6 +261,7 @@ const Index = () => {
             {section === "journal" && (
               <JournalView key={journalDate} date={journalDate} onDateChange={setJournalDate} />
             )}
+            {section === "habits" && <HabitsView />}
             {section === "project" && (
               !selectedProject ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
@@ -274,7 +277,7 @@ const Index = () => {
               ) : (
                 <>
                   {view === "notes" && <NotesView key={selectedProject.id} projectId={selectedProject.id} />}
-                  {view === "table" && <TableView projectId={selectedProject.id} showHabits={!!selectedProject.is_default} />}
+                  {view === "table" && <TableView projectId={selectedProject.id} />}
                   {view === "gantt" && <GanttView projectId={selectedProject.id} />}
                   {view === "kanban" && <KanbanView projectId={selectedProject.id} />}
                   {view === "calendar" && <WeeklyCalendarView projectId={selectedProject.id} />}
