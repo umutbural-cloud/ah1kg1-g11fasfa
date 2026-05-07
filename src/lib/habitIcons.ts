@@ -13,7 +13,7 @@ import {
   Flower, Flower2, Leaf, Sprout, TreePine, TreeDeciduous, Trees, Bird, Cat, Dog, Fish, Rabbit, Squirrel, Turtle, Bug, Worm, PawPrint,
   Wallet, PiggyBank, ShoppingBag, ShoppingCart, Gift, CreditCard, Banknote, Coins, DollarSign, Receipt,
   Sparkles, Star, Stars, Zap, Wind, Mountain, MountainSnow, Waves, Compass, Map, MapPin, Navigation, Tornado, Flame, Droplets, Droplet,
-  Pill, Stethoscope, Bath, ShowerHead, Toilet, Soap, Brush as BrushIcon, Eye, Glasses,
+  Pill, Stethoscope, Bath, ShowerHead, Toilet, Eye, Glasses,
   Shirt, Scissors, Wrench, Hammer, Recycle, Trash2, Box, Package, Archive, Folder, FolderOpen,
   Plane, Car, Train, Bus, Ship, Sailboat, Rocket, Anchor, Bike as BikeIcon2,
   Gamepad, Gamepad2, Dices, Puzzle, Joystick,
