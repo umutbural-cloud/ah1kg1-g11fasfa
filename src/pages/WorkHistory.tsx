@@ -17,12 +17,16 @@ import { useProjects } from "@/hooks/useProjects";
 import AppSidebar from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import type { ViewKey } from "@/hooks/useProjectViews";
+import { usePomodoroCategories } from "@/hooks/usePomodoroCategories";
+import { colorClasses, type TaskColor } from "@/lib/taskColors";
 
 type Session = {
   id: string;
   started_at: string;
   duration_seconds: number;
   kind: "work" | "break";
+  note: string | null;
+  category_id: string | null;
 };
 
 const formatDur = (sec: number) => {
@@ -45,6 +49,7 @@ const WorkHistory = () => {
   const { user } = useAuth();
   const { projects, createProject, updateProject, deleteProject } = useProjects();
   const { section, selectedProjectId, view, setSection, setSelectedProjectId, setView, setJournalDate } = usePageState();
+  const { categories } = usePomodoroCategories();
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({});
@@ -56,7 +61,7 @@ const WorkHistory = () => {
     (async () => {
       const { data } = await supabase
         .from("pomodoro_sessions")
-        .select("id, started_at, duration_seconds, kind")
+        .select("id, started_at, duration_seconds, kind, note, category_id")
         .eq("user_id", user.id)
         .eq("kind", "work")
         .order("started_at", { ascending: false })
@@ -129,24 +134,23 @@ const WorkHistory = () => {
       }));
   }, [sessions]);
 
-  // Recent days flat list — last N weeks (7 * recentWeeks days back from today)
+  // Recent days — for each day in the last N weeks, list all work sessions for that day
   const recentDays = useMemo(() => {
-    const byDay = new Map<string, { date: Date; total: number }>();
+    const byDay = new Map<string, Session[]>();
     sessions.forEach((s) => {
-      const d = parseISO(s.started_at);
-      const k = format(startOfDay(d), "yyyy-MM-dd");
-      const existing = byDay.get(k);
-      if (existing) existing.total += s.duration_seconds;
-      else byDay.set(k, { date: startOfDay(d), total: s.duration_seconds });
+      const k = format(startOfDay(parseISO(s.started_at)), "yyyy-MM-dd");
+      const arr = byDay.get(k);
+      if (arr) arr.push(s);
+      else byDay.set(k, [s]);
     });
     const today = startOfDay(new Date());
-    const cutoff = new Date(today.getTime() - (recentWeeks * 7 - 1) * 24 * 60 * 60 * 1000);
-    const out: { key: string; date: Date; total: number }[] = [];
+    const out: { key: string; date: Date; total: number; sessions: Session[] }[] = [];
     for (let i = 0; i < recentWeeks * 7; i++) {
       const d = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
       const k = format(d, "yyyy-MM-dd");
-      const entry = byDay.get(k);
-      out.push({ key: k, date: d, total: entry?.total ?? 0 });
+      const items = (byDay.get(k) || []).slice().sort((a, b) => (a.started_at < b.started_at ? -1 : 1));
+      const total = items.reduce((acc, s) => acc + s.duration_seconds, 0);
+      out.push({ key: k, date: d, total, sessions: items });
     }
     return out;
   }, [sessions, recentWeeks]);
@@ -282,21 +286,55 @@ const WorkHistory = () => {
                 <h2 className="text-xs uppercase tracking-widest text-muted-foreground/70 mb-3 px-1">
                   Son {recentWeeks} Hafta — Günlük
                 </h2>
-                <div className="border border-border/60 rounded-sm divide-y divide-border/40 overflow-hidden">
+                <div className="space-y-4">
                   {recentDays.map((d) => (
-                    <button
-                      key={d.key}
-                      onClick={() => goToDay(d.key)}
-                      className="w-full flex items-center justify-between px-3 py-2 hover:bg-accent/30 transition-colors text-left"
-                      title="Günlüğe git"
-                    >
-                      <span className="text-sm font-light">
-                        {format(d.date, "d MMMM EEEE", { locale: tr })}
-                      </span>
-                      <span className={`text-xs tabular-nums ${d.total > 0 ? "text-muted-foreground" : "text-muted-foreground/40"}`}>
-                        {d.total > 0 ? formatDur(d.total) : "—"}
-                      </span>
-                    </button>
+                    <div key={d.key} className="border border-border/60 rounded-sm overflow-hidden">
+                      <button
+                        onClick={() => goToDay(d.key)}
+                        className="w-full flex items-center justify-between px-3 py-2 bg-card/40 border-b border-border/60 hover:bg-card/60 transition-colors text-left"
+                        title="Günlüğe git"
+                      >
+                        <span className="text-sm font-light">
+                          {format(d.date, "d MMMM yyyy, EEEE", { locale: tr })}
+                        </span>
+                        <span className={`text-xs tabular-nums ${d.total > 0 ? "text-muted-foreground" : "text-muted-foreground/40"}`}>
+                          {d.total > 0 ? formatDur(d.total) : "—"}
+                        </span>
+                      </button>
+                      {d.sessions.length > 0 ? (
+                        <div className="divide-y divide-border/40">
+                          {d.sessions.map((s) => {
+                            const cat = categories.find((c) => c.id === s.category_id);
+                            return (
+                              <div key={s.id} className="flex items-center justify-between px-3 py-2 gap-3">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <span className="text-[11px] text-muted-foreground/70 tabular-nums w-10 shrink-0">
+                                    {format(parseISO(s.started_at), "HH:mm")}
+                                  </span>
+                                  {cat && (
+                                    <span className="flex items-center gap-1.5 shrink-0">
+                                      <span className={`h-2 w-2 rounded-full ${colorClasses(cat.color as TaskColor, "dot")}`} />
+                                      <span className="text-xs text-muted-foreground">{cat.name}</span>
+                                    </span>
+                                  )}
+                                  {s.note && (
+                                    <span className="text-xs font-light truncate">
+                                      {cat && <span className="text-muted-foreground/40 mx-1">·</span>}
+                                      {s.note}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                                  {formatDur(s.duration_seconds)}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="px-3 py-3 text-[11px] text-muted-foreground/50 italic">Kayıt yok</div>
+                      )}
+                    </div>
                   ))}
                 </div>
                 <div className="mt-3 flex justify-center">
