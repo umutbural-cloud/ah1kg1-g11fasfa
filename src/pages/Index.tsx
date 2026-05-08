@@ -45,6 +45,12 @@ const Index = () => {
   // İlk yüklemede açılış sayfası tercihini uygula
   useEffect(() => {
     if (loading || startupApplied) return;
+    // Sadece hiçbir bölüm/proje seçilmemişken (taze açılış) uygula.
+    // Aksi halde başka sayfadan ("/pomodoro" gibi) gelen kullanıcının seçimini ezeriz.
+    if (section !== "project" || selectedProjectId !== null) {
+      startupApplied = true;
+      return;
+    }
     startupApplied = true;
 
     if (startup.type === "module") {
