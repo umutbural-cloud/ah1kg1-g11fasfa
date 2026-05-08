@@ -649,7 +649,7 @@ const WorkHistory = () => {
                                         </span>
                                         {cat && (
                                           <span className="flex items-center gap-1.5 shrink-0">
-                                            <span className={`h-2 w-2 rounded-full ${colorClasses(cat.color as TaskColor, "dot")}`} />
+                                            <span className="h-2 w-2 rounded-full" style={{ background: colorHex(cat.color) }} />
                                             <span className="text-xs text-muted-foreground">{cat.name}</span>
                                           </span>
                                         )}
