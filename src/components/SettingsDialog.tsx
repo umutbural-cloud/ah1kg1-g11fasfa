@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
+import { useHabitTodayDefault } from "@/hooks/useHabitSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -16,6 +17,7 @@ type Props = {
 const SettingsDialog = ({ open, onOpenChange }: Props) => {
   const { theme, toggle: toggleTheme } = useTheme();
   const { user } = useAuth();
+  const [habitDefault, setHabitDefault] = useHabitTodayDefault();
   const [email, setEmail] = useState(user?.email || "");
   const [password, setPassword] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
