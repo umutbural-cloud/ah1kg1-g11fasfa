@@ -228,7 +228,7 @@ const Row = ({
             >
               {cat ? (
                 <>
-                  <span className={`h-2 w-2 rounded-full ${colorClasses(cat.color as TaskColor, "dot")}`} />
+                  <span className="h-2 w-2 rounded-full" style={{ background: colorHex(cat.color) }} />
                   <span className="truncate">{cat.name}</span>
                 </>
               ) : (
