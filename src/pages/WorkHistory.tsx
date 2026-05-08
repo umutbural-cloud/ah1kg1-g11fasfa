@@ -58,7 +58,7 @@ const WorkHistory = () => {
     (async () => {
       const { data } = await supabase
         .from("pomodoro_sessions")
-        .select("id, started_at, duration_seconds, kind")
+        .select("id, started_at, duration_seconds, kind, note, category_id")
         .eq("user_id", user.id)
         .eq("kind", "work")
         .order("started_at", { ascending: false })
