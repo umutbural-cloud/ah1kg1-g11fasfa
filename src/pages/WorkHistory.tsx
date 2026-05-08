@@ -29,6 +29,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import type { ViewKey } from "@/hooks/useProjectViews";
 import { usePomodoroCategories } from "@/hooks/usePomodoroCategories";
 import { colorClasses, type TaskColor } from "@/lib/taskColors";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 type Session = {
   id: string;
