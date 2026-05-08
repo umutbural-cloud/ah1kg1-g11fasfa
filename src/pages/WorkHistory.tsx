@@ -129,6 +129,28 @@ const WorkHistory = () => {
       }));
   }, [sessions]);
 
+  // Recent days flat list — last N weeks (7 * recentWeeks days back from today)
+  const recentDays = useMemo(() => {
+    const byDay = new Map<string, { date: Date; total: number }>();
+    sessions.forEach((s) => {
+      const d = parseISO(s.started_at);
+      const k = format(startOfDay(d), "yyyy-MM-dd");
+      const existing = byDay.get(k);
+      if (existing) existing.total += s.duration_seconds;
+      else byDay.set(k, { date: startOfDay(d), total: s.duration_seconds });
+    });
+    const today = startOfDay(new Date());
+    const cutoff = new Date(today.getTime() - (recentWeeks * 7 - 1) * 24 * 60 * 60 * 1000);
+    const out: { key: string; date: Date; total: number }[] = [];
+    for (let i = 0; i < recentWeeks * 7; i++) {
+      const d = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+      const k = format(d, "yyyy-MM-dd");
+      const entry = byDay.get(k);
+      out.push({ key: k, date: d, total: entry?.total ?? 0 });
+    }
+    return out;
+  }, [sessions, recentWeeks]);
+
   const goToDay = (dayKey: string) => {
     setJournalDate(dayKey);
     setSection("journal");
