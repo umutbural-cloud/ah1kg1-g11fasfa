@@ -354,30 +354,22 @@ const ProjectItem = ({
 const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onCreate, onDelete, onUpdateProject, onSelectBacklog, onSelectTrash, onSelectJournal, onSelectHabits }: Props) => {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
-  const { prefs, customModules, addCustomModule, removeCustomModule } = useSidebarPreferences();
+  const { prefs, setItem } = useSidebarPreferences();
   const [newName, setNewName] = useState("");
   const [showInput, setShowInput] = useState(false);
   const [addingParentId, setAddingParentId] = useState<string | null>(null);
   const [subName, setSubName] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [newModuleName, setNewModuleName] = useState("");
-  const [newModuleTarget, setNewModuleTarget] = useState<"backlog" | "journal" | "habits" | "workHistory">("journal");
   const [newModuleOpen, setNewModuleOpen] = useState(false);
 
-  const handleCustomModuleClick = (target: "backlog" | "journal" | "habits" | "workHistory") => {
-    if (target === "backlog") onSelectBacklog();
-    else if (target === "journal") onSelectJournal();
-    else if (target === "habits") onSelectHabits();
-    else if (target === "workHistory") navigate("/work-history");
-  };
-
-  const handleAddModule = () => {
-    if (!newModuleName.trim()) return;
-    addCustomModule(newModuleName, newModuleTarget);
-    setNewModuleName("");
-    setNewModuleTarget("journal");
-    setNewModuleOpen(false);
-  };
+  const MODULE_OPTIONS: { key: "backlog" | "journal" | "habits" | "workHistory" | "pomodoro"; label: string; icon: any }[] = [
+    { key: "backlog", label: "Heybe", icon: Package },
+    { key: "journal", label: "Günlük", icon: FileText },
+    { key: "habits", label: "Alışkanlıklar", icon: Repeat },
+    { key: "workHistory", label: "Çalışma Geçmişi", icon: Clock },
+    { key: "pomodoro", label: "Pomodoro", icon: Clock },
+  ];
+  const hiddenModules = MODULE_OPTIONS.filter((m) => !prefs[m.key]);
 
   const handleCreate = () => {
     if (!newName.trim()) return;
