@@ -444,24 +444,6 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
-              {customModules.map((mod) => (
-                <SidebarMenuItem key={mod.id}>
-                  <SidebarMenuButton
-                    onClick={() => handleCustomModuleClick(mod.target)}
-                    className="text-sm font-light group/mod"
-                  >
-                    <Repeat className="h-3.5 w-3.5" />
-                    <span className="tracking-wide flex-1 truncate">{mod.label}</span>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); removeCustomModule(mod.id); }}
-                      className="opacity-0 group-hover/mod:opacity-100 text-muted-foreground hover:text-destructive shrink-0"
-                      title="Modülü kaldır"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
               <SidebarMenuItem>
                 <Popover open={newModuleOpen} onOpenChange={setNewModuleOpen}>
                   <PopoverTrigger asChild>
@@ -470,46 +452,26 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                       <span className="tracking-wide">Yeni Modül</span>
                     </SidebarMenuButton>
                   </PopoverTrigger>
-                  <PopoverContent className="w-60 p-2" align="start">
-                    <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70 font-light mb-1.5 px-1">
-                      Yeni Modül
-                    </div>
-                    <Input
-                      value={newModuleName}
-                      onChange={(e) => setNewModuleName(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") handleAddModule(); }}
-                      placeholder="Modül adı..."
-                      className="h-8 text-xs mb-2"
-                      autoFocus
-                    />
-                    <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70 font-light mb-1 px-1">
-                      Hedef
-                    </div>
-                    <div className="grid grid-cols-2 gap-1 mb-2">
-                      {(["backlog", "journal", "habits", "workHistory"] as const).map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => setNewModuleTarget(t)}
-                          className={`text-[11px] px-2 py-1 rounded-sm border transition-colors ${
-                            newModuleTarget === t
-                              ? "bg-accent text-accent-foreground border-accent"
-                              : "border-border/60 text-muted-foreground hover:bg-accent/40"
-                          }`}
-                        >
-                          {t === "backlog" && "Heybe"}
-                          {t === "journal" && "Günlük"}
-                          {t === "habits" && "Alışkanlıklar"}
-                          {t === "workHistory" && "Çalışma Geçmişi"}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      onClick={handleAddModule}
-                      disabled={!newModuleName.trim()}
-                      className="w-full text-xs px-2 py-1.5 rounded-sm bg-foreground text-background disabled:opacity-40 hover:opacity-90 transition-opacity"
-                    >
-                      Ekle
-                    </button>
+                  <PopoverContent className="w-52 p-1" align="start">
+                    {hiddenModules.length === 0 ? (
+                      <div className="text-[11px] text-muted-foreground/70 font-light px-2 py-2 text-center">
+                        Tüm modüller eklendi
+                      </div>
+                    ) : (
+                      hiddenModules.map((m) => {
+                        const Icon = m.icon;
+                        return (
+                          <button
+                            key={m.key}
+                            onClick={() => { setItem(m.key, true); setNewModuleOpen(false); }}
+                            className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent rounded-sm transition-colors text-left"
+                          >
+                            <Icon className="h-3.5 w-3.5" />
+                            <span className="tracking-wide">{m.label}</span>
+                          </button>
+                        );
+                      })
+                    )}
                   </PopoverContent>
                 </Popover>
               </SidebarMenuItem>
