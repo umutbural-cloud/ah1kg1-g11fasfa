@@ -17,6 +17,8 @@ import { useProjects } from "@/hooks/useProjects";
 import AppSidebar from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import type { ViewKey } from "@/hooks/useProjectViews";
+import { usePomodoroCategories } from "@/hooks/usePomodoroCategories";
+import { colorClasses, type TaskColor } from "@/lib/taskColors";
 
 type Session = {
   id: string;
