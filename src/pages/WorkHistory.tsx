@@ -286,21 +286,55 @@ const WorkHistory = () => {
                 <h2 className="text-xs uppercase tracking-widest text-muted-foreground/70 mb-3 px-1">
                   Son {recentWeeks} Hafta — Günlük
                 </h2>
-                <div className="border border-border/60 rounded-sm divide-y divide-border/40 overflow-hidden">
+                <div className="space-y-4">
                   {recentDays.map((d) => (
-                    <button
-                      key={d.key}
-                      onClick={() => goToDay(d.key)}
-                      className="w-full flex items-center justify-between px-3 py-2 hover:bg-accent/30 transition-colors text-left"
-                      title="Günlüğe git"
-                    >
-                      <span className="text-sm font-light">
-                        {format(d.date, "d MMMM EEEE", { locale: tr })}
-                      </span>
-                      <span className={`text-xs tabular-nums ${d.total > 0 ? "text-muted-foreground" : "text-muted-foreground/40"}`}>
-                        {d.total > 0 ? formatDur(d.total) : "—"}
-                      </span>
-                    </button>
+                    <div key={d.key} className="border border-border/60 rounded-sm overflow-hidden">
+                      <button
+                        onClick={() => goToDay(d.key)}
+                        className="w-full flex items-center justify-between px-3 py-2 bg-card/40 border-b border-border/60 hover:bg-card/60 transition-colors text-left"
+                        title="Günlüğe git"
+                      >
+                        <span className="text-sm font-light">
+                          {format(d.date, "d MMMM yyyy, EEEE", { locale: tr })}
+                        </span>
+                        <span className={`text-xs tabular-nums ${d.total > 0 ? "text-muted-foreground" : "text-muted-foreground/40"}`}>
+                          {d.total > 0 ? formatDur(d.total) : "—"}
+                        </span>
+                      </button>
+                      {d.sessions.length > 0 ? (
+                        <div className="divide-y divide-border/40">
+                          {d.sessions.map((s) => {
+                            const cat = categories.find((c) => c.id === s.category_id);
+                            return (
+                              <div key={s.id} className="flex items-center justify-between px-3 py-2 gap-3">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <span className="text-[11px] text-muted-foreground/70 tabular-nums w-10 shrink-0">
+                                    {format(parseISO(s.started_at), "HH:mm")}
+                                  </span>
+                                  {cat && (
+                                    <span className="flex items-center gap-1.5 shrink-0">
+                                      <span className={`h-2 w-2 rounded-full ${colorClasses(cat.color as TaskColor, "dot")}`} />
+                                      <span className="text-xs text-muted-foreground">{cat.name}</span>
+                                    </span>
+                                  )}
+                                  {s.note && (
+                                    <span className="text-xs font-light truncate">
+                                      {cat && <span className="text-muted-foreground/40 mx-1">·</span>}
+                                      {s.note}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                                  {formatDur(s.duration_seconds)}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="px-3 py-3 text-[11px] text-muted-foreground/50 italic">Kayıt yok</div>
+                      )}
+                    </div>
                   ))}
                 </div>
                 <div className="mt-3 flex justify-center">
