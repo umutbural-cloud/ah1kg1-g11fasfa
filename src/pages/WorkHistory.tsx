@@ -588,7 +588,7 @@ const WorkHistory = () => {
                             : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/20"
                         }`}
                       >
-                        <span className={`h-2 w-2 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                        <span className="h-2 w-2 rounded-full" style={{ background: colorHex(c.color) }} />
                         {c.name}
                       </button>
                     );
