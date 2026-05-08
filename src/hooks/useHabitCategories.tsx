@@ -31,6 +31,17 @@ export const CATEGORY_COLORS: { key: string; hex: string; label: string }[] = [
   { key: "yellow", hex: "#eab308", label: "Sarı" },
   { key: "amber", hex: "#f59e0b", label: "Kehribar" },
   { key: "orange", hex: "#f97316", label: "Turuncu" },
+  // Pastel tones
+  { key: "pastel-rose", hex: "#fecdd3", label: "Pastel Gül" },
+  { key: "pastel-peach", hex: "#fed7aa", label: "Pastel Şeftali" },
+  { key: "pastel-yellow", hex: "#fef08a", label: "Pastel Sarı" },
+  { key: "pastel-mint", hex: "#bbf7d0", label: "Pastel Nane" },
+  { key: "pastel-sky", hex: "#bae6fd", label: "Pastel Gök" },
+  { key: "pastel-lavender", hex: "#ddd6fe", label: "Pastel Lavanta" },
+  { key: "pastel-pink", hex: "#fbcfe8", label: "Pastel Pembe" },
+  { key: "pastel-sand", hex: "#e7e5e4", label: "Pastel Kum" },
+  { key: "pastel-lilac", hex: "#e9d5ff", label: "Pastel Leylak" },
+  { key: "pastel-aqua", hex: "#a5f3fc", label: "Pastel Su" },
 ];
 
 export const colorHex = (key?: string | null) =>

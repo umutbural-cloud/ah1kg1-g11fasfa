@@ -40,7 +40,7 @@ export const CategoryColorPicker = ({ value, onChange, size = "md", align = "sta
                 {active && (
                   <Check
                     className="absolute inset-0 m-auto h-3.5 w-3.5"
-                    style={{ color: ["yellow", "lime", "amber", "orange"].includes(col.key) ? "#1c1917" : "#fff" }}
+                    style={{ color: col.key.startsWith("pastel-") || ["yellow", "lime", "amber", "orange"].includes(col.key) ? "#1c1917" : "#fff" }}
                   />
                 )}
               </button>
