@@ -371,11 +371,27 @@ const WorkHistory = () => {
                         >
                           <ChevronLeft className="h-3.5 w-3.5" />
                         </button>
-                        <span className="text-[10px] text-muted-foreground tabular-nums min-w-[64px] text-center">
-                          {catDayKey === todayKey()
-                            ? "Bugün"
-                            : format(new Date(`${catDayKey}T00:00:00`), "d MMM", { locale: tr })}
-                        </span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              className="text-[10px] text-muted-foreground hover:text-foreground transition-colors tabular-nums min-w-[64px] text-center px-1 py-0.5 rounded-sm hover:bg-accent/40"
+                              title="Tarih seç"
+                            >
+                              {catDayKey === todayKey()
+                                ? "Bugün"
+                                : format(new Date(`${catDayKey}T00:00:00`), "d MMM", { locale: tr })}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent align="end" className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={new Date(`${catDayKey}T00:00:00`)}
+                              onSelect={(d) => d && setCatDayKey(format(d, "yyyy-MM-dd"))}
+                              disabled={(d) => d > new Date()}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                         <button
                           onClick={() => {
                             if (catDayKey >= todayKey()) return;
