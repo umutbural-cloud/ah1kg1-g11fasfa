@@ -23,6 +23,8 @@ type Session = {
   started_at: string;
   duration_seconds: number;
   kind: "work" | "break";
+  note: string | null;
+  category_id: string | null;
 };
 
 const formatDur = (sec: number) => {
