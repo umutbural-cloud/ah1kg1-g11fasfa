@@ -566,6 +566,47 @@ const WorkHistory = () => {
                 <h2 className="text-xs uppercase tracking-widest text-muted-foreground/70 mb-3 px-1">
                   Son {recentWeeks} Hafta — Günlük
                 </h2>
+
+                {/* Category filter chips */}
+                <div className="flex flex-wrap items-center gap-1.5 mb-4 px-1">
+                  {categories.map((c) => {
+                    const active = recentCatFilter.has(c.id);
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => toggleRecentCat(c.id)}
+                        className={`flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
+                          active
+                            ? "border-foreground/40 bg-accent/40 text-foreground"
+                            : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/20"
+                        }`}
+                      >
+                        <span className={`h-2 w-2 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                        {c.name}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => toggleRecentCat(NONE_CAT_KEY)}
+                    className={`flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
+                      recentCatFilter.has(NONE_CAT_KEY)
+                        ? "border-foreground/40 bg-accent/40 text-foreground"
+                        : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/20"
+                    }`}
+                  >
+                    <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                    Kategorisiz
+                  </button>
+                  {recentCatFilter.size > 0 && (
+                    <button
+                      onClick={() => setRecentCatFilter(new Set())}
+                      className="text-[11px] px-2 py-1 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Temizle
+                    </button>
+                  )}
+                </div>
+
                 <div className="space-y-4">
                   {recentDays.map((d) => {
                     const sessionsExpanded = expandedSessionsByDay[d.key] ?? false;
