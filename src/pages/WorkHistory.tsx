@@ -80,6 +80,21 @@ const WorkHistory = () => {
   const [expandedSessionsByDay, setExpandedSessionsByDay] = useState<Record<string, boolean>>({});
   const [collapsedDays, setCollapsedDays] = useState<Record<string, boolean>>({});
   const [catDayKey, setCatDayKey] = useState<string>(todayKey());
+  const [recentCatFilter, setRecentCatFilter] = useState<Set<string>>(new Set());
+
+  const NONE_CAT_KEY = "__none__";
+  const toggleRecentCat = (key: string) => {
+    setRecentCatFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+  const sessionMatchesFilter = (s: Session) => {
+    if (recentCatFilter.size === 0) return true;
+    return recentCatFilter.has(s.category_id ?? NONE_CAT_KEY);
+  };
 
   useEffect(() => {
     if (!user) return;
