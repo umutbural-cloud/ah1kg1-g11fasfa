@@ -540,7 +540,7 @@ const Pomodoro = () => {
                           onClick={() => setAddCategoryId(c.id)}
                           className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm border ${addCategoryId === c.id ? "bg-accent border-foreground/30" : "border-border/60 hover:bg-accent/50"}`}
                         >
-                          <span className={`h-2 w-2 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                          <span className="h-2 w-2 rounded-full" style={{ background: colorHex(c.color) }} />
                           {c.name}
                         </button>
                       ))}
