@@ -436,7 +436,7 @@ const Pomodoro = () => {
                             onClick={() => setFilterCategoryId(c.id)}
                             className={`w-full flex items-center gap-2 text-left px-2 py-1 text-xs rounded-sm hover:bg-accent ${filterCategoryId === c.id ? "bg-accent" : ""}`}
                           >
-                            <span className={`h-2.5 w-2.5 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                            <span className="h-2.5 w-2.5 rounded-full" style={{ background: colorHex(c.color) }} />
                             {c.name}
                           </button>
                         ))}
