@@ -257,8 +257,9 @@ const WorkHistory = () => {
 
   // -------- Recent days --------
   const recentDays = useMemo(() => {
+    const filtered = sessions.filter(sessionMatchesFilter);
     const byDay = new Map<string, Session[]>();
-    sessions.forEach((s) => {
+    filtered.forEach((s) => {
       const k = format(startOfDay(parseISO(s.started_at)), "yyyy-MM-dd");
       const arr = byDay.get(k);
       if (arr) arr.push(s);
@@ -274,7 +275,7 @@ const WorkHistory = () => {
       out.push({ key: k, date: d, total, sessions: items });
     }
     return out;
-  }, [sessions, recentWeeks]);
+  }, [sessions, recentWeeks, recentCatFilter]);
 
   // -------- Sidebar handlers --------
   const handleSidebarSelect = (id: string, v?: ViewKey) => {
