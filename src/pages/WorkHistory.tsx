@@ -169,7 +169,7 @@ const WorkHistory = () => {
 
   // -------- Stats --------
   const stats = useMemo(() => {
-    if (sessions.length === 0) {
+    if (filteredStatsSessions.length === 0) {
       return { last7: 0, last30: 0, avgDaily: 0, hasData: false };
     }
     const now = Date.now();
