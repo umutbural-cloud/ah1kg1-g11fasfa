@@ -178,7 +178,7 @@ const WorkHistory = () => {
     const cutoff30 = now - 30 * day;
     let last7 = 0, last30 = 0, total = 0;
     let firstTs = Infinity;
-    sessions.forEach((s) => {
+    filteredStatsSessions.forEach((s) => {
       const t = parseISO(s.started_at).getTime();
       total += s.duration_seconds;
       if (t >= cutoff7) last7 += s.duration_seconds;
@@ -187,20 +187,20 @@ const WorkHistory = () => {
     });
     const days = Math.max(1, differenceInCalendarDays(new Date(), new Date(firstTs)) + 1);
     return { last7, last30, avgDaily: Math.round(total / days), hasData: true };
-  }, [sessions]);
+  }, [filteredStatsSessions]);
 
   // -------- Category breakdowns --------
   // Build a quick day index of seconds per category
   const sessionsByDayCat = useMemo(() => {
     const map = new Map<string, Map<string | null, number>>();
-    sessions.forEach((s) => {
+    filteredStatsSessions.forEach((s) => {
       const k = format(startOfDay(parseISO(s.started_at)), "yyyy-MM-dd");
       let inner = map.get(k);
       if (!inner) { inner = new Map(); map.set(k, inner); }
       inner.set(s.category_id, (inner.get(s.category_id) || 0) + s.duration_seconds);
     });
     return map;
-  }, [sessions]);
+  }, [filteredStatsSessions]);
 
   const catBreakdown = useMemo(() => {
     const aggregate = (fromDate: Date, toDate: Date) => {
