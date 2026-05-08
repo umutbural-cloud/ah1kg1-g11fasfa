@@ -28,6 +28,18 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
   const { user } = useAuth();
   const [habitDefault, setHabitDefault] = useHabitTodayDefault();
   const { prefs: sidebarPrefs, setItem: setSidebarPref } = useSidebarPreferences();
+  const { startup, setStartup } = useStartupPage();
+  const { projects } = useProjects();
+  const enabledModules = SIDEBAR_ITEM_ORDER.filter((k) => sidebarPrefs[k]);
+  const startupValue =
+    startup.type === "module" ? `mod:${startup.value}` :
+    startup.type === "project" ? `prj:${startup.value}` :
+    "default";
+  const handleStartupChange = (v: string) => {
+    if (v === "default") setStartup({ type: "default" });
+    else if (v.startsWith("mod:")) setStartup({ type: "module", value: v.slice(4) as any });
+    else if (v.startsWith("prj:")) setStartup({ type: "project", value: v.slice(4) });
+  };
   const [email, setEmail] = useState(user?.email || "");
   const [password, setPassword] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
