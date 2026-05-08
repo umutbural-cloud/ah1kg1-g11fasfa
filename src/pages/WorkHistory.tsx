@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Clock, Settings2, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   format,
@@ -84,6 +84,62 @@ const WorkHistory = () => {
   const [recentCatFilter, setRecentCatFilter] = useState<Set<string>>(new Set());
 
   const NONE_CAT_KEY = "__none__";
+
+  // ----- Stats category inclusion (persisted) -----
+  // null = include all (default). Otherwise an explicit Set of included keys.
+  const storageKey = user ? `keikaku:work-stats:included-cats:${user.id}` : null;
+  const [includedCats, setIncludedCats] = useState<Set<string> | null>(null);
+  const [statsSettingsOpen, setStatsSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const arr = JSON.parse(raw) as string[];
+        if (Array.isArray(arr)) setIncludedCats(new Set(arr));
+      } else {
+        setIncludedCats(null);
+      }
+    } catch { /* ignore */ }
+  }, [storageKey]);
+
+  const persistIncluded = (next: Set<string> | null) => {
+    setIncludedCats(next);
+    if (!storageKey) return;
+    try {
+      if (next === null) localStorage.removeItem(storageKey);
+      else localStorage.setItem(storageKey, JSON.stringify(Array.from(next)));
+    } catch { /* ignore */ }
+  };
+
+  const isCatIncluded = (catId: string | null) => {
+    if (includedCats === null) return true;
+    return includedCats.has(catId ?? NONE_CAT_KEY);
+  };
+
+  const toggleStatsCat = (key: string) => {
+    // Materialize current selection (treat null as "everything")
+    const allKeys = [...categories.map((c) => c.id), NONE_CAT_KEY];
+    const current = includedCats ?? new Set(allKeys);
+    const next = new Set(current);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    // If all enabled, store as null to keep "include all" behavior even for new categories
+    const allOn = allKeys.every((k) => next.has(k));
+    persistIncluded(allOn ? null : next);
+  };
+
+  const setAllStatsCats = (on: boolean) => {
+    if (on) persistIncluded(null);
+    else persistIncluded(new Set());
+  };
+
+  const filteredStatsSessions = useMemo(
+    () => sessions.filter((s) => isCatIncluded(s.category_id)),
+    [sessions, includedCats],
+  );
+
   const toggleRecentCat = (key: string) => {
     setRecentCatFilter((prev) => {
       const next = new Set(prev);
@@ -113,7 +169,7 @@ const WorkHistory = () => {
 
   // -------- Stats --------
   const stats = useMemo(() => {
-    if (sessions.length === 0) {
+    if (filteredStatsSessions.length === 0) {
       return { last7: 0, last30: 0, avgDaily: 0, hasData: false };
     }
     const now = Date.now();
@@ -122,7 +178,7 @@ const WorkHistory = () => {
     const cutoff30 = now - 30 * day;
     let last7 = 0, last30 = 0, total = 0;
     let firstTs = Infinity;
-    sessions.forEach((s) => {
+    filteredStatsSessions.forEach((s) => {
       const t = parseISO(s.started_at).getTime();
       total += s.duration_seconds;
       if (t >= cutoff7) last7 += s.duration_seconds;
@@ -131,20 +187,20 @@ const WorkHistory = () => {
     });
     const days = Math.max(1, differenceInCalendarDays(new Date(), new Date(firstTs)) + 1);
     return { last7, last30, avgDaily: Math.round(total / days), hasData: true };
-  }, [sessions]);
+  }, [filteredStatsSessions]);
 
   // -------- Category breakdowns --------
   // Build a quick day index of seconds per category
   const sessionsByDayCat = useMemo(() => {
     const map = new Map<string, Map<string | null, number>>();
-    sessions.forEach((s) => {
+    filteredStatsSessions.forEach((s) => {
       const k = format(startOfDay(parseISO(s.started_at)), "yyyy-MM-dd");
       let inner = map.get(k);
       if (!inner) { inner = new Map(); map.set(k, inner); }
       inner.set(s.category_id, (inner.get(s.category_id) || 0) + s.duration_seconds);
     });
     return map;
-  }, [sessions]);
+  }, [filteredStatsSessions]);
 
   const catBreakdown = useMemo(() => {
     const aggregate = (fromDate: Date, toDate: Date) => {
@@ -363,9 +419,71 @@ const WorkHistory = () => {
 
               {/* ============ STATS ============ */}
               <section>
-                <h2 className="text-xs uppercase tracking-widest text-muted-foreground/70 mb-3 px-1">
-                  İstatistikler
-                </h2>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <h2 className="text-xs uppercase tracking-widest text-muted-foreground/70">
+                    İstatistikler
+                  </h2>
+                  <Popover open={statsSettingsOpen} onOpenChange={setStatsSettingsOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        className="p-1 -m-1 text-muted-foreground/70 hover:text-foreground transition-colors rounded-sm hover:bg-accent/40"
+                        title="İstatistik ayarları"
+                        aria-label="İstatistik ayarları"
+                      >
+                        <Settings2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-72 p-0">
+                      <div className="px-3 py-2.5 border-b border-border/60">
+                        <div className="text-[11px] uppercase tracking-widest text-muted-foreground/70">
+                          Dahil edilen kategoriler
+                        </div>
+                        <div className="text-[10px] text-muted-foreground/60 mt-0.5 font-light leading-snug">
+                          Yalnızca seçili kategoriler istatistik, grafik ve özetlere dahil edilir.
+                        </div>
+                      </div>
+                      <div className="max-h-72 overflow-auto py-1">
+                        {[
+                          ...categories.map((c) => ({ key: c.id, name: c.name, color: c.color })),
+                          { key: NONE_CAT_KEY, name: "Kategorisiz", color: "gray" },
+                        ].map((c) => {
+                          const checked = isCatIncluded(c.key === NONE_CAT_KEY ? null : c.key);
+                          return (
+                            <button
+                              key={c.key}
+                              onClick={() => toggleStatsCat(c.key)}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-accent/40 transition-colors text-left"
+                            >
+                              <span
+                                className={`h-3.5 w-3.5 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${
+                                  checked ? "bg-foreground border-foreground" : "border-border"
+                                }`}
+                              >
+                                {checked && <Check className="h-2.5 w-2.5 text-background" strokeWidth={3} />}
+                              </span>
+                              <span className="h-2 w-2 rounded-full shrink-0" style={{ background: colorHex(c.color) }} />
+                              <span className="font-light flex-1 truncate">{c.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="flex items-center justify-between gap-2 px-2 py-1.5 border-t border-border/60">
+                        <button
+                          onClick={() => setAllStatsCats(true)}
+                          className="text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-sm hover:bg-accent/40"
+                        >
+                          Tümünü seç
+                        </button>
+                        <button
+                          onClick={() => setAllStatsCats(false)}
+                          className="text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-sm hover:bg-accent/40"
+                        >
+                          Tümünü kaldır
+                        </button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <StatCard label="Son 7 gün" value={formatDur(stats.last7)} />
