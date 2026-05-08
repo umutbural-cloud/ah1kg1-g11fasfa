@@ -134,24 +134,23 @@ const WorkHistory = () => {
       }));
   }, [sessions]);
 
-  // Recent days flat list — last N weeks (7 * recentWeeks days back from today)
+  // Recent days — for each day in the last N weeks, list all work sessions for that day
   const recentDays = useMemo(() => {
-    const byDay = new Map<string, { date: Date; total: number }>();
+    const byDay = new Map<string, Session[]>();
     sessions.forEach((s) => {
-      const d = parseISO(s.started_at);
-      const k = format(startOfDay(d), "yyyy-MM-dd");
-      const existing = byDay.get(k);
-      if (existing) existing.total += s.duration_seconds;
-      else byDay.set(k, { date: startOfDay(d), total: s.duration_seconds });
+      const k = format(startOfDay(parseISO(s.started_at)), "yyyy-MM-dd");
+      const arr = byDay.get(k);
+      if (arr) arr.push(s);
+      else byDay.set(k, [s]);
     });
     const today = startOfDay(new Date());
-    const cutoff = new Date(today.getTime() - (recentWeeks * 7 - 1) * 24 * 60 * 60 * 1000);
-    const out: { key: string; date: Date; total: number }[] = [];
+    const out: { key: string; date: Date; total: number; sessions: Session[] }[] = [];
     for (let i = 0; i < recentWeeks * 7; i++) {
       const d = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
       const k = format(d, "yyyy-MM-dd");
-      const entry = byDay.get(k);
-      out.push({ key: k, date: d, total: entry?.total ?? 0 });
+      const items = (byDay.get(k) || []).slice().sort((a, b) => (a.started_at < b.started_at ? -1 : 1));
+      const total = items.reduce((acc, s) => acc + s.duration_seconds, 0);
+      out.push({ key: k, date: d, total, sessions: items });
     }
     return out;
   }, [sessions, recentWeeks]);
