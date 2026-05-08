@@ -568,31 +568,22 @@ const Pomodoro = () => {
                       const totalSec = items.filter((s) => s.kind === "work").reduce((a, s) => a + s.duration_seconds, 0);
                       const h = Math.floor(totalSec / 3600);
                       const m = Math.floor((totalSec % 3600) / 60);
+                      const todayKey = format(startOfDay(new Date()), "yyyy-MM-dd");
+                      const isToday = day === todayKey;
                       return (
-                        <div key={day} className="border border-border/60 rounded-sm overflow-hidden">
-                          <div className="flex items-center justify-between px-3 py-2 bg-card/40 border-b border-border/60">
-                            <span className="text-sm font-light">
-                              {format(parseISO(day), "d MMMM yyyy, EEEE", { locale: tr })}
-                            </span>
-                            <span className="text-xs text-muted-foreground tabular-nums">
-                              {h > 0 ? `${h}s ` : ""}{m}d
-                            </span>
-                          </div>
-                          <div className="divide-y divide-border/40">
-                            {items.map((s) => (
-                              <SessionRow
-                                key={s.id}
-                                session={s}
-                                categories={categories}
-                                onUpdateNote={updateNote}
-                                onUpdateDuration={updateDuration}
-                                onUpdateTimes={updateTimes}
-                                onUpdateCategory={updateSessionCategory}
-                                onDelete={deleteSession}
-                              />
-                            ))}
-                          </div>
-                        </div>
+                        <DayGroup
+                          key={day}
+                          day={day}
+                          items={items}
+                          isToday={isToday}
+                          totalLabel={`${h > 0 ? `${h}s ` : ""}${m}d`}
+                          categories={categories}
+                          onUpdateNote={updateNote}
+                          onUpdateDuration={updateDuration}
+                          onUpdateTimes={updateTimes}
+                          onUpdateCategory={updateSessionCategory}
+                          onDelete={deleteSession}
+                        />
                       );
                     })}
                   </div>
