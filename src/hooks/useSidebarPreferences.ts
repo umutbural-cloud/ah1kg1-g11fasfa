@@ -26,7 +26,23 @@ const DEFAULT_PREFS: Record<SidebarItemKey, boolean> = {
   pomodoro: true,
 };
 
+export type CustomModuleTarget = "backlog" | "journal" | "habits" | "workHistory";
+
+export const CUSTOM_MODULE_TARGET_LABELS: Record<CustomModuleTarget, string> = {
+  backlog: "Heybe",
+  journal: "Günlük",
+  habits: "Alışkanlıklar",
+  workHistory: "Çalışma Geçmişi",
+};
+
+export type CustomModule = {
+  id: string;
+  label: string;
+  target: CustomModuleTarget;
+};
+
 const STORAGE_KEY = "keikaku.sidebarPreferences.v1";
+const CUSTOM_KEY = "keikaku.sidebarCustomModules.v1";
 const EVENT = "keikaku:sidebarPreferences";
 
 const read = (): Record<SidebarItemKey, boolean> => {
@@ -41,11 +57,27 @@ const read = (): Record<SidebarItemKey, boolean> => {
   }
 };
 
+const readCustom = (): CustomModule[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(CUSTOM_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 export const useSidebarPreferences = () => {
   const [prefs, setPrefs] = useState<Record<SidebarItemKey, boolean>>(read);
+  const [customModules, setCustomModules] = useState<CustomModule[]>(readCustom);
 
   useEffect(() => {
-    const handler = () => setPrefs(read());
+    const handler = () => {
+      setPrefs(read());
+      setCustomModules(readCustom());
+    };
     window.addEventListener(EVENT, handler);
     window.addEventListener("storage", handler);
     return () => {
@@ -65,5 +97,30 @@ export const useSidebarPreferences = () => {
     });
   };
 
-  return { prefs, setItem };
+  const persistCustom = (next: CustomModule[]) => {
+    try {
+      window.localStorage.setItem(CUSTOM_KEY, JSON.stringify(next));
+      window.dispatchEvent(new Event(EVENT));
+    } catch {}
+  };
+
+  const addCustomModule = (label: string, target: CustomModuleTarget) => {
+    const trimmed = label.trim();
+    if (!trimmed) return;
+    setCustomModules((prev) => {
+      const next = [...prev, { id: `mod_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, label: trimmed, target }];
+      persistCustom(next);
+      return next;
+    });
+  };
+
+  const removeCustomModule = (id: string) => {
+    setCustomModules((prev) => {
+      const next = prev.filter((m) => m.id !== id);
+      persistCustom(next);
+      return next;
+    });
+  };
+
+  return { prefs, setItem, customModules, addCustomModule, removeCustomModule };
 };
