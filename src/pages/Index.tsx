@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { FileText, Table as TableIcon, GanttChart, Kanban, Calendar, Plus, Undo, Redo, Moon, Sun, LayoutGrid } from "lucide-react";
 import AppSidebar, { ProjectIconPicker } from "@/components/AppSidebar";
@@ -16,6 +17,7 @@ import { ViewKey } from "@/hooks/useProjectViews";
 import { useUndo } from "@/hooks/useUndo";
 import { useTheme } from "@/hooks/useTheme";
 import { usePageState } from "@/hooks/usePageState";
+import { useStartupPage } from "@/hooks/useStartupPage";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const VIEWS: { id: ViewKey; label: string; jp: string; icon: any }[] = [
