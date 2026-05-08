@@ -49,6 +49,7 @@ const WorkHistory = () => {
   const { user } = useAuth();
   const { projects, createProject, updateProject, deleteProject } = useProjects();
   const { section, selectedProjectId, view, setSection, setSelectedProjectId, setView, setJournalDate } = usePageState();
+  const { categories } = usePomodoroCategories();
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({});
