@@ -419,9 +419,71 @@ const WorkHistory = () => {
 
               {/* ============ STATS ============ */}
               <section>
-                <h2 className="text-xs uppercase tracking-widest text-muted-foreground/70 mb-3 px-1">
-                  İstatistikler
-                </h2>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <h2 className="text-xs uppercase tracking-widest text-muted-foreground/70">
+                    İstatistikler
+                  </h2>
+                  <Popover open={statsSettingsOpen} onOpenChange={setStatsSettingsOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        className="p-1 -m-1 text-muted-foreground/70 hover:text-foreground transition-colors rounded-sm hover:bg-accent/40"
+                        title="İstatistik ayarları"
+                        aria-label="İstatistik ayarları"
+                      >
+                        <Settings2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-72 p-0">
+                      <div className="px-3 py-2.5 border-b border-border/60">
+                        <div className="text-[11px] uppercase tracking-widest text-muted-foreground/70">
+                          Dahil edilen kategoriler
+                        </div>
+                        <div className="text-[10px] text-muted-foreground/60 mt-0.5 font-light leading-snug">
+                          Yalnızca seçili kategoriler istatistik, grafik ve özetlere dahil edilir.
+                        </div>
+                      </div>
+                      <div className="max-h-72 overflow-auto py-1">
+                        {[
+                          ...categories.map((c) => ({ key: c.id, name: c.name, color: c.color })),
+                          { key: NONE_CAT_KEY, name: "Kategorisiz", color: "gray" },
+                        ].map((c) => {
+                          const checked = isCatIncluded(c.key === NONE_CAT_KEY ? null : c.key);
+                          return (
+                            <button
+                              key={c.key}
+                              onClick={() => toggleStatsCat(c.key)}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-accent/40 transition-colors text-left"
+                            >
+                              <span
+                                className={`h-3.5 w-3.5 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${
+                                  checked ? "bg-foreground border-foreground" : "border-border"
+                                }`}
+                              >
+                                {checked && <Check className="h-2.5 w-2.5 text-background" strokeWidth={3} />}
+                              </span>
+                              <span className="h-2 w-2 rounded-full shrink-0" style={{ background: colorHex(c.color) }} />
+                              <span className="font-light flex-1 truncate">{c.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="flex items-center justify-between gap-2 px-2 py-1.5 border-t border-border/60">
+                        <button
+                          onClick={() => setAllStatsCats(true)}
+                          className="text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-sm hover:bg-accent/40"
+                        >
+                          Tümünü seç
+                        </button>
+                        <button
+                          onClick={() => setAllStatsCats(false)}
+                          className="text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-sm hover:bg-accent/40"
+                        >
+                          Tümünü kaldır
+                        </button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <StatCard label="Son 7 gün" value={formatDur(stats.last7)} />
