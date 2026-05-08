@@ -26,6 +26,10 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
   const [habitDefault, setHabitDefault] = useHabitTodayDefault();
   const [email, setEmail] = useState(user?.email || "");
   const [password, setPassword] = useState("");
+  const [habitDefault, setHabitDefault] = useHabitTodayDefault();
+  const { prefs: sidebarPrefs, setItem: setSidebarPref } = useSidebarPreferences();
+  const [email, setEmail] = useState(user?.email || "");
+  const [password, setPassword] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [notifPerm, setNotifPerm] = useState<NotificationPermission | "unsupported">(
