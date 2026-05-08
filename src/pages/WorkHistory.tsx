@@ -77,7 +77,7 @@ const WorkHistory = () => {
   const [openWeeks, setOpenWeeks] = useState<Record<string, boolean>>({});
   const [recentWeeks, setRecentWeeks] = useState(1);
   const [expandedSessionsByDay, setExpandedSessionsByDay] = useState<Record<string, boolean>>({});
-  const [expandedDayTasks, setExpandedDayTasks] = useState<Record<string, boolean>>({});
+  const [collapsedDays, setCollapsedDays] = useState<Record<string, boolean>>({});
   const [catDayKey, setCatDayKey] = useState<string>(todayKey());
 
   useEffect(() => {
