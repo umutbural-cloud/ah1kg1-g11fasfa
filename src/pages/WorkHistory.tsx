@@ -621,30 +621,6 @@ const WorkHistory = () => {
                       </div>
                     );
                   })}
-                            </div>
-                            {d.sessions.length > 3 && (
-                              <button
-                                onClick={() => setExpandedSessionsByDay((s) => ({ ...s, [d.key]: !sessionsExpanded }))}
-                                className="w-full text-[11px] text-muted-foreground hover:text-foreground transition-colors py-1.5 border-t border-border/40 hover:bg-accent/20"
-                              >
-                                {sessionsExpanded
-                                  ? "Daha az göster"
-                                  : `Devamını göster (+${d.sessions.length - 3})`}
-                              </button>
-                            )}
-                          </>
-                        ) : (
-                          <div className="px-3 py-3 text-[11px] text-muted-foreground/50 italic">Kayıt yok</div>
-                        )}
-
-                        {tasksOpen && (
-                          <div className="px-3 pb-3 -mt-2">
-                            <JournalCompletedTasks date={d.key} />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
                 </div>
                 <div className="mt-3 flex justify-center">
                   <button
