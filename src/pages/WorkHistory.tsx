@@ -84,6 +84,62 @@ const WorkHistory = () => {
   const [recentCatFilter, setRecentCatFilter] = useState<Set<string>>(new Set());
 
   const NONE_CAT_KEY = "__none__";
+
+  // ----- Stats category inclusion (persisted) -----
+  // null = include all (default). Otherwise an explicit Set of included keys.
+  const storageKey = user ? `keikaku:work-stats:included-cats:${user.id}` : null;
+  const [includedCats, setIncludedCats] = useState<Set<string> | null>(null);
+  const [statsSettingsOpen, setStatsSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const arr = JSON.parse(raw) as string[];
+        if (Array.isArray(arr)) setIncludedCats(new Set(arr));
+      } else {
+        setIncludedCats(null);
+      }
+    } catch { /* ignore */ }
+  }, [storageKey]);
+
+  const persistIncluded = (next: Set<string> | null) => {
+    setIncludedCats(next);
+    if (!storageKey) return;
+    try {
+      if (next === null) localStorage.removeItem(storageKey);
+      else localStorage.setItem(storageKey, JSON.stringify(Array.from(next)));
+    } catch { /* ignore */ }
+  };
+
+  const isCatIncluded = (catId: string | null) => {
+    if (includedCats === null) return true;
+    return includedCats.has(catId ?? NONE_CAT_KEY);
+  };
+
+  const toggleStatsCat = (key: string) => {
+    // Materialize current selection (treat null as "everything")
+    const allKeys = [...categories.map((c) => c.id), NONE_CAT_KEY];
+    const current = includedCats ?? new Set(allKeys);
+    const next = new Set(current);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    // If all enabled, store as null to keep "include all" behavior even for new categories
+    const allOn = allKeys.every((k) => next.has(k));
+    persistIncluded(allOn ? null : next);
+  };
+
+  const setAllStatsCats = (on: boolean) => {
+    if (on) persistIncluded(null);
+    else persistIncluded(new Set());
+  };
+
+  const filteredStatsSessions = useMemo(
+    () => sessions.filter((s) => isCatIncluded(s.category_id)),
+    [sessions, includedCats],
+  );
+
   const toggleRecentCat = (key: string) => {
     setRecentCatFilter((prev) => {
       const next = new Set(prev);
