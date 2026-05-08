@@ -186,7 +186,11 @@ const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onDeleteTask 
 
   const isDoneCol = column.key === "done";
   const sorted = isDoneCol
-    ? [...tasks].sort((a, b) => (b.created_at > a.created_at ? 1 : -1))
+    ? [...tasks].sort((a, b) => {
+        const aKey = a.completed_at || a.created_at;
+        const bKey = b.completed_at || b.created_at;
+        return bKey > aKey ? 1 : bKey < aKey ? -1 : 0;
+      })
     : tasks;
   const visibleTasks = isDoneCol && !showAllDone ? sorted.slice(0, 3) : sorted;
   const hiddenCount = isDoneCol ? Math.max(0, sorted.length - 3) : 0;
