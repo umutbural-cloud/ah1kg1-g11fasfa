@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePomodoroCategories, PomodoroCategory } from "@/hooks/usePomodoroCategories";
 import { colorClasses, TaskColor } from "@/lib/taskColors";
+import { colorHex } from "@/hooks/useHabitCategories";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 
