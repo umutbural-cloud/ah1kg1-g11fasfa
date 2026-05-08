@@ -159,6 +159,30 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
 
           <div className="border-t border-border/60" />
 
+          {/* Tercihler — Sidebar görünürlüğü */}
+          <div className="space-y-2">
+            <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">設定 — Tercihler</div>
+            <div className="text-[10px] text-muted-foreground tracking-wide">
+              Yan menüde hangi bölümler görünsün
+            </div>
+            <div className="grid grid-cols-1 gap-1.5 pt-1">
+              {SIDEBAR_ITEM_ORDER.map((key) => (
+                <label
+                  key={key}
+                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-sm hover:bg-accent/40 transition-colors cursor-pointer"
+                >
+                  <Checkbox
+                    checked={sidebarPrefs[key]}
+                    onCheckedChange={(v) => setSidebarPref(key, v === true)}
+                  />
+                  <span className="text-sm font-light tracking-wide">{SIDEBAR_ITEM_LABELS[key]}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-border/60" />
+
           {/* E-posta */}
 
           <div className="space-y-2">
