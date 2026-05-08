@@ -198,6 +198,36 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
 
           <div className="border-t border-border/60" />
 
+          {/* Açılış sayfası */}
+          <div className="space-y-2">
+            <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">起動 — Açılış sayfası</div>
+            <div className="text-[10px] text-muted-foreground tracking-wide">
+              Uygulama açıldığında hangi sayfaya gidilsin
+            </div>
+            <Select value={startupValue} onValueChange={handleStartupChange}>
+              <SelectTrigger className="h-9 text-sm font-light">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value="default">Varsayılan (ilk proje)</SelectItem>
+                {enabledModules.length > 0 && (
+                  <div className="px-2 pt-1.5 pb-0.5 text-[10px] text-muted-foreground tracking-[0.15em] uppercase">Modüller</div>
+                )}
+                {enabledModules.map((k) => (
+                  <SelectItem key={`mod:${k}`} value={`mod:${k}`}>{SIDEBAR_ITEM_LABELS[k]}</SelectItem>
+                ))}
+                {projects.length > 0 && (
+                  <div className="px-2 pt-1.5 pb-0.5 text-[10px] text-muted-foreground tracking-[0.15em] uppercase">Projeler</div>
+                )}
+                {projects.map((p) => (
+                  <SelectItem key={`prj:${p.id}`} value={`prj:${p.id}`}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="border-t border-border/60" />
+
           {/* E-posta */}
 
           <div className="space-y-2">
