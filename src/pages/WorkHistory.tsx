@@ -538,15 +538,21 @@ const WorkHistory = () => {
                                   {weekOpen && (
                                     <div className="divide-y divide-border/40 bg-background/40">
                                       {w.days.map((d) => (
-                                        <div
+                                        <button
                                           key={d.key}
-                                          className="w-full flex items-center justify-between px-3 py-2 pl-14"
+                                          onClick={() => {
+                                            setJournalDate(d.key);
+                                            setSection("journal");
+                                            navigate("/");
+                                          }}
+                                          className="w-full flex items-center justify-between px-3 py-2 pl-14 hover:bg-accent/30 transition-colors text-left"
+                                          title="Günlüğe git"
                                         >
                                           <span className="text-sm font-light">
                                             {format(d.date, "d MMMM, EEEE", { locale: tr })}
                                           </span>
                                           <span className="text-xs text-muted-foreground tabular-nums">{formatDur(d.total)}</span>
-                                        </div>
+                                        </button>
                                       ))}
                                     </div>
                                   )}
