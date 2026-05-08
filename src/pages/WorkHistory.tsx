@@ -70,7 +70,7 @@ const WorkHistory = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { projects, createProject, updateProject, deleteProject } = useProjects();
-  const { section, selectedProjectId, view, setSection, setSelectedProjectId, setView } = usePageState();
+  const { section, selectedProjectId, view, setSection, setSelectedProjectId, setView, setJournalDate } = usePageState();
   const { categories } = usePomodoroCategories();
 
   const [sessions, setSessions] = useState<Session[]>([]);
