@@ -509,7 +509,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
-              <PomodoroSidebarWidget />
+              {prefs.pomodoro && <PomodoroSidebarWidget />}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={onSelectTrash}
