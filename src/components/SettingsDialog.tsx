@@ -123,7 +123,37 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
 
           <div className="border-t border-border/60" />
 
+          {/* Alışkanlıklar */}
+          <div className="space-y-2">
+            <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">習慣 — Alışkanlıklar</div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-light">Bugün varsayılan filtresi</div>
+                <div className="text-[10px] text-muted-foreground tracking-wide">
+                  Sayfa açıldığında hangi alışkanlıklar gösterilsin
+                </div>
+              </div>
+              <div className="flex rounded-sm border border-border/60 overflow-hidden shrink-0">
+                <button
+                  onClick={() => setHabitDefault("time")}
+                  className={`px-3 py-1.5 text-xs tracking-wide transition-colors ${
+                    habitDefault === "time" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/40"
+                  }`}
+                >Günün saati</button>
+                <button
+                  onClick={() => setHabitDefault("all")}
+                  className={`px-3 py-1.5 text-xs tracking-wide transition-colors border-l border-border/60 ${
+                    habitDefault === "all" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/40"
+                  }`}
+                >Tümü</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-border/60" />
+
           {/* E-posta */}
+
           <div className="space-y-2">
             <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">E-posta</div>
             <div className="flex gap-2">
