@@ -29,7 +29,6 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import type { ViewKey } from "@/hooks/useProjectViews";
 import { usePomodoroCategories } from "@/hooks/usePomodoroCategories";
 import { colorClasses, type TaskColor } from "@/lib/taskColors";
-import JournalCompletedTasks from "@/components/JournalCompletedTasks";
 
 type Session = {
   id: string;
@@ -536,17 +535,17 @@ const WorkHistory = () => {
                 <div className="space-y-4">
                   {recentDays.map((d) => {
                     const sessionsExpanded = expandedSessionsByDay[d.key] ?? false;
-                    const tasksOpen = expandedDayTasks[d.key] ?? false;
+                    const collapsed = collapsedDays[d.key] ?? false;
                     const visible = sessionsExpanded ? d.sessions : d.sessions.slice(0, 3);
                     return (
                       <div key={d.key} className="border border-border/60 rounded-sm overflow-hidden">
                         <button
-                          onClick={() => setExpandedDayTasks((s) => ({ ...s, [d.key]: !tasksOpen }))}
-                          className="w-full flex items-center justify-between px-3 py-2 bg-card/40 border-b border-border/60 hover:bg-card/60 transition-colors text-left"
-                          title={tasksOpen ? "Görevleri gizle" : "Bugün tamamlanan görevleri göster"}
+                          onClick={() => setCollapsedDays((s) => ({ ...s, [d.key]: !collapsed }))}
+                          className={`w-full flex items-center justify-between px-3 py-2 bg-card/40 ${collapsed ? "" : "border-b border-border/60"} hover:bg-card/60 transition-colors text-left`}
+                          title={collapsed ? "Çalışmaları göster" : "Çalışmaları gizle"}
                         >
                           <span className="flex items-center gap-2 text-sm font-light">
-                            <ChevronRight className={`h-3 w-3 transition-transform ${tasksOpen ? "rotate-90" : ""}`} />
+                            <ChevronRight className={`h-3 w-3 transition-transform ${collapsed ? "" : "rotate-90"}`} />
                             {format(d.date, "d MMMM yyyy, EEEE", { locale: tr })}
                           </span>
                           <span className={`text-xs tabular-nums ${d.total > 0 ? "text-muted-foreground" : "text-muted-foreground/40"}`}>
@@ -554,36 +553,56 @@ const WorkHistory = () => {
                           </span>
                         </button>
 
-                        {d.sessions.length > 0 ? (
-                          <>
-                            <div className="divide-y divide-border/40">
-                              {visible.map((s) => {
-                                const cat = categories.find((c) => c.id === s.category_id);
-                                return (
-                                  <div key={s.id} className="flex items-center justify-between px-3 py-2 gap-3">
-                                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                                      <span className="text-[11px] text-muted-foreground/70 tabular-nums w-10 shrink-0">
-                                        {format(parseISO(s.started_at), "HH:mm")}
+                        {!collapsed && (
+                          d.sessions.length > 0 ? (
+                            <>
+                              <div className="divide-y divide-border/40">
+                                {visible.map((s) => {
+                                  const cat = categories.find((c) => c.id === s.category_id);
+                                  return (
+                                    <div key={s.id} className="flex items-center justify-between px-3 py-2 gap-3">
+                                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        <span className="text-[11px] text-muted-foreground/70 tabular-nums w-10 shrink-0">
+                                          {format(parseISO(s.started_at), "HH:mm")}
+                                        </span>
+                                        {cat && (
+                                          <span className="flex items-center gap-1.5 shrink-0">
+                                            <span className={`h-2 w-2 rounded-full ${colorClasses(cat.color as TaskColor, "dot")}`} />
+                                            <span className="text-xs text-muted-foreground">{cat.name}</span>
+                                          </span>
+                                        )}
+                                        {s.note && (
+                                          <span className="text-xs font-light truncate">
+                                            {cat && <span className="text-muted-foreground/40 mx-1">·</span>}
+                                            {s.note}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                                        {formatDur(s.duration_seconds)}
                                       </span>
-                                      {cat && (
-                                        <span className="flex items-center gap-1.5 shrink-0">
-                                          <span className={`h-2 w-2 rounded-full ${colorClasses(cat.color as TaskColor, "dot")}`} />
-                                          <span className="text-xs text-muted-foreground">{cat.name}</span>
-                                        </span>
-                                      )}
-                                      {s.note && (
-                                        <span className="text-xs font-light truncate">
-                                          {cat && <span className="text-muted-foreground/40 mx-1">·</span>}
-                                          {s.note}
-                                        </span>
-                                      )}
                                     </div>
-                                    <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                                      {formatDur(s.duration_seconds)}
-                                    </span>
-                                  </div>
-                                );
-                              })}
+                                  );
+                                })}
+                              </div>
+                              {d.sessions.length > 3 && (
+                                <button
+                                  onClick={() => setExpandedSessionsByDay((s) => ({ ...s, [d.key]: !sessionsExpanded }))}
+                                  className="w-full text-[11px] text-muted-foreground hover:text-foreground transition-colors py-1.5 border-t border-border/40 hover:bg-accent/20"
+                                >
+                                  {sessionsExpanded
+                                    ? "Daha az göster"
+                                    : `Devamını göster (+${d.sessions.length - 3})`}
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <div className="px-3 py-3 text-[11px] text-muted-foreground/50 italic">Kayıt yok</div>
+                          )
+                        )}
+                      </div>
+                    );
+                  })}
                             </div>
                             {d.sessions.length > 3 && (
                               <button
