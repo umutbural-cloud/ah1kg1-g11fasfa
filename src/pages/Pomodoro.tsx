@@ -11,6 +11,8 @@ import { usePageState } from "@/hooks/usePageState";
 import { useProjects } from "@/hooks/useProjects";
 import { usePomodoroCategories, PomodoroCategory } from "@/hooks/usePomodoroCategories";
 import { TASK_COLORS, colorClasses, TaskColor } from "@/lib/taskColors";
+import { colorHex } from "@/hooks/useHabitCategories";
+import { CategoryColorPicker } from "@/components/CategoryColorPicker";
 import PomodoroTaskBoard from "@/components/PomodoroTaskBoard";
 import AppSidebar from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
