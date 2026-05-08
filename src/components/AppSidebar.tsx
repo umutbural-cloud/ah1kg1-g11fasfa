@@ -353,6 +353,8 @@ const ProjectItem = ({
 
 const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onCreate, onDelete, onUpdateProject, onSelectBacklog, onSelectTrash, onSelectJournal, onSelectHabits }: Props) => {
   const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+  const { prefs } = useSidebarPreferences();
   const [newName, setNewName] = useState("");
   const [showInput, setShowInput] = useState(false);
   const [addingParentId, setAddingParentId] = useState<string | null>(null);
