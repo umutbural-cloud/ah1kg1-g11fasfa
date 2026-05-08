@@ -49,6 +49,7 @@ const WorkHistory = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({});
   const [openWeeks, setOpenWeeks] = useState<Record<string, boolean>>({});
+  const [recentWeeks, setRecentWeeks] = useState(1);
 
   useEffect(() => {
     if (!user) return;
@@ -127,6 +128,28 @@ const WorkHistory = () => {
           })),
       }));
   }, [sessions]);
+
+  // Recent days flat list — last N weeks (7 * recentWeeks days back from today)
+  const recentDays = useMemo(() => {
+    const byDay = new Map<string, { date: Date; total: number }>();
+    sessions.forEach((s) => {
+      const d = parseISO(s.started_at);
+      const k = format(startOfDay(d), "yyyy-MM-dd");
+      const existing = byDay.get(k);
+      if (existing) existing.total += s.duration_seconds;
+      else byDay.set(k, { date: startOfDay(d), total: s.duration_seconds });
+    });
+    const today = startOfDay(new Date());
+    const cutoff = new Date(today.getTime() - (recentWeeks * 7 - 1) * 24 * 60 * 60 * 1000);
+    const out: { key: string; date: Date; total: number }[] = [];
+    for (let i = 0; i < recentWeeks * 7; i++) {
+      const d = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+      const k = format(d, "yyyy-MM-dd");
+      const entry = byDay.get(k);
+      out.push({ key: k, date: d, total: entry?.total ?? 0 });
+    }
+    return out;
+  }, [sessions, recentWeeks]);
 
   const goToDay = (dayKey: string) => {
     setJournalDate(dayKey);
@@ -254,6 +277,37 @@ const WorkHistory = () => {
                   })}
                 </div>
               )}
+
+              <div className="mt-10">
+                <h2 className="text-xs uppercase tracking-widest text-muted-foreground/70 mb-3 px-1">
+                  Son {recentWeeks} Hafta — Günlük
+                </h2>
+                <div className="border border-border/60 rounded-sm divide-y divide-border/40 overflow-hidden">
+                  {recentDays.map((d) => (
+                    <button
+                      key={d.key}
+                      onClick={() => goToDay(d.key)}
+                      className="w-full flex items-center justify-between px-3 py-2 hover:bg-accent/30 transition-colors text-left"
+                      title="Günlüğe git"
+                    >
+                      <span className="text-sm font-light">
+                        {format(d.date, "d MMMM EEEE", { locale: tr })}
+                      </span>
+                      <span className={`text-xs tabular-nums ${d.total > 0 ? "text-muted-foreground" : "text-muted-foreground/40"}`}>
+                        {d.total > 0 ? formatDur(d.total) : "—"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-3 flex justify-center">
+                  <button
+                    onClick={() => setRecentWeeks((w) => w + 1)}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"
+                  >
+                    Devamını göster
+                  </button>
+                </div>
+              </div>
             </div>
           </main>
         </div>
