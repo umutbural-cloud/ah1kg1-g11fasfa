@@ -568,31 +568,22 @@ const Pomodoro = () => {
                       const totalSec = items.filter((s) => s.kind === "work").reduce((a, s) => a + s.duration_seconds, 0);
                       const h = Math.floor(totalSec / 3600);
                       const m = Math.floor((totalSec % 3600) / 60);
+                      const todayKey = format(startOfDay(new Date()), "yyyy-MM-dd");
+                      const isToday = day === todayKey;
                       return (
-                        <div key={day} className="border border-border/60 rounded-sm overflow-hidden">
-                          <div className="flex items-center justify-between px-3 py-2 bg-card/40 border-b border-border/60">
-                            <span className="text-sm font-light">
-                              {format(parseISO(day), "d MMMM yyyy, EEEE", { locale: tr })}
-                            </span>
-                            <span className="text-xs text-muted-foreground tabular-nums">
-                              {h > 0 ? `${h}s ` : ""}{m}d
-                            </span>
-                          </div>
-                          <div className="divide-y divide-border/40">
-                            {items.map((s) => (
-                              <SessionRow
-                                key={s.id}
-                                session={s}
-                                categories={categories}
-                                onUpdateNote={updateNote}
-                                onUpdateDuration={updateDuration}
-                                onUpdateTimes={updateTimes}
-                                onUpdateCategory={updateSessionCategory}
-                                onDelete={deleteSession}
-                              />
-                            ))}
-                          </div>
-                        </div>
+                        <DayGroup
+                          key={day}
+                          day={day}
+                          items={items}
+                          isToday={isToday}
+                          totalLabel={`${h > 0 ? `${h}s ` : ""}${m}d`}
+                          categories={categories}
+                          onUpdateNote={updateNote}
+                          onUpdateDuration={updateDuration}
+                          onUpdateTimes={updateTimes}
+                          onUpdateCategory={updateSessionCategory}
+                          onDelete={deleteSession}
+                        />
                       );
                     })}
                   </div>
@@ -619,6 +610,66 @@ const Pomodoro = () => {
         </DialogContent>
       </Dialog>
     </SidebarProvider>
+  );
+};
+
+const DayGroup = ({
+  day,
+  items,
+  isToday,
+  totalLabel,
+  categories,
+  onUpdateNote,
+  onUpdateDuration,
+  onUpdateTimes,
+  onUpdateCategory,
+  onDelete,
+}: {
+  day: string;
+  items: Session[];
+  isToday: boolean;
+  totalLabel: string;
+  categories: PomodoroCategory[];
+  onUpdateNote: (id: string, note: string) => void;
+  onUpdateDuration: (id: string, totalSeconds: number) => void;
+  onUpdateTimes: (id: string, startedAt: string, endedAt: string) => void;
+  onUpdateCategory: (id: string, category_id: string | null) => void;
+  onDelete: (id: string) => void;
+}) => {
+  const [expanded, setExpanded] = useState(false);
+  const visibleItems = isToday || expanded ? items : items.slice(0, 3);
+  const hiddenCount = items.length - visibleItems.length;
+  return (
+    <div className="border border-border/60 rounded-sm overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 bg-card/40 border-b border-border/60">
+        <span className="text-sm font-light">
+          {format(parseISO(day), "d MMMM yyyy, EEEE", { locale: tr })}
+        </span>
+        <span className="text-xs text-muted-foreground tabular-nums">{totalLabel}</span>
+      </div>
+      <div className="divide-y divide-border/40">
+        {visibleItems.map((s) => (
+          <SessionRow
+            key={s.id}
+            session={s}
+            categories={categories}
+            onUpdateNote={onUpdateNote}
+            onUpdateDuration={onUpdateDuration}
+            onUpdateTimes={onUpdateTimes}
+            onUpdateCategory={onUpdateCategory}
+            onDelete={onDelete}
+          />
+        ))}
+      </div>
+      {!isToday && items.length > 3 && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full px-3 py-2 text-[10px] tracking-[0.2em] uppercase text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors border-t border-border/60"
+        >
+          {expanded ? "Daha az göster" : `Devamını göster (+${hiddenCount})`}
+        </button>
+      )}
+    </div>
   );
 };
 
