@@ -80,6 +80,21 @@ const WorkHistory = () => {
   const [expandedSessionsByDay, setExpandedSessionsByDay] = useState<Record<string, boolean>>({});
   const [collapsedDays, setCollapsedDays] = useState<Record<string, boolean>>({});
   const [catDayKey, setCatDayKey] = useState<string>(todayKey());
+  const [recentCatFilter, setRecentCatFilter] = useState<Set<string>>(new Set());
+
+  const NONE_CAT_KEY = "__none__";
+  const toggleRecentCat = (key: string) => {
+    setRecentCatFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+  const sessionMatchesFilter = (s: Session) => {
+    if (recentCatFilter.size === 0) return true;
+    return recentCatFilter.has(s.category_id ?? NONE_CAT_KEY);
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -242,8 +257,9 @@ const WorkHistory = () => {
 
   // -------- Recent days --------
   const recentDays = useMemo(() => {
+    const filtered = sessions.filter(sessionMatchesFilter);
     const byDay = new Map<string, Session[]>();
-    sessions.forEach((s) => {
+    filtered.forEach((s) => {
       const k = format(startOfDay(parseISO(s.started_at)), "yyyy-MM-dd");
       const arr = byDay.get(k);
       if (arr) arr.push(s);
@@ -259,7 +275,7 @@ const WorkHistory = () => {
       out.push({ key: k, date: d, total, sessions: items });
     }
     return out;
-  }, [sessions, recentWeeks]);
+  }, [sessions, recentWeeks, recentCatFilter]);
 
   // -------- Sidebar handlers --------
   const handleSidebarSelect = (id: string, v?: ViewKey) => {
@@ -550,6 +566,47 @@ const WorkHistory = () => {
                 <h2 className="text-xs uppercase tracking-widest text-muted-foreground/70 mb-3 px-1">
                   Son {recentWeeks} Hafta — Günlük
                 </h2>
+
+                {/* Category filter chips */}
+                <div className="flex flex-wrap items-center gap-1.5 mb-4 px-1">
+                  {categories.map((c) => {
+                    const active = recentCatFilter.has(c.id);
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => toggleRecentCat(c.id)}
+                        className={`flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
+                          active
+                            ? "border-foreground/40 bg-accent/40 text-foreground"
+                            : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/20"
+                        }`}
+                      >
+                        <span className={`h-2 w-2 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                        {c.name}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => toggleRecentCat(NONE_CAT_KEY)}
+                    className={`flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
+                      recentCatFilter.has(NONE_CAT_KEY)
+                        ? "border-foreground/40 bg-accent/40 text-foreground"
+                        : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/20"
+                    }`}
+                  >
+                    <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                    Kategorisiz
+                  </button>
+                  {recentCatFilter.size > 0 && (
+                    <button
+                      onClick={() => setRecentCatFilter(new Set())}
+                      className="text-[11px] px-2 py-1 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Temizle
+                    </button>
+                  )}
+                </div>
+
                 <div className="space-y-4">
                   {recentDays.map((d) => {
                     const sessionsExpanded = expandedSessionsByDay[d.key] ?? false;
