@@ -12,6 +12,9 @@ import {
   SIDEBAR_ITEM_ORDER,
   SIDEBAR_ITEM_LABELS,
 } from "@/hooks/useSidebarPreferences";
+import { useStartupPage } from "@/hooks/useStartupPage";
+import { useProjects } from "@/hooks/useProjects";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -25,6 +28,18 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
   const { user } = useAuth();
   const [habitDefault, setHabitDefault] = useHabitTodayDefault();
   const { prefs: sidebarPrefs, setItem: setSidebarPref } = useSidebarPreferences();
+  const { startup, setStartup } = useStartupPage();
+  const { projects } = useProjects();
+  const enabledModules = SIDEBAR_ITEM_ORDER.filter((k) => sidebarPrefs[k]);
+  const startupValue =
+    startup.type === "module" ? `mod:${startup.value}` :
+    startup.type === "project" ? `prj:${startup.value}` :
+    "default";
+  const handleStartupChange = (v: string) => {
+    if (v === "default") setStartup({ type: "default" });
+    else if (v.startsWith("mod:")) setStartup({ type: "module", value: v.slice(4) as any });
+    else if (v.startsWith("prj:")) setStartup({ type: "project", value: v.slice(4) });
+  };
   const [email, setEmail] = useState(user?.email || "");
   const [password, setPassword] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
@@ -179,6 +194,36 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                 </label>
               ))}
             </div>
+          </div>
+
+          <div className="border-t border-border/60" />
+
+          {/* Açılış sayfası */}
+          <div className="space-y-2">
+            <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">起動 — Açılış sayfası</div>
+            <div className="text-[10px] text-muted-foreground tracking-wide">
+              Uygulama açıldığında hangi sayfaya gidilsin
+            </div>
+            <Select value={startupValue} onValueChange={handleStartupChange}>
+              <SelectTrigger className="h-9 text-sm font-light">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value="default">Varsayılan (ilk proje)</SelectItem>
+                {enabledModules.length > 0 && (
+                  <div className="px-2 pt-1.5 pb-0.5 text-[10px] text-muted-foreground tracking-[0.15em] uppercase">Modüller</div>
+                )}
+                {enabledModules.map((k) => (
+                  <SelectItem key={`mod:${k}`} value={`mod:${k}`}>{SIDEBAR_ITEM_LABELS[k]}</SelectItem>
+                ))}
+                {projects.length > 0 && (
+                  <div className="px-2 pt-1.5 pb-0.5 text-[10px] text-muted-foreground tracking-[0.15em] uppercase">Projeler</div>
+                )}
+                {projects.map((p) => (
+                  <SelectItem key={`prj:${p.id}`} value={`prj:${p.id}`}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="border-t border-border/60" />
