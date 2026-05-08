@@ -3,9 +3,15 @@ import { Moon, Sun, Bell, BellOff } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useHabitTodayDefault } from "@/hooks/useHabitSettings";
+import {
+  useSidebarPreferences,
+  SIDEBAR_ITEM_ORDER,
+  SIDEBAR_ITEM_LABELS,
+} from "@/hooks/useSidebarPreferences";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -18,6 +24,7 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
   const { theme, toggle: toggleTheme } = useTheme();
   const { user } = useAuth();
   const [habitDefault, setHabitDefault] = useHabitTodayDefault();
+  const { prefs: sidebarPrefs, setItem: setSidebarPref } = useSidebarPreferences();
   const [email, setEmail] = useState(user?.email || "");
   const [password, setPassword] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
@@ -147,6 +154,30 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                   }`}
                 >Tümü</button>
               </div>
+            </div>
+          </div>
+
+          <div className="border-t border-border/60" />
+
+          {/* Tercihler — Sidebar görünürlüğü */}
+          <div className="space-y-2">
+            <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">設定 — Tercihler</div>
+            <div className="text-[10px] text-muted-foreground tracking-wide">
+              Yan menüde hangi bölümler görünsün
+            </div>
+            <div className="grid grid-cols-1 gap-1.5 pt-1">
+              {SIDEBAR_ITEM_ORDER.map((key) => (
+                <label
+                  key={key}
+                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-sm hover:bg-accent/40 transition-colors cursor-pointer"
+                >
+                  <Checkbox
+                    checked={sidebarPrefs[key]}
+                    onCheckedChange={(v) => setSidebarPref(key, v === true)}
+                  />
+                  <span className="text-sm font-light tracking-wide">{SIDEBAR_ITEM_LABELS[key]}</span>
+                </label>
+              ))}
             </div>
           </div>
 

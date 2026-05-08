@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Plus, Trash2, LogOut, ChevronRight, ChevronUp, ChevronDown, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash, Settings, Repeat, Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, Trash2, LogOut, ChevronRight, ChevronUp, ChevronDown, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash, Settings, Repeat, Check, Clock } from "lucide-react";
+import { useSidebarPreferences } from "@/hooks/useSidebarPreferences";
 import { HABIT_ICON_GROUPS, getHabitIcon } from "@/lib/habitIcons";
 import { CATEGORY_COLORS, colorHex } from "@/hooks/useHabitCategories";
 import SettingsDialog from "./SettingsDialog";
@@ -351,6 +353,8 @@ const ProjectItem = ({
 
 const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onCreate, onDelete, onUpdateProject, onSelectBacklog, onSelectTrash, onSelectJournal, onSelectHabits }: Props) => {
   const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+  const { prefs } = useSidebarPreferences();
   const [newName, setNewName] = useState("");
   const [showInput, setShowInput] = useState(false);
   const [addingParentId, setAddingParentId] = useState<string | null>(null);
@@ -386,33 +390,50 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={onSelectBacklog}
-                  className={`text-sm font-light ${section === "backlog" ? "bg-accent text-accent-foreground" : ""}`}
-                >
-                  <Package className="h-3.5 w-3.5" />
-                  <span className="tracking-wide">Heybe</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={onSelectJournal}
-                  className={`text-sm font-light ${section === "journal" ? "bg-accent text-accent-foreground" : ""}`}
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                  <span className="tracking-wide">Günlük</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={onSelectHabits}
-                  className={`text-sm font-light ${section === "habits" ? "bg-accent text-accent-foreground" : ""}`}
-                >
-                  <Repeat className="h-3.5 w-3.5" />
-                  <span className="tracking-wide">Alışkanlıklar</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {prefs.backlog && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={onSelectBacklog}
+                    className={`text-sm font-light ${section === "backlog" ? "bg-accent text-accent-foreground" : ""}`}
+                  >
+                    <Package className="h-3.5 w-3.5" />
+                    <span className="tracking-wide">Heybe</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+              {prefs.journal && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={onSelectJournal}
+                    className={`text-sm font-light ${section === "journal" ? "bg-accent text-accent-foreground" : ""}`}
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    <span className="tracking-wide">Günlük</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+              {prefs.habits && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={onSelectHabits}
+                    className={`text-sm font-light ${section === "habits" ? "bg-accent text-accent-foreground" : ""}`}
+                  >
+                    <Repeat className="h-3.5 w-3.5" />
+                    <span className="tracking-wide">Alışkanlıklar</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+              {prefs.workHistory && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate("/work-history")}
+                    className="text-sm font-light"
+                  >
+                    <Clock className="h-3.5 w-3.5" />
+                    <span className="tracking-wide">Çalışma Geçmişi</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -488,7 +509,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
-              <PomodoroSidebarWidget />
+              {prefs.pomodoro && <PomodoroSidebarWidget />}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={onSelectTrash}
