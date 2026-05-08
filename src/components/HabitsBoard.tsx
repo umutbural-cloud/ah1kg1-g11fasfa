@@ -10,6 +10,7 @@ import HabitDetailDialog from "./HabitDetailDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CategoryColorPicker } from "./CategoryColorPicker";
 import { TIME_OF_DAY_OPTIONS, type TimeOfDay, timeOfDayLabel } from "@/lib/timeOfDay";
 
 const FREQ_LABEL: Record<FrequencyType, string> = {
@@ -210,24 +211,7 @@ const HabitsBoard = () => {
           <div className="space-y-2">
             {categories.map((c) => (
               <div key={c.id} className="flex items-center gap-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button className="h-6 w-6 rounded-full border border-border/60" style={{ background: colorHex(c.color) }} />
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-2">
-                    <div className="grid grid-cols-4 gap-1">
-                      {CATEGORY_COLORS.map((col) => (
-                        <button
-                          key={col.key}
-                          onClick={() => updateCategory(c.id, { color: col.key })}
-                          className="h-6 w-6 rounded-full border border-border/60"
-                          style={{ background: col.hex }}
-                          title={col.label}
-                        />
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                <CategoryColorPicker value={c.color} onChange={(k) => updateCategory(c.id, { color: k })} />
                 <Input
                   defaultValue={c.name}
                   onBlur={(e) => { if (e.target.value.trim() && e.target.value !== c.name) updateCategory(c.id, { name: e.target.value.trim() }); }}

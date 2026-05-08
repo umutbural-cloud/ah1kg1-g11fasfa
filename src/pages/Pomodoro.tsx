@@ -11,6 +11,8 @@ import { usePageState } from "@/hooks/usePageState";
 import { useProjects } from "@/hooks/useProjects";
 import { usePomodoroCategories, PomodoroCategory } from "@/hooks/usePomodoroCategories";
 import { TASK_COLORS, colorClasses, TaskColor } from "@/lib/taskColors";
+import { colorHex } from "@/hooks/useHabitCategories";
+import { CategoryColorPicker } from "@/components/CategoryColorPicker";
 import PomodoroTaskBoard from "@/components/PomodoroTaskBoard";
 import AppSidebar from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -434,7 +436,7 @@ const Pomodoro = () => {
                             onClick={() => setFilterCategoryId(c.id)}
                             className={`w-full flex items-center gap-2 text-left px-2 py-1 text-xs rounded-sm hover:bg-accent ${filterCategoryId === c.id ? "bg-accent" : ""}`}
                           >
-                            <span className={`h-2.5 w-2.5 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                            <span className="h-2.5 w-2.5 rounded-full" style={{ background: colorHex(c.color) }} />
                             {c.name}
                           </button>
                         ))}
@@ -538,7 +540,7 @@ const Pomodoro = () => {
                           onClick={() => setAddCategoryId(c.id)}
                           className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm border ${addCategoryId === c.id ? "bg-accent border-foreground/30" : "border-border/60 hover:bg-accent/50"}`}
                         >
-                          <span className={`h-2 w-2 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                          <span className="h-2 w-2 rounded-full" style={{ background: colorHex(c.color) }} />
                           {c.name}
                         </button>
                       ))}
@@ -696,17 +698,7 @@ const CategoriesEditor = ({
               onBlur={(e) => e.target.value !== c.name && onUpdate(c.id, { name: e.target.value })}
               className="flex-1 bg-transparent border-b border-border/60 outline-none focus:border-foreground/40 text-xs px-1 py-1"
             />
-            <div className="flex gap-1">
-              {TASK_COLORS.map((tc) => (
-                <button
-                  key={tc.value}
-                  onClick={() => onUpdate(c.id, { color: tc.value })}
-                  className={`h-4 w-4 rounded-full border ${colorClasses(tc.value, "swatch")} ${
-                    c.color === tc.value ? "ring-2 ring-foreground/50 ring-offset-1 ring-offset-background" : "opacity-70"
-                  }`}
-                />
-              ))}
-            </div>
+            <CategoryColorPicker value={c.color} onChange={(k) => onUpdate(c.id, { color: k })} size="sm" />
             <button onClick={() => onRemove(c.id)} className="text-muted-foreground hover:text-destructive">
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -720,17 +712,7 @@ const CategoriesEditor = ({
           placeholder="Yeni kategori"
           className="flex-1 bg-transparent border-b border-border/60 outline-none focus:border-foreground/40 text-xs px-1 py-1"
         />
-        <div className="flex gap-1">
-          {TASK_COLORS.map((tc) => (
-            <button
-              key={tc.value}
-              onClick={() => setNewColor(tc.value)}
-              className={`h-4 w-4 rounded-full border ${colorClasses(tc.value, "swatch")} ${
-                newColor === tc.value ? "ring-2 ring-foreground/50 ring-offset-1 ring-offset-background" : "opacity-70"
-              }`}
-            />
-          ))}
-        </div>
+        <CategoryColorPicker value={newColor} onChange={setNewColor} size="sm" />
         <button
           onClick={async () => {
             if (!newName.trim()) return;
@@ -859,7 +841,7 @@ const SessionRow = ({
             >
               {cat ? (
                 <>
-                  <span className={`h-2 w-2 rounded-full ${colorClasses(cat.color as TaskColor, "dot")}`} />
+                  <span className="h-2 w-2 rounded-full" style={{ background: colorHex(cat.color) }} />
                   <span className="truncate">{cat.name}</span>
                 </>
               ) : (
@@ -880,7 +862,7 @@ const SessionRow = ({
                 onClick={() => onUpdateCategory(session.id, c.id)}
                 className="w-full flex items-center gap-2 text-left px-2 py-1 text-xs rounded-sm hover:bg-accent"
               >
-                <span className={`h-2.5 w-2.5 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: colorHex(c.color) }} />
                 {c.name}
               </button>
             ))}

@@ -29,6 +29,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import type { ViewKey } from "@/hooks/useProjectViews";
 import { usePomodoroCategories } from "@/hooks/usePomodoroCategories";
 import { colorClasses, type TaskColor } from "@/lib/taskColors";
+import { colorHex } from "@/hooks/useHabitCategories";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
@@ -312,7 +313,7 @@ const WorkHistory = () => {
           return (
             <li key={String(r.catId)} className="flex items-center justify-between gap-2 text-xs">
               <span className="flex items-center gap-1.5 min-w-0">
-                <span className={`h-2 w-2 rounded-full ${colorClasses(catColor(r.catId), "dot")}`} />
+                <span className="h-2 w-2 rounded-full" style={{ background: colorHex(categories.find((c) => c.id === r.catId)?.color) }} />
                 <span className="font-light truncate">{catName(r.catId)}</span>
                 <span className="text-muted-foreground/50 text-[10px]">{pct}%</span>
               </span>
@@ -587,7 +588,7 @@ const WorkHistory = () => {
                             : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/20"
                         }`}
                       >
-                        <span className={`h-2 w-2 rounded-full ${colorClasses(c.color as TaskColor, "dot")}`} />
+                        <span className="h-2 w-2 rounded-full" style={{ background: colorHex(c.color) }} />
                         {c.name}
                       </button>
                     );
@@ -648,7 +649,7 @@ const WorkHistory = () => {
                                         </span>
                                         {cat && (
                                           <span className="flex items-center gap-1.5 shrink-0">
-                                            <span className={`h-2 w-2 rounded-full ${colorClasses(cat.color as TaskColor, "dot")}`} />
+                                            <span className="h-2 w-2 rounded-full" style={{ background: colorHex(cat.color) }} />
                                             <span className="text-xs text-muted-foreground">{cat.name}</span>
                                           </span>
                                         )}
