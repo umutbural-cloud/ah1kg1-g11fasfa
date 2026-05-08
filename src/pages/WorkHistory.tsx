@@ -8,8 +8,18 @@ import {
   startOfMonth,
   startOfWeek,
   endOfWeek,
+  differenceInCalendarDays,
 } from "date-fns";
 import { tr } from "date-fns/locale";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePageState } from "@/hooks/usePageState";
@@ -19,6 +29,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import type { ViewKey } from "@/hooks/useProjectViews";
 import { usePomodoroCategories } from "@/hooks/usePomodoroCategories";
 import { colorClasses, type TaskColor } from "@/lib/taskColors";
+import JournalCompletedTasks from "@/components/JournalCompletedTasks";
 
 type Session = {
   id: string;
@@ -37,6 +48,14 @@ const formatDur = (sec: number) => {
   return `${m} Dakika`;
 };
 
+const formatDurShort = (sec: number) => {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0 && m > 0) return `${h}s ${m}d`;
+  if (h > 0) return `${h}s`;
+  return `${m}d`;
+};
+
 const weekOfMonth = (d: Date) => {
   const first = startOfMonth(d);
   const firstWeekStart = startOfWeek(first, { weekStartsOn: 1 });
@@ -44,17 +63,22 @@ const weekOfMonth = (d: Date) => {
   return Math.floor((dWeekStart.getTime() - firstWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
 };
 
+const todayKey = () => format(startOfDay(new Date()), "yyyy-MM-dd");
+
 const WorkHistory = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { projects, createProject, updateProject, deleteProject } = useProjects();
-  const { section, selectedProjectId, view, setSection, setSelectedProjectId, setView, setJournalDate } = usePageState();
+  const { section, selectedProjectId, view, setSection, setSelectedProjectId, setView } = usePageState();
   const { categories } = usePomodoroCategories();
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({});
   const [openWeeks, setOpenWeeks] = useState<Record<string, boolean>>({});
   const [recentWeeks, setRecentWeeks] = useState(1);
+  const [expandedSessionsByDay, setExpandedSessionsByDay] = useState<Record<string, boolean>>({});
+  const [expandedDayTasks, setExpandedDayTasks] = useState<Record<string, boolean>>({});
+  const [catDayKey, setCatDayKey] = useState<string>(todayKey());
 
   useEffect(() => {
     if (!user) return;
@@ -70,7 +94,94 @@ const WorkHistory = () => {
     })();
   }, [user]);
 
-  // Group: month -> week -> day
+  // -------- Stats --------
+  const stats = useMemo(() => {
+    if (sessions.length === 0) {
+      return { last7: 0, last30: 0, avgDaily: 0, hasData: false };
+    }
+    const now = Date.now();
+    const day = 24 * 60 * 60 * 1000;
+    const cutoff7 = now - 7 * day;
+    const cutoff30 = now - 30 * day;
+    let last7 = 0, last30 = 0, total = 0;
+    let firstTs = Infinity;
+    sessions.forEach((s) => {
+      const t = parseISO(s.started_at).getTime();
+      total += s.duration_seconds;
+      if (t >= cutoff7) last7 += s.duration_seconds;
+      if (t >= cutoff30) last30 += s.duration_seconds;
+      if (t < firstTs) firstTs = t;
+    });
+    const days = Math.max(1, differenceInCalendarDays(new Date(), new Date(firstTs)) + 1);
+    return { last7, last30, avgDaily: Math.round(total / days), hasData: true };
+  }, [sessions]);
+
+  // -------- Category breakdowns --------
+  // Build a quick day index of seconds per category
+  const sessionsByDayCat = useMemo(() => {
+    const map = new Map<string, Map<string | null, number>>();
+    sessions.forEach((s) => {
+      const k = format(startOfDay(parseISO(s.started_at)), "yyyy-MM-dd");
+      let inner = map.get(k);
+      if (!inner) { inner = new Map(); map.set(k, inner); }
+      inner.set(s.category_id, (inner.get(s.category_id) || 0) + s.duration_seconds);
+    });
+    return map;
+  }, [sessions]);
+
+  const catBreakdown = useMemo(() => {
+    const aggregate = (fromDate: Date, toDate: Date) => {
+      const totals = new Map<string | null, number>();
+      const fromKey = format(fromDate, "yyyy-MM-dd");
+      const toKey = format(toDate, "yyyy-MM-dd");
+      sessionsByDayCat.forEach((inner, k) => {
+        if (k >= fromKey && k <= toKey) {
+          inner.forEach((sec, catId) => {
+            totals.set(catId, (totals.get(catId) || 0) + sec);
+          });
+        }
+      });
+      return Array.from(totals.entries())
+        .map(([catId, sec]) => ({ catId, sec }))
+        .sort((a, b) => b.sec - a.sec);
+    };
+    const today = startOfDay(new Date());
+    const day7 = new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000);
+    const day30 = new Date(today.getTime() - 29 * 24 * 60 * 60 * 1000);
+
+    const dayMap = sessionsByDayCat.get(catDayKey);
+    const dayList = dayMap
+      ? Array.from(dayMap.entries()).map(([catId, sec]) => ({ catId, sec })).sort((a, b) => b.sec - a.sec)
+      : [];
+
+    return {
+      day: dayList,
+      week: aggregate(day7, today),
+      month: aggregate(day30, today),
+    };
+  }, [sessionsByDayCat, catDayKey]);
+
+  // -------- Daily chart series (last 30 days) --------
+  const chartData = useMemo(() => {
+    const today = startOfDay(new Date());
+    const out: { date: string; label: string; minutes: number; sec: number }[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+      const k = format(d, "yyyy-MM-dd");
+      const inner = sessionsByDayCat.get(k);
+      let sec = 0;
+      inner?.forEach((v) => { sec += v; });
+      out.push({
+        date: k,
+        label: format(d, "d MMM", { locale: tr }),
+        minutes: Math.round(sec / 60),
+        sec,
+      });
+    }
+    return out;
+  }, [sessionsByDayCat]);
+
+  // -------- Group: month -> week -> day --------
   const grouped = useMemo(() => {
     const months = new Map<
       string,
@@ -89,10 +200,7 @@ const WorkHistory = () => {
       const weekKey = format(wkStart, "yyyy-MM-dd");
 
       let m = months.get(monthKey);
-      if (!m) {
-        m = { date: startOfMonth(d), total: 0, weeks: new Map() };
-        months.set(monthKey, m);
-      }
+      if (!m) { m = { date: startOfMonth(d), total: 0, weeks: new Map() }; months.set(monthKey, m); }
       m.total += s.duration_seconds;
 
       let w = m.weeks.get(weekKey);
@@ -109,10 +217,7 @@ const WorkHistory = () => {
       w.total += s.duration_seconds;
 
       let day = w.days.get(dayKey);
-      if (!day) {
-        day = { date: startOfDay(d), total: 0 };
-        w.days.set(dayKey, day);
-      }
+      if (!day) { day = { date: startOfDay(d), total: 0 }; w.days.set(dayKey, day); }
       day.total += s.duration_seconds;
     });
 
@@ -134,7 +239,7 @@ const WorkHistory = () => {
       }));
   }, [sessions]);
 
-  // Recent days — for each day in the last N weeks, list all work sessions for that day
+  // -------- Recent days --------
   const recentDays = useMemo(() => {
     const byDay = new Map<string, Session[]>();
     sessions.forEach((s) => {
@@ -155,13 +260,7 @@ const WorkHistory = () => {
     return out;
   }, [sessions, recentWeeks]);
 
-  const goToDay = (dayKey: string) => {
-    setJournalDate(dayKey);
-    setSection("journal");
-    navigate("/");
-  };
-
-  // Sidebar handlers
+  // -------- Sidebar handlers --------
   const handleSidebarSelect = (id: string, v?: ViewKey) => {
     setSection("project");
     setSelectedProjectId(id);
@@ -178,6 +277,34 @@ const WorkHistory = () => {
       setView("table");
       navigate("/");
     }
+  };
+
+  // Helpers for category lookup
+  const catName = (id: string | null) => id ? (categories.find((c) => c.id === id)?.name || "—") : "Kategorisiz";
+  const catColor = (id: string | null): TaskColor => (categories.find((c) => c.id === id)?.color as TaskColor) || "gray";
+
+  const renderCatList = (rows: { catId: string | null; sec: number }[]) => {
+    if (rows.length === 0) {
+      return <div className="text-[11px] text-muted-foreground/50 italic px-1 py-2">Kayıt yok</div>;
+    }
+    const total = rows.reduce((a, r) => a + r.sec, 0);
+    return (
+      <ul className="space-y-1.5">
+        {rows.map((r) => {
+          const pct = total > 0 ? Math.round((r.sec / total) * 100) : 0;
+          return (
+            <li key={String(r.catId)} className="flex items-center justify-between gap-2 text-xs">
+              <span className="flex items-center gap-1.5 min-w-0">
+                <span className={`h-2 w-2 rounded-full ${colorClasses(catColor(r.catId), "dot")}`} />
+                <span className="font-light truncate">{catName(r.catId)}</span>
+                <span className="text-muted-foreground/50 text-[10px]">{pct}%</span>
+              </span>
+              <span className="text-muted-foreground tabular-nums shrink-0">{formatDurShort(r.sec)}</span>
+            </li>
+          );
+        })}
+      </ul>
+    );
   };
 
   return (
@@ -214,11 +341,108 @@ const WorkHistory = () => {
           </header>
 
           <main className="flex-1 overflow-auto">
-            <div className="max-w-3xl mx-auto p-6 sm:p-8">
+            <div className="max-w-3xl mx-auto p-6 sm:p-8 space-y-10">
+
+              {/* ============ STATS ============ */}
+              <section>
+                <h2 className="text-xs uppercase tracking-widest text-muted-foreground/70 mb-3 px-1">
+                  İstatistikler
+                </h2>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <StatCard label="Son 7 gün" value={formatDur(stats.last7)} />
+                  <StatCard label="Son 30 gün" value={formatDur(stats.last30)} />
+                  <StatCard label="Günlük ortalama" value={formatDur(stats.avgDaily)} />
+                </div>
+
+                {/* Category breakdown */}
+                <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="border border-border/60 rounded-sm p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] uppercase tracking-widest text-muted-foreground/70">Günlük</span>
+                      <input
+                        type="date"
+                        value={catDayKey}
+                        max={todayKey()}
+                        onChange={(e) => setCatDayKey(e.target.value)}
+                        className="text-[10px] bg-transparent border border-border/60 rounded-sm px-1 py-0.5 outline-none focus:border-foreground/40"
+                      />
+                    </div>
+                    {renderCatList(catBreakdown.day)}
+                  </div>
+                  <div className="border border-border/60 rounded-sm p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] uppercase tracking-widest text-muted-foreground/70">Haftalık</span>
+                      <span className="text-[10px] text-muted-foreground/50">son 7 gün</span>
+                    </div>
+                    {renderCatList(catBreakdown.week)}
+                  </div>
+                  <div className="border border-border/60 rounded-sm p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] uppercase tracking-widest text-muted-foreground/70">Aylık</span>
+                      <span className="text-[10px] text-muted-foreground/50">son 30 gün</span>
+                    </div>
+                    {renderCatList(catBreakdown.month)}
+                  </div>
+                </div>
+
+                {/* Daily chart */}
+                <div className="mt-5 border border-border/60 rounded-sm p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] uppercase tracking-widest text-muted-foreground/70">
+                      Günlük çalışma süresi
+                    </span>
+                    <span className="text-[10px] text-muted-foreground/50">son 30 gün · dakika</span>
+                  </div>
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                        <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" vertical={false} />
+                        <XAxis
+                          dataKey="label"
+                          tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                          interval={4}
+                          tickLine={false}
+                          axisLine={{ stroke: "hsl(var(--border))" }}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                          tickLine={false}
+                          axisLine={{ stroke: "hsl(var(--border))" }}
+                          width={36}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            background: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
+                            fontSize: 11,
+                            borderRadius: 2,
+                          }}
+                          labelStyle={{ color: "hsl(var(--foreground))" }}
+                          formatter={(v: any, _name, p: any) => [formatDurShort((p?.payload?.sec ?? 0) as number), "Çalışma"]}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="minutes"
+                          stroke="hsl(var(--foreground))"
+                          strokeWidth={1.5}
+                          dot={{ r: 2, fill: "hsl(var(--foreground))" }}
+                          activeDot={{ r: 4 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </section>
+
+              {/* ============ MONTH/WEEK/DAY GROUPED ============ */}
               {grouped.length === 0 ? (
                 <div className="text-center text-xs text-muted-foreground py-16">Henüz çalışma kaydı yok</div>
               ) : (
                 <div className="space-y-2">
+                  <h2 className="text-xs uppercase tracking-widest text-muted-foreground/70 mb-3 px-1">
+                    Aylar
+                  </h2>
                   {grouped.map((m) => {
                     const monthOpen = openMonths[m.key] ?? true;
                     return (
@@ -257,17 +481,15 @@ const WorkHistory = () => {
                                   {weekOpen && (
                                     <div className="divide-y divide-border/40 bg-background/40">
                                       {w.days.map((d) => (
-                                        <button
+                                        <div
                                           key={d.key}
-                                          onClick={() => goToDay(d.key)}
-                                          className="w-full flex items-center justify-between px-3 py-2 pl-14 hover:bg-accent/30 transition-colors text-left"
-                                          title="Günlüğe git"
+                                          className="w-full flex items-center justify-between px-3 py-2 pl-14"
                                         >
                                           <span className="text-sm font-light">
                                             {format(d.date, "d MMMM, EEEE", { locale: tr })}
                                           </span>
                                           <span className="text-xs text-muted-foreground tabular-nums">{formatDur(d.total)}</span>
-                                        </button>
+                                        </div>
                                       ))}
                                     </div>
                                   )}
@@ -282,60 +504,86 @@ const WorkHistory = () => {
                 </div>
               )}
 
-              <div className="mt-10">
+              {/* ============ RECENT DAYS ============ */}
+              <div>
                 <h2 className="text-xs uppercase tracking-widest text-muted-foreground/70 mb-3 px-1">
                   Son {recentWeeks} Hafta — Günlük
                 </h2>
                 <div className="space-y-4">
-                  {recentDays.map((d) => (
-                    <div key={d.key} className="border border-border/60 rounded-sm overflow-hidden">
-                      <button
-                        onClick={() => goToDay(d.key)}
-                        className="w-full flex items-center justify-between px-3 py-2 bg-card/40 border-b border-border/60 hover:bg-card/60 transition-colors text-left"
-                        title="Günlüğe git"
-                      >
-                        <span className="text-sm font-light">
-                          {format(d.date, "d MMMM yyyy, EEEE", { locale: tr })}
-                        </span>
-                        <span className={`text-xs tabular-nums ${d.total > 0 ? "text-muted-foreground" : "text-muted-foreground/40"}`}>
-                          {d.total > 0 ? formatDur(d.total) : "—"}
-                        </span>
-                      </button>
-                      {d.sessions.length > 0 ? (
-                        <div className="divide-y divide-border/40">
-                          {d.sessions.map((s) => {
-                            const cat = categories.find((c) => c.id === s.category_id);
-                            return (
-                              <div key={s.id} className="flex items-center justify-between px-3 py-2 gap-3">
-                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                  <span className="text-[11px] text-muted-foreground/70 tabular-nums w-10 shrink-0">
-                                    {format(parseISO(s.started_at), "HH:mm")}
-                                  </span>
-                                  {cat && (
-                                    <span className="flex items-center gap-1.5 shrink-0">
-                                      <span className={`h-2 w-2 rounded-full ${colorClasses(cat.color as TaskColor, "dot")}`} />
-                                      <span className="text-xs text-muted-foreground">{cat.name}</span>
+                  {recentDays.map((d) => {
+                    const sessionsExpanded = expandedSessionsByDay[d.key] ?? false;
+                    const tasksOpen = expandedDayTasks[d.key] ?? false;
+                    const visible = sessionsExpanded ? d.sessions : d.sessions.slice(0, 3);
+                    return (
+                      <div key={d.key} className="border border-border/60 rounded-sm overflow-hidden">
+                        <button
+                          onClick={() => setExpandedDayTasks((s) => ({ ...s, [d.key]: !tasksOpen }))}
+                          className="w-full flex items-center justify-between px-3 py-2 bg-card/40 border-b border-border/60 hover:bg-card/60 transition-colors text-left"
+                          title={tasksOpen ? "Görevleri gizle" : "Bugün tamamlanan görevleri göster"}
+                        >
+                          <span className="flex items-center gap-2 text-sm font-light">
+                            <ChevronRight className={`h-3 w-3 transition-transform ${tasksOpen ? "rotate-90" : ""}`} />
+                            {format(d.date, "d MMMM yyyy, EEEE", { locale: tr })}
+                          </span>
+                          <span className={`text-xs tabular-nums ${d.total > 0 ? "text-muted-foreground" : "text-muted-foreground/40"}`}>
+                            {d.total > 0 ? formatDur(d.total) : "—"}
+                          </span>
+                        </button>
+
+                        {d.sessions.length > 0 ? (
+                          <>
+                            <div className="divide-y divide-border/40">
+                              {visible.map((s) => {
+                                const cat = categories.find((c) => c.id === s.category_id);
+                                return (
+                                  <div key={s.id} className="flex items-center justify-between px-3 py-2 gap-3">
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                      <span className="text-[11px] text-muted-foreground/70 tabular-nums w-10 shrink-0">
+                                        {format(parseISO(s.started_at), "HH:mm")}
+                                      </span>
+                                      {cat && (
+                                        <span className="flex items-center gap-1.5 shrink-0">
+                                          <span className={`h-2 w-2 rounded-full ${colorClasses(cat.color as TaskColor, "dot")}`} />
+                                          <span className="text-xs text-muted-foreground">{cat.name}</span>
+                                        </span>
+                                      )}
+                                      {s.note && (
+                                        <span className="text-xs font-light truncate">
+                                          {cat && <span className="text-muted-foreground/40 mx-1">·</span>}
+                                          {s.note}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                                      {formatDur(s.duration_seconds)}
                                     </span>
-                                  )}
-                                  {s.note && (
-                                    <span className="text-xs font-light truncate">
-                                      {cat && <span className="text-muted-foreground/40 mx-1">·</span>}
-                                      {s.note}
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                                  {formatDur(s.duration_seconds)}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="px-3 py-3 text-[11px] text-muted-foreground/50 italic">Kayıt yok</div>
-                      )}
-                    </div>
-                  ))}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            {d.sessions.length > 3 && (
+                              <button
+                                onClick={() => setExpandedSessionsByDay((s) => ({ ...s, [d.key]: !sessionsExpanded }))}
+                                className="w-full text-[11px] text-muted-foreground hover:text-foreground transition-colors py-1.5 border-t border-border/40 hover:bg-accent/20"
+                              >
+                                {sessionsExpanded
+                                  ? "Daha az göster"
+                                  : `Devamını göster (+${d.sessions.length - 3})`}
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <div className="px-3 py-3 text-[11px] text-muted-foreground/50 italic">Kayıt yok</div>
+                        )}
+
+                        {tasksOpen && (
+                          <div className="px-3 pb-3 -mt-2">
+                            <JournalCompletedTasks date={d.key} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="mt-3 flex justify-center">
                   <button
@@ -353,5 +601,12 @@ const WorkHistory = () => {
     </SidebarProvider>
   );
 };
+
+const StatCard = ({ label, value }: { label: string; value: string }) => (
+  <div className="border border-border/60 rounded-sm p-3">
+    <div className="text-[11px] uppercase tracking-widest text-muted-foreground/70 mb-1">{label}</div>
+    <div className="text-lg font-light tracking-wide tabular-nums">{value}</div>
+  </div>
+);
 
 export default WorkHistory;
