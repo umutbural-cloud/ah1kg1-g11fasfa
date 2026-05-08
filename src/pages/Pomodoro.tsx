@@ -712,17 +712,7 @@ const CategoriesEditor = ({
           placeholder="Yeni kategori"
           className="flex-1 bg-transparent border-b border-border/60 outline-none focus:border-foreground/40 text-xs px-1 py-1"
         />
-        <div className="flex gap-1">
-          {TASK_COLORS.map((tc) => (
-            <button
-              key={tc.value}
-              onClick={() => setNewColor(tc.value)}
-              className={`h-4 w-4 rounded-full border ${colorClasses(tc.value, "swatch")} ${
-                newColor === tc.value ? "ring-2 ring-foreground/50 ring-offset-1 ring-offset-background" : "opacity-70"
-              }`}
-            />
-          ))}
-        </div>
+        <CategoryColorPicker value={newColor} onChange={setNewColor} size="sm" />
         <button
           onClick={async () => {
             if (!newName.trim()) return;
