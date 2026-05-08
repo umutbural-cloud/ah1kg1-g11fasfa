@@ -49,6 +49,7 @@ const WorkHistory = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({});
   const [openWeeks, setOpenWeeks] = useState<Record<string, boolean>>({});
+  const [recentWeeks, setRecentWeeks] = useState(1);
 
   useEffect(() => {
     if (!user) return;
