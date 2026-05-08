@@ -390,33 +390,50 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={onSelectBacklog}
-                  className={`text-sm font-light ${section === "backlog" ? "bg-accent text-accent-foreground" : ""}`}
-                >
-                  <Package className="h-3.5 w-3.5" />
-                  <span className="tracking-wide">Heybe</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={onSelectJournal}
-                  className={`text-sm font-light ${section === "journal" ? "bg-accent text-accent-foreground" : ""}`}
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                  <span className="tracking-wide">Günlük</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={onSelectHabits}
-                  className={`text-sm font-light ${section === "habits" ? "bg-accent text-accent-foreground" : ""}`}
-                >
-                  <Repeat className="h-3.5 w-3.5" />
-                  <span className="tracking-wide">Alışkanlıklar</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {prefs.backlog && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={onSelectBacklog}
+                    className={`text-sm font-light ${section === "backlog" ? "bg-accent text-accent-foreground" : ""}`}
+                  >
+                    <Package className="h-3.5 w-3.5" />
+                    <span className="tracking-wide">Heybe</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+              {prefs.journal && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={onSelectJournal}
+                    className={`text-sm font-light ${section === "journal" ? "bg-accent text-accent-foreground" : ""}`}
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    <span className="tracking-wide">Günlük</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+              {prefs.habits && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={onSelectHabits}
+                    className={`text-sm font-light ${section === "habits" ? "bg-accent text-accent-foreground" : ""}`}
+                  >
+                    <Repeat className="h-3.5 w-3.5" />
+                    <span className="tracking-wide">Alışkanlıklar</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+              {prefs.workHistory && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate("/work-history")}
+                    className="text-sm font-light"
+                  >
+                    <Clock className="h-3.5 w-3.5" />
+                    <span className="tracking-wide">Çalışma Geçmişi</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
