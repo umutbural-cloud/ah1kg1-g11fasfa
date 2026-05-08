@@ -36,6 +36,8 @@ const Index = () => {
   const { startup } = useStartupPage();
   const navigate = useNavigate();
   const initRef = useRef(false);
+  // Module-level guard: yalnız oturum başına bir kez açılış sayfası uygulansın
+  // (Index her remount olduğunda tekrar yönlendirme yapılmasın)
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
   const projectViews: ViewKey[] = selectedProject?.enabled_views || ["table", "notes"];
