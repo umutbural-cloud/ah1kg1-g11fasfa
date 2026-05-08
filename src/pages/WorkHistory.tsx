@@ -358,15 +358,39 @@ const WorkHistory = () => {
                 {/* Category breakdown */}
                 <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="border border-border/60 rounded-sm p-3">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-2 gap-2">
                       <span className="text-[11px] uppercase tracking-widest text-muted-foreground/70">Günlük</span>
-                      <input
-                        type="date"
-                        value={catDayKey}
-                        max={todayKey()}
-                        onChange={(e) => setCatDayKey(e.target.value)}
-                        className="text-[10px] bg-transparent border border-border/60 rounded-sm px-1 py-0.5 outline-none focus:border-foreground/40"
-                      />
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            const d = new Date(`${catDayKey}T00:00:00`);
+                            d.setDate(d.getDate() - 1);
+                            setCatDayKey(format(d, "yyyy-MM-dd"));
+                          }}
+                          className="p-0.5 text-muted-foreground hover:text-foreground transition-colors"
+                          title="Önceki gün"
+                        >
+                          <ChevronLeft className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="text-[10px] text-muted-foreground tabular-nums min-w-[64px] text-center">
+                          {catDayKey === todayKey()
+                            ? "Bugün"
+                            : format(new Date(`${catDayKey}T00:00:00`), "d MMM", { locale: tr })}
+                        </span>
+                        <button
+                          onClick={() => {
+                            if (catDayKey >= todayKey()) return;
+                            const d = new Date(`${catDayKey}T00:00:00`);
+                            d.setDate(d.getDate() + 1);
+                            setCatDayKey(format(d, "yyyy-MM-dd"));
+                          }}
+                          disabled={catDayKey >= todayKey()}
+                          className="p-0.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:hover:text-muted-foreground"
+                          title="Sonraki gün"
+                        >
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                     {renderCatList(catBreakdown.day)}
                   </div>
