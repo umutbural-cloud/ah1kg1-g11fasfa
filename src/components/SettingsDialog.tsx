@@ -24,9 +24,6 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
   const { theme, toggle: toggleTheme } = useTheme();
   const { user } = useAuth();
   const [habitDefault, setHabitDefault] = useHabitTodayDefault();
-  const [email, setEmail] = useState(user?.email || "");
-  const [password, setPassword] = useState("");
-  const [habitDefault, setHabitDefault] = useHabitTodayDefault();
   const { prefs: sidebarPrefs, setItem: setSidebarPref } = useSidebarPreferences();
   const [email, setEmail] = useState(user?.email || "");
   const [password, setPassword] = useState("");
