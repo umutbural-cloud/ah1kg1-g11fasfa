@@ -3,9 +3,15 @@ import { Moon, Sun, Bell, BellOff } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useHabitTodayDefault } from "@/hooks/useHabitSettings";
+import {
+  useSidebarPreferences,
+  SIDEBAR_ITEM_ORDER,
+  SIDEBAR_ITEM_LABELS,
+} from "@/hooks/useSidebarPreferences";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
