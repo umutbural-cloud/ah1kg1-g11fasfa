@@ -33,13 +33,36 @@ const Index = () => {
   const { undo, redo, canUndo, canRedo } = useUndo();
   const { theme, toggle: toggleTheme } = useTheme();
   const { section, selectedProjectId, view, journalDate, setSection, setSelectedProjectId, setView, setJournalDate } = usePageState();
+  const { startup } = useStartupPage();
+  const navigate = useNavigate();
+  const initRef = useRef(false);
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
   const projectViews: ViewKey[] = selectedProject?.enabled_views || ["table", "notes"];
 
-  // İlk yüklemede sabit "Yapılacaklar Listesi" projesinin ilk görünümünü aç
+  // İlk yüklemede açılış sayfası tercihini uygula
   useEffect(() => {
-    if (loading || selectedProjectId) return;
+    if (loading || initRef.current) return;
+    initRef.current = true;
+
+    if (startup.type === "module") {
+      if (startup.value === "workHistory") { navigate("/work-history"); return; }
+      if (startup.value === "pomodoro") { navigate("/pomodoro"); return; }
+      if (startup.value === "backlog" || startup.value === "journal" || startup.value === "habits") {
+        setSection(startup.value);
+        return;
+      }
+    }
+    if (startup.type === "project") {
+      const p = projects.find((x) => x.id === startup.value);
+      if (p) {
+        setSelectedProjectId(p.id);
+        setSection("project");
+        const pvs = (p.enabled_views?.length ? p.enabled_views : ["table", "notes"]) as ViewKey[];
+        setView(pvs[0]);
+        return;
+      }
+    }
     const def = projects.find((p) => p.is_default);
     if (def) {
       setSelectedProjectId(def.id);
@@ -47,7 +70,7 @@ const Index = () => {
       const pvs = (def.enabled_views?.length ? def.enabled_views : ["table", "notes"]) as ViewKey[];
       setView(pvs[0]);
     }
-  }, [loading, projects, selectedProjectId]);
+  }, [loading, projects, startup]);
 
   // Keyboard shortcuts for undo/redo
   useEffect(() => {
