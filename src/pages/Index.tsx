@@ -28,6 +28,9 @@ const VIEWS: { id: ViewKey; label: string; jp: string; icon: any }[] = [
   { id: "calendar", label: "Takvim", jp: "暦", icon: Calendar },
 ];
 
+// Oturum başına bir kez açılış sayfası uygulansın (Index remount edildiğinde tekrarlanmasın)
+let startupApplied = false;
+
 const Index = () => {
   const { projects, loading, createProject, updateProject, deleteProject } = useProjects();
   const { undo, redo, canUndo, canRedo } = useUndo();
@@ -35,17 +38,14 @@ const Index = () => {
   const { section, selectedProjectId, view, journalDate, setSection, setSelectedProjectId, setView, setJournalDate } = usePageState();
   const { startup } = useStartupPage();
   const navigate = useNavigate();
-  const initRef = useRef(false);
-  // Module-level guard: yalnız oturum başına bir kez açılış sayfası uygulansın
-  // (Index her remount olduğunda tekrar yönlendirme yapılmasın)
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
   const projectViews: ViewKey[] = selectedProject?.enabled_views || ["table", "notes"];
 
   // İlk yüklemede açılış sayfası tercihini uygula
   useEffect(() => {
-    if (loading || initRef.current) return;
-    initRef.current = true;
+    if (loading || startupApplied) return;
+    startupApplied = true;
 
     if (startup.type === "module") {
       if (startup.value === "workHistory") { navigate("/work-history"); return; }
