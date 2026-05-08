@@ -277,6 +277,37 @@ const WorkHistory = () => {
                   })}
                 </div>
               )}
+
+              <div className="mt-10">
+                <h2 className="text-xs uppercase tracking-widest text-muted-foreground/70 mb-3 px-1">
+                  Son {recentWeeks} Hafta — Günlük
+                </h2>
+                <div className="border border-border/60 rounded-sm divide-y divide-border/40 overflow-hidden">
+                  {recentDays.map((d) => (
+                    <button
+                      key={d.key}
+                      onClick={() => goToDay(d.key)}
+                      className="w-full flex items-center justify-between px-3 py-2 hover:bg-accent/30 transition-colors text-left"
+                      title="Günlüğe git"
+                    >
+                      <span className="text-sm font-light">
+                        {format(d.date, "d MMMM EEEE", { locale: tr })}
+                      </span>
+                      <span className={`text-xs tabular-nums ${d.total > 0 ? "text-muted-foreground" : "text-muted-foreground/40"}`}>
+                        {d.total > 0 ? formatDur(d.total) : "—"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-3 flex justify-center">
+                  <button
+                    onClick={() => setRecentWeeks((w) => w + 1)}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"
+                  >
+                    Devamını göster
+                  </button>
+                </div>
+              </div>
             </div>
           </main>
         </div>
