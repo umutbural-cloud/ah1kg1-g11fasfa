@@ -2,50 +2,48 @@ import { useState } from "react";
 import HabitsToday from "./HabitsToday";
 import HabitsBoard from "./HabitsBoard";
 import HabitsStats from "./HabitsStats";
-import { ChevronDown, ChevronRight } from "lucide-react";
 
-const Section = ({
-  jp,
-  title,
-  defaultOpen = true,
-  children,
-}: {
-  jp: string;
-  title: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}) => {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <section className="space-y-4">
-      <button
-        onClick={() => setOpen((p) => !p)}
-        className="group flex items-center gap-2 w-full text-left border-b border-border/60 pb-2"
-      >
-        {open ? (
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-        )}
-        <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">{jp}</span>
-        <span className="text-sm font-light tracking-wide">{title}</span>
-      </button>
-      {open && <div>{children}</div>}
-    </section>
-  );
-};
+type Tab = "today" | "master" | "stats";
+
+const TABS: { key: Tab; jp: string; label: string }[] = [
+  { key: "today", jp: "今日", label: "Bugün" },
+  { key: "master", jp: "全て", label: "Master" },
+  { key: "stats", jp: "統計", label: "İstatistik" },
+];
 
 const HabitsView = () => {
+  const [tab, setTab] = useState<Tab>("today");
+
   return (
-    <div className="max-w-3xl mx-auto space-y-10">
+    <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <div className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">習慣</div>
         <h1 className="text-2xl font-light tracking-wide">Alışkanlıklar</h1>
       </div>
 
-      <Section jp="今日" title="Bugün" defaultOpen><HabitsToday /></Section>
-      <Section jp="全て" title="Tümü" defaultOpen><HabitsBoard /></Section>
-      <Section jp="統計" title="İstatistik" defaultOpen={false}><HabitsStats /></Section>
+      <div className="flex items-center gap-1 border-b border-border/60">
+        {TABS.map((t) => {
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex items-baseline gap-2 px-3 py-2 -mb-px border-b transition-colors ${
+                active
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <span className="text-[10px] tracking-[0.2em] uppercase font-light">{t.jp}</span>
+              <span className="text-sm font-light tracking-wide">{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === "today" && <HabitsToday />}
+      {tab === "master" && <HabitsBoard />}
+      {tab === "stats" && <HabitsStats />}
     </div>
   );
 };

@@ -5,13 +5,15 @@ import { useHabits, isHabitScheduledOn, type Habit } from "@/hooks/useHabits";
 import { useHabitCategories, colorHex } from "@/hooks/useHabitCategories";
 import { getHabitIcon } from "@/lib/habitIcons";
 import { TIME_OF_DAY_OPTIONS, currentTimeOfDay, type TimeOfDay } from "@/lib/timeOfDay";
+import { useHabitTodayDefault } from "@/hooks/useHabitSettings";
 import HabitDetailDialog from "./HabitDetailDialog";
 import { Circle, CheckCircle2, ChevronUp, ChevronDown } from "lucide-react";
 
 const HabitsToday = () => {
   const { habits, completionsMap, today, toggleCompletion, updateHabit, deleteHabit } = useHabits();
   const { categories } = useHabitCategories();
-  const [filter, setFilter] = useState<TimeOfDay | "all">(currentTimeOfDay());
+  const [defaultFilter] = useHabitTodayDefault();
+  const [filter, setFilter] = useState<TimeOfDay | "all">(defaultFilter === "all" ? "all" : currentTimeOfDay());
   const [openHabit, setOpenHabit] = useState<Habit | null>(null);
   const [override, setOverride] = useState<string[] | null>(null);
 
