@@ -11,6 +11,7 @@ import { PrayerTimesSync } from "@/components/PrayerTimesSync";
 import { UiScaleSync } from "@/components/UiScaleSync";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Pomodoro from "./pages/Pomodoro";
 import WorkHistory from "./pages/WorkHistory";
 import NotFound from "./pages/NotFound";
@@ -54,6 +55,7 @@ const App = () => (
             <UiScaleSync />
             <Routes>
               <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/pomodoro" element={<ProtectedRoute><Pomodoro /></ProtectedRoute>} />
               <Route path="/work-history" element={<ProtectedRoute><WorkHistory /></ProtectedRoute>} />
