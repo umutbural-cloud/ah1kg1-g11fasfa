@@ -205,6 +205,23 @@ export const HABIT_ICON_GROUPS: HabitIconGroup[] = [
     ],
   },
   {
+    label: "Manevi & Namaz",
+    icons: [
+      { name: "hilal", label: "Hilal", icon: MoonStar },
+      { name: "sabah", label: "Sabah", icon: Sunrise },
+      { name: "ogle", label: "Öğle", icon: Sun },
+      { name: "aksam", label: "Akşam", icon: Sunset },
+      { name: "yatsi", label: "Yatsı", icon: Moon },
+      { name: "yildiz", label: "Yıldız", icon: Star },
+      { name: "dua", label: "Dua", icon: Heart },
+      { name: "zikir", label: "Zikir", icon: Sparkles },
+      { name: "kuran", label: "Kuran", icon: BookOpen },
+      { name: "vakit", label: "Vakit", icon: Timer },
+      { name: "hatirlatma", label: "Hatırlatma", icon: AlarmClock },
+      { name: "kible", label: "Kıble", icon: Compass },
+    ],
+  },
+  {
     label: "Seyahat & Mekan",
     icons: [
       { name: "home", label: "Ev", icon: Home },
