@@ -67,6 +67,7 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
     setAutoMode: setTodAutoMode,
   } = useTimeOfDayRanges();
   const { settings: userSettings, update: updateUserSettings } = useUserSettings();
+  const { scale: uiScale, setScale: setUiScale } = useUiScale();
   const { request: requestGeo, loading: geoLoading } = useUserLocation();
   const prayerQuery = usePrayerTimes();
   const [citySearch, setCitySearch] = useState("");
