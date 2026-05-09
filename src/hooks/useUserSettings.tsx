@@ -83,6 +83,7 @@ export const useUserSettings = () => {
           calculation_method: data.calculation_method,
           module_labels: (data as any).module_labels ?? {},
           startup_page: ((data as any).startup_page as StartupPageSetting) ?? { type: "default" },
+          ui_scale: ((data as any).ui_scale as UserSettings["ui_scale"]) ?? "normal",
         };
         setSettings(next);
         writeCache(next);
