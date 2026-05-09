@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { UndoProvider } from "@/hooks/useUndo";
 import { PomodoroProvider } from "@/hooks/usePomodoro";
 import { PageStateProvider } from "@/hooks/usePageState";
+import { PrayerTimesSync } from "@/components/PrayerTimesSync";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Pomodoro from "./pages/Pomodoro";
