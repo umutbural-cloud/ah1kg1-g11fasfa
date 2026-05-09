@@ -451,6 +451,8 @@ export type Database = {
           latitude: number | null
           location_permission: boolean
           longitude: number | null
+          module_labels: Json
+          startup_page: Json
           updated_at: string
           user_id: string
         }
@@ -463,6 +465,8 @@ export type Database = {
           latitude?: number | null
           location_permission?: boolean
           longitude?: number | null
+          module_labels?: Json
+          startup_page?: Json
           updated_at?: string
           user_id: string
         }
@@ -475,6 +479,8 @@ export type Database = {
           latitude?: number | null
           location_permission?: boolean
           longitude?: number | null
+          module_labels?: Json
+          startup_page?: Json
           updated_at?: string
           user_id?: string
         }

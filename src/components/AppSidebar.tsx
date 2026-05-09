@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, LogOut, ChevronRight, ChevronUp, ChevronDown, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash, Settings, Repeat, Check, Clock } from "lucide-react";
 import { useSidebarPreferences } from "@/hooks/useSidebarPreferences";
+import { useModuleLabels } from "@/hooks/useModuleLabels";
 import { HABIT_ICON_GROUPS, getHabitIcon } from "@/lib/habitIcons";
 import { CATEGORY_COLORS, colorHex } from "@/hooks/useHabitCategories";
 import SettingsDialog from "./SettingsDialog";
@@ -355,6 +356,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const { prefs, setItem } = useSidebarPreferences();
+  const { get: moduleLabel } = useModuleLabels();
   const [newName, setNewName] = useState("");
   const [showInput, setShowInput] = useState(false);
   const [addingParentId, setAddingParentId] = useState<string | null>(null);
@@ -363,11 +365,11 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
   const [newModuleOpen, setNewModuleOpen] = useState(false);
 
   const MODULE_OPTIONS: { key: "backlog" | "journal" | "habits" | "workHistory" | "pomodoro"; label: string; icon: any }[] = [
-    { key: "backlog", label: "Heybe", icon: Package },
-    { key: "journal", label: "Günlük", icon: FileText },
-    { key: "habits", label: "Alışkanlıklar", icon: Repeat },
-    { key: "workHistory", label: "Çalışma Geçmişi", icon: Clock },
-    { key: "pomodoro", label: "Pomodoro", icon: Clock },
+    { key: "backlog", label: moduleLabel("backlog"), icon: Package },
+    { key: "journal", label: moduleLabel("journal"), icon: FileText },
+    { key: "habits", label: moduleLabel("habits"), icon: Repeat },
+    { key: "workHistory", label: moduleLabel("workHistory"), icon: Clock },
+    { key: "pomodoro", label: moduleLabel("pomodoro"), icon: Clock },
   ];
   const hiddenModules = MODULE_OPTIONS.filter((m) => !prefs[m.key]);
 
@@ -407,7 +409,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                     className={`text-sm font-light ${section === "backlog" ? "bg-accent text-accent-foreground" : ""}`}
                   >
                     <Package className="h-3.5 w-3.5" />
-                    <span className="tracking-wide">Heybe</span>
+                    <span className="tracking-wide">{moduleLabel("backlog")}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
@@ -418,7 +420,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                     className={`text-sm font-light ${section === "journal" ? "bg-accent text-accent-foreground" : ""}`}
                   >
                     <FileText className="h-3.5 w-3.5" />
-                    <span className="tracking-wide">Günlük</span>
+                    <span className="tracking-wide">{moduleLabel("journal")}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
@@ -429,7 +431,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                     className={`text-sm font-light ${section === "habits" ? "bg-accent text-accent-foreground" : ""}`}
                   >
                     <Repeat className="h-3.5 w-3.5" />
-                    <span className="tracking-wide">Alışkanlıklar</span>
+                    <span className="tracking-wide">{moduleLabel("habits")}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
@@ -440,7 +442,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                     className="text-sm font-light"
                   >
                     <Clock className="h-3.5 w-3.5" />
-                    <span className="tracking-wide">Çalışma Geçmişi</span>
+                    <span className="tracking-wide">{moduleLabel("workHistory")}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
