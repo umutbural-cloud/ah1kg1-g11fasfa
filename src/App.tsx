@@ -49,22 +49,24 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <UndoProvider>
-          <PomodoroProvider>
-            <PageStateProvider>
-            <PrayerTimesSync />
-            <UiScaleSync />
-            <Routes>
-              <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/pomodoro" element={<ProtectedRoute><Pomodoro /></ProtectedRoute>} />
-              <Route path="/work-history" element={<ProtectedRoute><WorkHistory /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            </PageStateProvider>
-          </PomodoroProvider>
-        </UndoProvider>
+        <ErrorBoundary>
+          <UndoProvider>
+            <PomodoroProvider>
+              <PageStateProvider>
+              <PrayerTimesSync />
+              <UiScaleSync />
+              <Routes>
+                <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                <Route path="/pomodoro" element={<ProtectedRoute><Pomodoro /></ProtectedRoute>} />
+                <Route path="/work-history" element={<ProtectedRoute><WorkHistory /></ProtectedRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              </PageStateProvider>
+            </PomodoroProvider>
+          </UndoProvider>
+        </ErrorBoundary>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
