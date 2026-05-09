@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Moon, Sun, Bell, BellOff, Sprout, LayoutGrid, User, SlidersHorizontal } from "lucide-react";
+import { Moon, Sun, Bell, BellOff, Sprout, LayoutGrid, User, SlidersHorizontal, Trash2, RotateCcw, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useHabitTodayDefault } from "@/hooks/useHabitSettings";
-import { useTimeOfDayRanges, TIME_OF_DAY_LABELS, TIME_OF_DAY_KEYS } from "@/lib/timeOfDay";
+import {
+  useTimeOfDayRanges,
+  DEFAULT_TIME_OF_DAY_LABELS,
+  ALL_TIME_OF_DAY_KEYS,
+  type TimeOfDayKey,
+} from "@/lib/timeOfDay";
 import {
   useSidebarPreferences,
   SIDEBAR_ITEM_ORDER,
@@ -28,17 +33,30 @@ type Props = {
 type SectionKey = "habits" | "modules" | "account" | "preferences";
 
 const SECTIONS: { key: SectionKey; label: string; jp: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { key: "habits", label: "Alışkanlık Ayarları", jp: "習慣", icon: Sprout },
-  { key: "modules", label: "Modül Tercihleri", jp: "区分", icon: LayoutGrid },
-  { key: "account", label: "Kullanıcı Bilgileri", jp: "個人", icon: User },
-  { key: "preferences", label: "Kullanım Tercihleri", jp: "設定", icon: SlidersHorizontal },
+  { key: "habits", label: "Alışkanlık", jp: "習慣", icon: Sprout },
+  { key: "modules", label: "Modüller", jp: "区分", icon: LayoutGrid },
+  { key: "account", label: "Hesap", jp: "個人", icon: User },
+  { key: "preferences", label: "Tercihler", jp: "設定", icon: SlidersHorizontal },
 ];
+
+const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+  <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase mb-2 sm:hidden">{children}</div>
+);
 
 const SettingsDialog = ({ open, onOpenChange }: Props) => {
   const { theme, toggle: toggleTheme } = useTheme();
   const { user } = useAuth();
   const [habitDefault, setHabitDefault] = useHabitTodayDefault();
-  const { starts: todStarts, options: todOptions, update: updateTod, reset: resetTod } = useTimeOfDayRanges();
+  const {
+    starts: todStarts,
+    labels: todLabels,
+    disabled: todDisabled,
+    options: todOptions,
+    update: updateTod,
+    rename: renameTod,
+    setEnabled: setTodEnabled,
+    reset: resetTod,
+  } = useTimeOfDayRanges();
   const { prefs: sidebarPrefs, setItem: setSidebarPref } = useSidebarPreferences();
   const { startup, setStartup } = useStartupPage();
   const { projects } = useProjects();
@@ -108,16 +126,33 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
     }
   };
 
+  const enabledCount = ALL_TIME_OF_DAY_KEYS.length - todDisabled.length;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-5 py-3 border-b border-border/60">
+      <DialogContent
+        className={cn(
+          "p-0 gap-0 overflow-hidden",
+          // Mobile: nearly full-screen sheet. Desktop: centered modal.
+          "w-screen h-[100dvh] max-w-none rounded-none border-0",
+          "sm:w-[90vw] sm:h-auto sm:max-w-3xl sm:rounded-lg sm:border sm:max-h-[85vh]"
+        )}
+      >
+        <DialogHeader className="px-4 sm:px-5 py-3 border-b border-border/60 shrink-0">
           <DialogTitle className="text-base font-light tracking-wide">設定 — Ayarlar</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col sm:flex-row max-h-[75vh]">
-          {/* Sidebar menu */}
-          <nav className="sm:w-52 sm:border-r border-b sm:border-b-0 border-border/60 bg-muted/20 sm:py-3 py-2 px-2 flex sm:flex-col gap-1 overflow-x-auto sm:overflow-x-visible shrink-0">
+        <div className="flex flex-col sm:flex-row flex-1 min-h-0 sm:max-h-[calc(85vh-3.5rem)]">
+          {/* Sidebar / top tabs */}
+          <nav
+            className={cn(
+              "shrink-0 border-border/60 bg-muted/20 flex gap-1",
+              // Mobile: horizontal sticky tabs
+              "border-b px-2 py-1.5 overflow-x-auto",
+              // Desktop: vertical sidebar
+              "sm:flex-col sm:border-b-0 sm:border-r sm:w-48 sm:py-3 sm:px-2 sm:overflow-visible"
+            )}
+          >
             {SECTIONS.map((s) => {
               const Icon = s.icon;
               const active = section === s.key;
@@ -126,7 +161,7 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                   key={s.key}
                   onClick={() => setSection(s.key)}
                   className={cn(
-                    "flex items-center gap-2.5 px-3 py-2 rounded-sm text-left transition-colors shrink-0 sm:w-full",
+                    "flex items-center gap-2 px-3 py-2 rounded-sm text-left transition-colors shrink-0 sm:w-full",
                     active ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"
                   )}
                 >
@@ -138,11 +173,13 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
           </nav>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto px-5 py-4">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 min-h-0">
             {section === "habits" && (
               <div className="space-y-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
+                <SectionTitle>習慣 — Alışkanlık</SectionTitle>
+
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
                     <div className="text-sm font-light">Bugün varsayılan filtresi</div>
                     <div className="text-[10px] text-muted-foreground tracking-wide">
                       Sayfa açıldığında hangi alışkanlıklar gösterilsin
@@ -167,36 +204,77 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                 <div className="border-t border-border/60" />
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
                       <div className="text-sm font-light">Gün dilimleri</div>
                       <div className="text-[10px] text-muted-foreground tracking-wide">
-                        Her dilimin başlangıç saati. Sıradakine kadar sürer.
+                        Adı düzenleyin, başlangıç saatini değiştirin veya dilimi kaldırın.
                       </div>
                     </div>
                     <button
                       onClick={resetTod}
-                      className="text-[10px] tracking-wide text-muted-foreground hover:text-foreground transition-colors"
+                      className="flex items-center gap-1 text-[10px] tracking-wide text-muted-foreground hover:text-foreground transition-colors shrink-0"
                     >
+                      <RotateCcw className="h-3 w-3" />
                       Sıfırla
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 gap-1.5 pt-1">
-                    {TIME_OF_DAY_KEYS.map((k) => {
-                      const opt = todOptions.find((o) => o.key === k)!;
+
+                  <div className="flex flex-col gap-2 pt-1">
+                    {ALL_TIME_OF_DAY_KEYS.map((k) => {
+                      const isEnabled = !todDisabled.includes(k);
+                      const opt = todOptions.find((o) => o.key === k);
+                      const range = opt?.range ?? "—";
                       return (
-                        <div key={k} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/30 transition-colors">
-                          <span className="text-muted-foreground/70 text-xs w-4 text-center">{TIME_OF_DAY_LABELS[k].jp}</span>
-                          <span className="text-sm font-light w-24">{TIME_OF_DAY_LABELS[k].label}</span>
-                          <Input
-                            type="time"
-                            value={todStarts[k]}
-                            onChange={(e) => updateTod(k, e.target.value)}
-                            className="bg-transparent h-7 text-xs w-24 px-2"
-                          />
-                          <span className="text-[10px] text-muted-foreground tracking-wide ml-auto tabular-nums">
-                            {opt.range}
-                          </span>
+                        <div
+                          key={k}
+                          className={cn(
+                            "flex flex-col gap-1.5 px-2.5 py-2 rounded-sm border border-border/40 bg-card/40",
+                            !isEnabled && "opacity-50"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground/70 text-xs w-4 text-center shrink-0">
+                              {DEFAULT_TIME_OF_DAY_LABELS[k].jp}
+                            </span>
+                            <Input
+                              value={todLabels[k]}
+                              onChange={(e) => renameTod(k, e.target.value)}
+                              disabled={!isEnabled}
+                              placeholder={DEFAULT_TIME_OF_DAY_LABELS[k].label}
+                              className="bg-transparent h-7 text-sm font-light flex-1 min-w-0 px-2"
+                            />
+                            {isEnabled ? (
+                              <button
+                                onClick={() => setTodEnabled(k, false)}
+                                disabled={enabledCount <= 1}
+                                title={enabledCount <= 1 ? "En az bir dilim olmalı" : "Dilimi kaldır"}
+                                className="p-1.5 rounded-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setTodEnabled(k, true)}
+                                title="Dilimi geri ekle"
+                                className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors shrink-0"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 pl-6">
+                            <Input
+                              type="time"
+                              value={todStarts[k]}
+                              onChange={(e) => updateTod(k, e.target.value)}
+                              disabled={!isEnabled}
+                              className="bg-transparent h-7 text-xs w-28 px-2"
+                            />
+                            <span className="text-[10px] text-muted-foreground tracking-wide tabular-nums ml-auto">
+                              {isEnabled ? range : "kapalı"}
+                            </span>
+                          </div>
                         </div>
                       );
                     })}
@@ -207,6 +285,7 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
 
             {section === "modules" && (
               <div className="space-y-2">
+                <SectionTitle>区分 — Modüller</SectionTitle>
                 <div className="text-[10px] text-muted-foreground tracking-wide">
                   Yan menüde hangi bölümler görünsün
                 </div>
@@ -214,7 +293,7 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                   {SIDEBAR_ITEM_ORDER.map((key) => (
                     <label
                       key={key}
-                      className="flex items-center gap-2.5 px-2 py-1.5 rounded-sm hover:bg-accent/40 transition-colors cursor-pointer"
+                      className="flex items-center gap-2.5 px-2 py-2 rounded-sm hover:bg-accent/40 transition-colors cursor-pointer"
                     >
                       <Checkbox
                         checked={sidebarPrefs[key]}
@@ -229,21 +308,23 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
 
             {section === "account" && (
               <div className="space-y-5">
+                <SectionTitle>個人 — Hesap</SectionTitle>
                 <div className="space-y-2">
                   <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">E-posta</div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="ornek@mail.com"
-                      className="bg-transparent h-8 text-sm"
+                      className="bg-transparent h-9 text-sm flex-1"
                     />
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={handleEmail}
                       disabled={savingEmail || email === user?.email || !email.trim()}
+                      className="shrink-0"
                     >
                       Güncelle
                     </Button>
@@ -252,19 +333,20 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
 
                 <div className="space-y-2">
                   <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">Yeni şifre</div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••"
-                      className="bg-transparent h-8 text-sm"
+                      className="bg-transparent h-9 text-sm flex-1"
                     />
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={handlePassword}
                       disabled={savingPassword || password.length < 6}
+                      className="shrink-0"
                     >
                       Güncelle
                     </Button>
@@ -275,14 +357,15 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
 
             {section === "preferences" && (
               <div className="space-y-5">
-                <div className="flex items-center justify-between">
-                  <div>
+                <SectionTitle>設定 — Tercihler</SectionTitle>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
                     <div className="text-sm font-light">Karanlık tema</div>
                     <div className="text-[10px] text-muted-foreground tracking-wide">Yumuşak tonlarda gece modu</div>
                   </div>
                   <button
                     onClick={toggleTheme}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors shrink-0"
                   >
                     {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
                     <span className="text-xs tracking-wide">{theme === "dark" ? "Aydınlık" : "Karanlık"}</span>
@@ -320,8 +403,8 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
 
                 <div className="border-t border-border/60" />
 
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
                     <div className="text-sm font-light">Bildirimler</div>
                     <div className="text-[10px] text-muted-foreground tracking-wide">
                       {notifPerm === "granted" && "Açık — Pomodoro bittiğinde haber verilir"}
@@ -333,7 +416,7 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                   <button
                     onClick={requestNotif}
                     disabled={notifPerm === "unsupported"}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                   >
                     {notifPerm === "granted" ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
                     <span className="text-xs tracking-wide">
