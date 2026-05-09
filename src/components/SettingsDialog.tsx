@@ -573,7 +573,7 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                 <div className="space-y-2">
                   <div className="text-sm font-light">Yazı ve arayüz boyutu</div>
                   <div className="text-[10px] text-muted-foreground tracking-wide">
-                    Tüm uygulama ölçeklenir — yazı, boşluklar, butonlar ve simgeler birlikte büyür.
+                    Tüm uygulama ölçeklenir — yazı, boşluklar, butonlar ve simgeler birlikte büyür. Bu tercih sadece bu cihazda saklanır.
                   </div>
                   <div className="grid grid-cols-3 gap-2 pt-1">
                     {([
