@@ -218,9 +218,18 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-sm font-light">Gün dilimleri</div>
+                      <div className="text-sm font-light flex items-center gap-2">
+                        Gün dilimleri
+                        {todAuto && (
+                          <span className="text-[9px] tracking-[0.15em] uppercase px-1.5 py-0.5 rounded-sm bg-accent/60 text-muted-foreground">
+                            Otomatik
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] text-muted-foreground tracking-wide">
-                        Adı düzenleyin, başlangıç saatini değiştirin veya dilimi kaldırın.
+                        {todAuto
+                          ? "Saatler güneşin konumuna göre belirleniyor."
+                          : "Adı düzenleyin, başlangıç saatini değiştirin veya dilimi kaldırın."}
                       </div>
                     </div>
                     <button
