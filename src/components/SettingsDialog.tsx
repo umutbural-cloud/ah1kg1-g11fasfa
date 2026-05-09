@@ -579,11 +579,11 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                       { v: "large", label: "Büyük", jp: "大" },
                       { v: "xlarge", label: "Çok Büyük", jp: "特大" },
                     ] as const).map((opt) => {
-                      const active = (userSettings.ui_scale ?? "normal") === opt.v;
+                      const active = uiScale === opt.v;
                       return (
                         <button
                           key={opt.v}
-                          onClick={() => updateUserSettings({ ui_scale: opt.v })}
+                          onClick={() => setUiScale(opt.v)}
                           className={cn(
                             "flex flex-col items-center justify-center gap-1 px-2 py-3 rounded-sm border transition-colors",
                             active
