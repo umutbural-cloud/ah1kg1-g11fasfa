@@ -57,11 +57,18 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
     labels: todLabels,
     disabled: todDisabled,
     options: todOptions,
+    auto: todAuto,
     update: updateTod,
     rename: renameTod,
     setEnabled: setTodEnabled,
     reset: resetTod,
+    setAutoMode: setTodAutoMode,
   } = useTimeOfDayRanges();
+  const { settings: userSettings, update: updateUserSettings } = useUserSettings();
+  const { request: requestGeo, loading: geoLoading } = useUserLocation();
+  const prayerQuery = usePrayerTimes();
+  const [citySearch, setCitySearch] = useState("");
+  const cityResults = useMemo(() => searchTurkeyCities(citySearch).slice(0, 30), [citySearch]);
   const { prefs: sidebarPrefs, setItem: setSidebarPref } = useSidebarPreferences();
   const { startup, setStartup } = useStartupPage();
   const { projects } = useProjects();
