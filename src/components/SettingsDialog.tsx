@@ -23,6 +23,7 @@ import { useModuleLabels } from "@/hooks/useModuleLabels";
 import { useStartupPage } from "@/hooks/useStartupPage";
 import { useProjects } from "@/hooks/useProjects";
 import { useUserSettings } from "@/hooks/useUserSettings";
+import { useUiScale } from "@/hooks/useUiScale";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { usePrayerTimes } from "@/hooks/usePrayerTimes";
 import { searchTurkeyCities, TURKEY_CITIES } from "@/lib/turkeyCities";
@@ -66,6 +67,7 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
     setAutoMode: setTodAutoMode,
   } = useTimeOfDayRanges();
   const { settings: userSettings, update: updateUserSettings } = useUserSettings();
+  const { scale: uiScale, setScale: setUiScale } = useUiScale();
   const { request: requestGeo, loading: geoLoading } = useUserLocation();
   const prayerQuery = usePrayerTimes();
   const [citySearch, setCitySearch] = useState("");
@@ -571,7 +573,7 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                 <div className="space-y-2">
                   <div className="text-sm font-light">Yazı ve arayüz boyutu</div>
                   <div className="text-[10px] text-muted-foreground tracking-wide">
-                    Tüm uygulama ölçeklenir — yazı, boşluklar, butonlar ve simgeler birlikte büyür.
+                    Tüm uygulama ölçeklenir — yazı, boşluklar, butonlar ve simgeler birlikte büyür. Bu tercih sadece bu cihazda saklanır.
                   </div>
                   <div className="grid grid-cols-3 gap-2 pt-1">
                     {([
@@ -579,11 +581,11 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                       { v: "large", label: "Büyük", jp: "大" },
                       { v: "xlarge", label: "Çok Büyük", jp: "特大" },
                     ] as const).map((opt) => {
-                      const active = (userSettings.ui_scale ?? "normal") === opt.v;
+                      const active = uiScale === opt.v;
                       return (
                         <button
                           key={opt.v}
-                          onClick={() => updateUserSettings({ ui_scale: opt.v })}
+                          onClick={() => setUiScale(opt.v)}
                           className={cn(
                             "flex flex-col items-center justify-center gap-1 px-2 py-3 rounded-sm border transition-colors",
                             active
