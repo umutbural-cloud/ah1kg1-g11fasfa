@@ -569,6 +569,48 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                 <div className="border-t border-border/60" />
 
                 <div className="space-y-2">
+                  <div className="text-sm font-light">Yazı ve arayüz boyutu</div>
+                  <div className="text-[10px] text-muted-foreground tracking-wide">
+                    Tüm uygulama ölçeklenir — yazı, boşluklar, butonlar ve simgeler birlikte büyür.
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    {([
+                      { v: "normal", label: "Normal", jp: "標準" },
+                      { v: "large", label: "Büyük", jp: "大" },
+                      { v: "xlarge", label: "Çok Büyük", jp: "特大" },
+                    ] as const).map((opt) => {
+                      const active = (userSettings.ui_scale ?? "normal") === opt.v;
+                      return (
+                        <button
+                          key={opt.v}
+                          onClick={() => updateUserSettings({ ui_scale: opt.v })}
+                          className={cn(
+                            "flex flex-col items-center justify-center gap-1 px-2 py-3 rounded-sm border transition-colors",
+                            active
+                              ? "bg-accent text-foreground border-foreground/40"
+                              : "border-border/60 text-muted-foreground hover:bg-accent/40"
+                          )}
+                        >
+                          <span
+                            className="font-light leading-none"
+                            style={{
+                              fontSize:
+                                opt.v === "normal" ? "1rem" : opt.v === "large" ? "1.15rem" : "1.3rem",
+                            }}
+                          >
+                            Aa
+                          </span>
+                          <span className="text-[10px] tracking-[0.15em] uppercase">{opt.label}</span>
+                          <span className="text-[9px] text-muted-foreground/70">{opt.jp}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="border-t border-border/60" />
+
+                <div className="space-y-2">
                   <div className="text-sm font-light">Açılış sayfası</div>
                   <div className="text-[10px] text-muted-foreground tracking-wide">
                     Uygulama açıldığında hangi sayfaya gidilsin (tüm cihazlarda eşitlenir)
