@@ -171,12 +171,17 @@ const HabitsBoard = () => {
                     )}
                   </TableCell>
                   <TableCell className="px-1 sm:px-2 py-1 hidden md:table-cell">
-                    <Select value={h.time_of_day} onValueChange={(v: TimeOfDay) => updateHabit(h.id, { time_of_day: v })}>
+                    <Select value={h.time_of_day === ("afternoon" as any) ? "noon" : h.time_of_day} onValueChange={(v: TimeOfDay) => updateHabit(h.id, { time_of_day: v })}>
                       <SelectTrigger className="h-8 text-xs border-none bg-transparent shadow-none focus:ring-0 px-1"><SelectValue>{timeOfDayLabel(h.time_of_day)}</SelectValue></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="any">Herhangi</SelectItem>
-                        {TIME_OF_DAY_OPTIONS.map((o) => (
-                          <SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>
+                        {todOptions.map((o) => (
+                          <SelectItem key={o.key} value={o.key}>
+                            <span className="flex items-center gap-2">
+                              <span>{o.label}</span>
+                              <span className="text-[10px] text-muted-foreground tracking-wide tabular-nums">{o.range}</span>
+                            </span>
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
