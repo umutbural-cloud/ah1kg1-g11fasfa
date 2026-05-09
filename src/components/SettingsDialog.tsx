@@ -19,6 +19,7 @@ import {
   SIDEBAR_ITEM_ORDER,
   SIDEBAR_ITEM_LABELS,
 } from "@/hooks/useSidebarPreferences";
+import { useModuleLabels } from "@/hooks/useModuleLabels";
 import { useStartupPage } from "@/hooks/useStartupPage";
 import { useProjects } from "@/hooks/useProjects";
 import { useUserSettings } from "@/hooks/useUserSettings";
@@ -70,6 +71,7 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
   const [citySearch, setCitySearch] = useState("");
   const cityResults = useMemo(() => searchTurkeyCities(citySearch).slice(0, 30), [citySearch]);
   const { prefs: sidebarPrefs, setItem: setSidebarPref } = useSidebarPreferences();
+  const { get: moduleLabel, rename: renameModule, reset: resetModule, labels: customLabels } = useModuleLabels();
   const { startup, setStartup } = useStartupPage();
   const { projects } = useProjects();
   const enabledModules = SIDEBAR_ITEM_ORDER.filter((k) => sidebarPrefs[k]);
