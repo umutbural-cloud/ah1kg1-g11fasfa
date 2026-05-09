@@ -144,7 +144,7 @@ export type TimeOfDayOption = {
 };
 
 export const getTimeOfDayOptions = (
-  starts: Record<TimeOfDayKey, string> = readTimeOfDayStarts(),
+  starts: Record<TimeOfDayKey, string> = readEffectiveStarts(),
   labels: Record<TimeOfDayKey, string> = readTimeOfDayLabels(),
   disabled: TimeOfDayKey[] = readTimeOfDayDisabled(),
 ): TimeOfDayOption[] => {
