@@ -18,6 +18,7 @@ import { useUndo } from "@/hooks/useUndo";
 import { useTheme } from "@/hooks/useTheme";
 import { usePageState } from "@/hooks/usePageState";
 import { useStartupPage } from "@/hooks/useStartupPage";
+import { useUserSettings } from "@/hooks/useUserSettings";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const VIEWS: { id: ViewKey; label: string; jp: string; icon: any }[] = [
@@ -37,6 +38,7 @@ const Index = () => {
   const { theme, toggle: toggleTheme } = useTheme();
   const { section, selectedProjectId, view, journalDate, setSection, setSelectedProjectId, setView, setJournalDate } = usePageState();
   const { startup } = useStartupPage();
+  const { loading: settingsLoading } = useUserSettings();
   const navigate = useNavigate();
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
@@ -44,7 +46,7 @@ const Index = () => {
 
   // İlk yüklemede açılış sayfası tercihini uygula
   useEffect(() => {
-    if (loading || startupApplied) return;
+    if (loading || settingsLoading || startupApplied) return;
     // Sadece hiçbir bölüm/proje seçilmemişken (taze açılış) uygula.
     // Aksi halde başka sayfadan ("/pomodoro" gibi) gelen kullanıcının seçimini ezeriz.
     if (section !== "project" || selectedProjectId !== null) {
