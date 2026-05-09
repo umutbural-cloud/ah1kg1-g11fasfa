@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Moon, Sun, Bell, BellOff, Sprout, LayoutGrid, User, SlidersHorizontal, Trash2, RotateCcw, Plus } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Moon, Sun, Bell, BellOff, Sprout, LayoutGrid, User, SlidersHorizontal, Trash2, RotateCcw, Plus, Sunrise, MapPin, Search, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useHabitTodayDefault } from "@/hooks/useHabitSettings";
@@ -20,6 +21,10 @@ import {
 } from "@/hooks/useSidebarPreferences";
 import { useStartupPage } from "@/hooks/useStartupPage";
 import { useProjects } from "@/hooks/useProjects";
+import { useUserSettings } from "@/hooks/useUserSettings";
+import { useUserLocation } from "@/hooks/useUserLocation";
+import { usePrayerTimes } from "@/hooks/usePrayerTimes";
+import { searchTurkeyCities, TURKEY_CITIES } from "@/lib/turkeyCities";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
