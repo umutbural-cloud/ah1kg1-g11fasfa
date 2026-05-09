@@ -28,6 +28,7 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
   const { theme, toggle: toggleTheme } = useTheme();
   const { user } = useAuth();
   const [habitDefault, setHabitDefault] = useHabitTodayDefault();
+  const { starts: todStarts, options: todOptions, update: updateTod, reset: resetTod } = useTimeOfDayRanges();
   const { prefs: sidebarPrefs, setItem: setSidebarPref } = useSidebarPreferences();
   const { startup, setStartup } = useStartupPage();
   const { projects } = useProjects();
