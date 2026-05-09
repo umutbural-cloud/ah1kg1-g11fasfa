@@ -197,15 +197,22 @@ export const useTimeOfDayRanges = () => {
   const [starts, setStarts] = useState<Record<TimeOfDayKey, string>>(readTimeOfDayStarts);
   const [labels, setLabels] = useState<Record<TimeOfDayKey, string>>(readTimeOfDayLabels);
   const [disabled, setDisabled] = useState<TimeOfDayKey[]>(readTimeOfDayDisabled);
+  const [auto, setAuto] = useState<boolean>(readAutoMode);
+  const [autoStarts, setAutoStarts] = useState<Record<TimeOfDayKey, string> | null>(readAutoStarts);
 
   useEffect(() => {
     const onChange = () => {
       setStarts(readTimeOfDayStarts());
       setLabels(readTimeOfDayLabels());
       setDisabled(readTimeOfDayDisabled());
+      setAuto(readAutoMode());
+      setAutoStarts(readAutoStarts());
     };
     const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_STARTS || e.key === STORAGE_LABELS || e.key === STORAGE_DISABLED) onChange();
+      if (
+        e.key === STORAGE_STARTS || e.key === STORAGE_LABELS || e.key === STORAGE_DISABLED ||
+        e.key === STORAGE_AUTO || e.key === STORAGE_AUTO_STARTS
+      ) onChange();
     };
     window.addEventListener(EVENT, onChange);
     window.addEventListener("storage", onStorage);
@@ -232,7 +239,6 @@ export const useTimeOfDayRanges = () => {
 
   const setEnabled = (key: TimeOfDayKey, enabled: boolean) => {
     const next = enabled ? disabled.filter((k) => k !== key) : Array.from(new Set([...disabled, key]));
-    // Don't allow disabling the last remaining slot
     if (!enabled && ALL_TIME_OF_DAY_KEYS.length - next.length === 0) return;
     setDisabled(next);
     persist(STORAGE_DISABLED, next);
@@ -253,6 +259,16 @@ export const useTimeOfDayRanges = () => {
     persist(STORAGE_DISABLED, []);
   };
 
-  const options = getTimeOfDayOptions(starts, labels, disabled);
-  return { starts, labels, disabled, options, update, rename, setEnabled, reset };
+  const setAutoMode = (v: boolean) => {
+    setAuto(v);
+    writeAutoMode(v);
+  };
+
+  const effectiveStarts = auto && autoStarts ? autoStarts : starts;
+  const options = getTimeOfDayOptions(effectiveStarts, labels, disabled);
+  return {
+    starts, labels, disabled, options,
+    auto, autoStarts, effectiveStarts,
+    update, rename, setEnabled, reset, setAutoMode,
+  };
 };
