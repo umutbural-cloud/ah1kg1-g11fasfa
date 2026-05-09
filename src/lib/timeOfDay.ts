@@ -4,9 +4,12 @@ export type TimeOfDay = "morning" | "noon" | "ikindi" | "evening" | "night" | "a
 
 export type TimeOfDayKey = Exclude<TimeOfDay, "any">;
 
-export const TIME_OF_DAY_KEYS: TimeOfDayKey[] = ["morning", "noon", "ikindi", "evening", "night"];
+export const ALL_TIME_OF_DAY_KEYS: TimeOfDayKey[] = ["morning", "noon", "ikindi", "evening", "night"];
 
-export const TIME_OF_DAY_LABELS: Record<TimeOfDayKey, { label: string; jp: string }> = {
+// Legacy alias — kept for callers iterating over default keys.
+export const TIME_OF_DAY_KEYS = ALL_TIME_OF_DAY_KEYS;
+
+export const DEFAULT_TIME_OF_DAY_LABELS: Record<TimeOfDayKey, { label: string; jp: string }> = {
   morning: { label: "Sabah", jp: "朝" },
   noon: { label: "Öğle", jp: "昼" },
   ikindi: { label: "İkindi", jp: "申" },
@@ -14,7 +17,9 @@ export const TIME_OF_DAY_LABELS: Record<TimeOfDayKey, { label: string; jp: strin
   night: { label: "Gece", jp: "夜" },
 };
 
-// Default start times for each slot (HH:MM, 24h). Each slot ends where the next begins.
+// Legacy export (static) — components needing live labels should use the hook.
+export const TIME_OF_DAY_LABELS = DEFAULT_TIME_OF_DAY_LABELS;
+
 export const DEFAULT_TIME_OF_DAY_STARTS: Record<TimeOfDayKey, string> = {
   morning: "04:00",
   noon: "11:00",
@@ -23,7 +28,9 @@ export const DEFAULT_TIME_OF_DAY_STARTS: Record<TimeOfDayKey, string> = {
   night: "21:00",
 };
 
-const STORAGE_KEY = "habits-time-of-day-starts";
+const STORAGE_STARTS = "habits-time-of-day-starts";
+const STORAGE_LABELS = "habits-time-of-day-labels";
+const STORAGE_DISABLED = "habits-time-of-day-disabled";
 const EVENT = "time-of-day-ranges-changed";
 
 const isValidTime = (s: unknown): s is string =>
@@ -31,11 +38,11 @@ const isValidTime = (s: unknown): s is string =>
 
 export const readTimeOfDayStarts = (): Record<TimeOfDayKey, string> => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_STARTS);
     if (!raw) return { ...DEFAULT_TIME_OF_DAY_STARTS };
     const parsed = JSON.parse(raw);
     const out = { ...DEFAULT_TIME_OF_DAY_STARTS };
-    TIME_OF_DAY_KEYS.forEach((k) => {
+    ALL_TIME_OF_DAY_KEYS.forEach((k) => {
       if (isValidTime(parsed?.[k])) out[k] = parsed[k];
     });
     return out;
@@ -44,8 +51,39 @@ export const readTimeOfDayStarts = (): Record<TimeOfDayKey, string> => {
   }
 };
 
-export const saveTimeOfDayStarts = (starts: Record<TimeOfDayKey, string>) => {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(starts)); } catch {}
+export const readTimeOfDayLabels = (): Record<TimeOfDayKey, string> => {
+  const out: Record<TimeOfDayKey, string> = {
+    morning: DEFAULT_TIME_OF_DAY_LABELS.morning.label,
+    noon: DEFAULT_TIME_OF_DAY_LABELS.noon.label,
+    ikindi: DEFAULT_TIME_OF_DAY_LABELS.ikindi.label,
+    evening: DEFAULT_TIME_OF_DAY_LABELS.evening.label,
+    night: DEFAULT_TIME_OF_DAY_LABELS.night.label,
+  };
+  try {
+    const raw = localStorage.getItem(STORAGE_LABELS);
+    if (!raw) return out;
+    const parsed = JSON.parse(raw);
+    ALL_TIME_OF_DAY_KEYS.forEach((k) => {
+      if (typeof parsed?.[k] === "string" && parsed[k].trim()) out[k] = parsed[k].trim();
+    });
+  } catch {}
+  return out;
+};
+
+export const readTimeOfDayDisabled = (): TimeOfDayKey[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_DISABLED);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((k): k is TimeOfDayKey => ALL_TIME_OF_DAY_KEYS.includes(k));
+  } catch {
+    return [];
+  }
+};
+
+const persist = (key: string, value: unknown) => {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
   window.dispatchEvent(new Event(EVENT));
 };
 
@@ -74,16 +112,22 @@ export type TimeOfDayOption = {
 
 export const getTimeOfDayOptions = (
   starts: Record<TimeOfDayKey, string> = readTimeOfDayStarts(),
+  labels: Record<TimeOfDayKey, string> = readTimeOfDayLabels(),
+  disabled: TimeOfDayKey[] = readTimeOfDayDisabled(),
 ): TimeOfDayOption[] => {
-  return TIME_OF_DAY_KEYS.map((k, i) => {
+  const enabled = ALL_TIME_OF_DAY_KEYS.filter((k) => !disabled.includes(k));
+  if (enabled.length === 0) return [];
+  // Sort enabled by start time so ranges are continuous in the day.
+  const sorted = [...enabled].sort((a, b) => toMinutes(starts[a]) - toMinutes(starts[b]));
+  return sorted.map((k, i) => {
     const startMin = toMinutes(starts[k]);
-    const nextKey = TIME_OF_DAY_KEYS[(i + 1) % TIME_OF_DAY_KEYS.length];
+    const nextKey = sorted[(i + 1) % sorted.length];
     let endMin = toMinutes(starts[nextKey]);
     if (endMin <= startMin) endMin += 24 * 60;
     return {
       key: k,
-      label: TIME_OF_DAY_LABELS[k].label,
-      jp: TIME_OF_DAY_LABELS[k].jp,
+      label: labels[k] || DEFAULT_TIME_OF_DAY_LABELS[k].label,
+      jp: DEFAULT_TIME_OF_DAY_LABELS[k].jp,
       range: fmtRange(startMin, endMin),
       startMin,
       endMin,
@@ -91,11 +135,11 @@ export const getTimeOfDayOptions = (
   });
 };
 
-// Backwards-compatible default export of options (computed at module init for non-reactive callers).
 export const TIME_OF_DAY_OPTIONS: TimeOfDayOption[] = getTimeOfDayOptions();
 
 export const currentTimeOfDay = (d = new Date()): TimeOfDayKey => {
   const opts = getTimeOfDayOptions();
+  if (opts.length === 0) return "morning";
   const nowMin = d.getHours() * 60 + d.getMinutes();
   for (const o of opts) {
     const s = o.startMin;
@@ -106,22 +150,30 @@ export const currentTimeOfDay = (d = new Date()): TimeOfDayKey => {
       if (nowMin >= s || nowMin < e - 24 * 60) return o.key;
     }
   }
-  return "morning";
+  return opts[0].key;
 };
 
 export const timeOfDayLabel = (t: TimeOfDay) => {
   if (t === "any") return "Herhangi";
-  // Backwards compatibility: legacy "afternoon" → "Öğle"
-  if ((t as string) === "afternoon") return TIME_OF_DAY_LABELS.noon.label;
-  return TIME_OF_DAY_LABELS[t as TimeOfDayKey]?.label || "";
+  if ((t as string) === "afternoon") return readTimeOfDayLabels().noon;
+  const labels = readTimeOfDayLabels();
+  return labels[t as TimeOfDayKey] || DEFAULT_TIME_OF_DAY_LABELS[t as TimeOfDayKey]?.label || "";
 };
 
 export const useTimeOfDayRanges = () => {
   const [starts, setStarts] = useState<Record<TimeOfDayKey, string>>(readTimeOfDayStarts);
+  const [labels, setLabels] = useState<Record<TimeOfDayKey, string>>(readTimeOfDayLabels);
+  const [disabled, setDisabled] = useState<TimeOfDayKey[]>(readTimeOfDayDisabled);
 
   useEffect(() => {
-    const onChange = () => setStarts(readTimeOfDayStarts());
-    const onStorage = (e: StorageEvent) => { if (e.key === STORAGE_KEY) onChange(); };
+    const onChange = () => {
+      setStarts(readTimeOfDayStarts());
+      setLabels(readTimeOfDayLabels());
+      setDisabled(readTimeOfDayDisabled());
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_STARTS || e.key === STORAGE_LABELS || e.key === STORAGE_DISABLED) onChange();
+    };
     window.addEventListener(EVENT, onChange);
     window.addEventListener("storage", onStorage);
     return () => {
@@ -134,14 +186,40 @@ export const useTimeOfDayRanges = () => {
     if (!isValidTime(value)) return;
     const next = { ...starts, [key]: value };
     setStarts(next);
-    saveTimeOfDayStarts(next);
+    persist(STORAGE_STARTS, next);
+  };
+
+  const rename = (key: TimeOfDayKey, value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    const next = { ...labels, [key]: trimmed };
+    setLabels(next);
+    persist(STORAGE_LABELS, next);
+  };
+
+  const setEnabled = (key: TimeOfDayKey, enabled: boolean) => {
+    const next = enabled ? disabled.filter((k) => k !== key) : Array.from(new Set([...disabled, key]));
+    // Don't allow disabling the last remaining slot
+    if (!enabled && ALL_TIME_OF_DAY_KEYS.length - next.length === 0) return;
+    setDisabled(next);
+    persist(STORAGE_DISABLED, next);
   };
 
   const reset = () => {
     setStarts({ ...DEFAULT_TIME_OF_DAY_STARTS });
-    saveTimeOfDayStarts({ ...DEFAULT_TIME_OF_DAY_STARTS });
+    setLabels({
+      morning: DEFAULT_TIME_OF_DAY_LABELS.morning.label,
+      noon: DEFAULT_TIME_OF_DAY_LABELS.noon.label,
+      ikindi: DEFAULT_TIME_OF_DAY_LABELS.ikindi.label,
+      evening: DEFAULT_TIME_OF_DAY_LABELS.evening.label,
+      night: DEFAULT_TIME_OF_DAY_LABELS.night.label,
+    });
+    setDisabled([]);
+    persist(STORAGE_STARTS, { ...DEFAULT_TIME_OF_DAY_STARTS });
+    persist(STORAGE_LABELS, DEFAULT_TIME_OF_DAY_LABELS);
+    persist(STORAGE_DISABLED, []);
   };
 
-  const options = getTimeOfDayOptions(starts);
-  return { starts, options, update, reset };
+  const options = getTimeOfDayOptions(starts, labels, disabled);
+  return { starts, labels, disabled, options, update, rename, setEnabled, reset };
 };
