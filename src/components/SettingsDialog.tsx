@@ -457,24 +457,45 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
             )}
 
             {section === "modules" && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <SectionTitle>区分 — Modüller</SectionTitle>
                 <div className="text-[10px] text-muted-foreground tracking-wide">
-                  Yan menüde hangi bölümler görünsün
+                  Yan menüde hangi bölümler görünsün ve adları
                 </div>
-                <div className="grid grid-cols-1 gap-1.5 pt-1">
-                  {SIDEBAR_ITEM_ORDER.map((key) => (
-                    <label
-                      key={key}
-                      className="flex items-center gap-2.5 px-2 py-2 rounded-sm hover:bg-accent/40 transition-colors cursor-pointer"
-                    >
-                      <Checkbox
-                        checked={sidebarPrefs[key]}
-                        onCheckedChange={(v) => setSidebarPref(key, v === true)}
-                      />
-                      <span className="text-sm font-light tracking-wide">{SIDEBAR_ITEM_LABELS[key]}</span>
-                    </label>
-                  ))}
+                <div className="flex flex-col gap-1.5 pt-1">
+                  {SIDEBAR_ITEM_ORDER.map((key) => {
+                    const isCustom = !!customLabels[key];
+                    return (
+                      <div
+                        key={key}
+                        className="flex items-center gap-2 px-2 py-2 rounded-sm border border-border/40 bg-card/40"
+                      >
+                        <Checkbox
+                          checked={sidebarPrefs[key]}
+                          onCheckedChange={(v) => setSidebarPref(key, v === true)}
+                          className="shrink-0"
+                        />
+                        <Input
+                          value={moduleLabel(key)}
+                          onChange={(e) => renameModule(key, e.target.value)}
+                          placeholder={SIDEBAR_ITEM_LABELS[key]}
+                          className="bg-transparent h-7 text-sm font-light flex-1 min-w-0 px-2"
+                        />
+                        <span className="text-[9px] text-muted-foreground/70 tracking-wide shrink-0 hidden sm:inline">
+                          {SIDEBAR_ITEM_LABELS[key]}
+                        </span>
+                        {isCustom && (
+                          <button
+                            onClick={() => resetModule(key)}
+                            title="Varsayılan ada dön"
+                            className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors shrink-0"
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
