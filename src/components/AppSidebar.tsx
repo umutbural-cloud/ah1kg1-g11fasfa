@@ -356,6 +356,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const { prefs, setItem } = useSidebarPreferences();
+  const { get: moduleLabel } = useModuleLabels();
   const [newName, setNewName] = useState("");
   const [showInput, setShowInput] = useState(false);
   const [addingParentId, setAddingParentId] = useState<string | null>(null);
@@ -364,11 +365,11 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
   const [newModuleOpen, setNewModuleOpen] = useState(false);
 
   const MODULE_OPTIONS: { key: "backlog" | "journal" | "habits" | "workHistory" | "pomodoro"; label: string; icon: any }[] = [
-    { key: "backlog", label: "Heybe", icon: Package },
-    { key: "journal", label: "Günlük", icon: FileText },
-    { key: "habits", label: "Alışkanlıklar", icon: Repeat },
-    { key: "workHistory", label: "Çalışma Geçmişi", icon: Clock },
-    { key: "pomodoro", label: "Pomodoro", icon: Clock },
+    { key: "backlog", label: moduleLabel("backlog"), icon: Package },
+    { key: "journal", label: moduleLabel("journal"), icon: FileText },
+    { key: "habits", label: moduleLabel("habits"), icon: Repeat },
+    { key: "workHistory", label: moduleLabel("workHistory"), icon: Clock },
+    { key: "pomodoro", label: moduleLabel("pomodoro"), icon: Clock },
   ];
   const hiddenModules = MODULE_OPTIONS.filter((m) => !prefs[m.key]);
 
