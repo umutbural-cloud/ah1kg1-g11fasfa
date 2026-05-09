@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useHabitTodayDefault } from "@/hooks/useHabitSettings";
+import { useTimeOfDayRanges, TIME_OF_DAY_LABELS, TIME_OF_DAY_KEYS } from "@/lib/timeOfDay";
 import {
   useSidebarPreferences,
   SIDEBAR_ITEM_ORDER,
