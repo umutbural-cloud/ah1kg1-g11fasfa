@@ -31,7 +31,40 @@ export const DEFAULT_TIME_OF_DAY_STARTS: Record<TimeOfDayKey, string> = {
 const STORAGE_STARTS = "habits-time-of-day-starts";
 const STORAGE_LABELS = "habits-time-of-day-labels";
 const STORAGE_DISABLED = "habits-time-of-day-disabled";
+const STORAGE_AUTO = "habits-time-of-day-auto";
+const STORAGE_AUTO_STARTS = "habits-time-of-day-auto-starts";
 const EVENT = "time-of-day-ranges-changed";
+
+export const readAutoMode = (): boolean => {
+  try { return localStorage.getItem(STORAGE_AUTO) === "true"; } catch { return false; }
+};
+
+export const writeAutoMode = (v: boolean) => {
+  try { localStorage.setItem(STORAGE_AUTO, v ? "true" : "false"); } catch {}
+  window.dispatchEvent(new Event(EVENT));
+};
+
+export const readAutoStarts = (): Record<TimeOfDayKey, string> | null => {
+  try {
+    const raw = localStorage.getItem(STORAGE_AUTO_STARTS);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const out = { ...DEFAULT_TIME_OF_DAY_STARTS };
+    let any = false;
+    ALL_TIME_OF_DAY_KEYS.forEach((k) => {
+      if (isValidTime(parsed?.[k])) { out[k] = parsed[k]; any = true; }
+    });
+    return any ? out : null;
+  } catch { return null; }
+};
+
+export const readEffectiveStarts = (): Record<TimeOfDayKey, string> => {
+  if (readAutoMode()) {
+    const auto = readAutoStarts();
+    if (auto) return auto;
+  }
+  return readTimeOfDayStarts();
+};
 
 const isValidTime = (s: unknown): s is string =>
   typeof s === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
