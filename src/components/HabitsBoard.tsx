@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CategoryColorPicker } from "./CategoryColorPicker";
-import { TIME_OF_DAY_OPTIONS, type TimeOfDay, timeOfDayLabel } from "@/lib/timeOfDay";
+import { useTimeOfDayRanges, type TimeOfDay, timeOfDayLabel } from "@/lib/timeOfDay";
 
 const FREQ_LABEL: Record<FrequencyType, string> = {
   daily: "Her gün",
