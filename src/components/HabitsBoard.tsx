@@ -22,6 +22,7 @@ const FREQ_LABEL: Record<FrequencyType, string> = {
 
 const HabitsBoard = () => {
   const { habits, createHabit, updateHabit, deleteHabit, moveHabit } = useHabits();
+  const { options: todOptions } = useTimeOfDayRanges();
   const { categories, createCategory, updateCategory, deleteCategory } = useHabitCategories();
   const [newTitle, setNewTitle] = useState("");
   const [openHabit, setOpenHabit] = useState<Habit | null>(null);
