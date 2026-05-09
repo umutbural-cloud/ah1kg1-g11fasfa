@@ -583,7 +583,7 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                         <div className="px-2 pt-1.5 pb-0.5 text-[10px] text-muted-foreground tracking-[0.15em] uppercase">Modüller</div>
                       )}
                       {enabledModules.map((k) => (
-                        <SelectItem key={`mod:${k}`} value={`mod:${k}`}>{SIDEBAR_ITEM_LABELS[k]}</SelectItem>
+                        <SelectItem key={`mod:${k}`} value={`mod:${k}`}>{moduleLabel(k)}</SelectItem>
                       ))}
                       {projects.length > 0 && (
                         <div className="px-2 pt-1.5 pb-0.5 text-[10px] text-muted-foreground tracking-[0.15em] uppercase">Projeler</div>
