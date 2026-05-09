@@ -17,6 +17,7 @@ export type UserSettings = {
   calculation_method: number;
   module_labels: Record<string, string>;
   startup_page: StartupPageSetting;
+  ui_scale: "normal" | "large" | "xlarge";
 };
 
 const DEFAULTS: UserSettings = {
@@ -29,6 +30,7 @@ const DEFAULTS: UserSettings = {
   calculation_method: 13,
   module_labels: {},
   startup_page: { type: "default" },
+  ui_scale: "normal",
 };
 
 const CACHE_KEY = "keikaku.userSettings.v1";
