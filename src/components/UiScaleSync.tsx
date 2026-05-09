@@ -1,31 +1,22 @@
 import { useEffect } from "react";
-import { useUserSettings } from "@/hooks/useUserSettings";
-
-const SCALE_FONT_SIZE: Record<string, string> = {
-  normal: "16px",
-  large: "18.4px",   // ~+15%
-  xlarge: "20.8px",  // ~+30%
-};
+import { useUiScale, UI_SCALE_FONT_SIZE } from "@/hooks/useUiScale";
 
 /**
- * Applies the user's accessibility UI scale globally.
- * Because Tailwind sizes (text-*, h-*, p-*, gap-*, [&_svg]:size-*) are in rem,
- * adjusting the root font-size proportionally scales typography, spacing,
- * button heights, input sizes, paddings, icons and line-heights together.
+ * Applies the user's accessibility UI scale globally for THIS device.
+ * Tailwind sizes (text-*, h-*, p-*, gap-*, [&_svg]:size-*) are in rem,
+ * so adjusting the root font-size scales typography, spacing, button heights,
+ * input sizes, paddings, icons and line-heights together.
+ *
+ * Stored in localStorage (per-device), not synced across devices.
  */
 export const UiScaleSync = () => {
-  const { settings } = useUserSettings();
+  const { scale } = useUiScale();
 
   useEffect(() => {
-    const scale = settings.ui_scale ?? "normal";
     const root = document.documentElement;
     root.dataset.uiScale = scale;
-    root.style.fontSize = SCALE_FONT_SIZE[scale] ?? SCALE_FONT_SIZE.normal;
-    return () => {
-      root.style.removeProperty("font-size");
-      delete root.dataset.uiScale;
-    };
-  }, [settings.ui_scale]);
+    root.style.fontSize = UI_SCALE_FONT_SIZE[scale] ?? UI_SCALE_FONT_SIZE.normal;
+  }, [scale]);
 
   return null;
 };
