@@ -172,6 +172,43 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                 >Tümü</button>
               </div>
             </div>
+
+            <div className="pt-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-light">Gün dilimleri</div>
+                  <div className="text-[10px] text-muted-foreground tracking-wide">
+                    Her dilimin başlangıç saati. Bir sonraki dilim, sıradakinin başlangıcına kadar sürer.
+                  </div>
+                </div>
+                <button
+                  onClick={resetTod}
+                  className="text-[10px] tracking-wide text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Sıfırla
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-1.5 pt-1">
+                {TIME_OF_DAY_KEYS.map((k) => {
+                  const opt = todOptions.find((o) => o.key === k)!;
+                  return (
+                    <div key={k} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/30 transition-colors">
+                      <span className="text-muted-foreground/70 text-xs w-4 text-center">{TIME_OF_DAY_LABELS[k].jp}</span>
+                      <span className="text-sm font-light w-24">{TIME_OF_DAY_LABELS[k].label}</span>
+                      <Input
+                        type="time"
+                        value={todStarts[k]}
+                        onChange={(e) => updateTod(k, e.target.value)}
+                        className="bg-transparent h-7 text-xs w-24 px-2"
+                      />
+                      <span className="text-[10px] text-muted-foreground tracking-wide ml-auto tabular-nums">
+                        {opt.range}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           <div className="border-t border-border/60" />
