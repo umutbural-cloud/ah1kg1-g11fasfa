@@ -409,7 +409,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                     className={`text-sm font-light ${section === "backlog" ? "bg-accent text-accent-foreground" : ""}`}
                   >
                     <Package className="h-3.5 w-3.5" />
-                    <span className="tracking-wide">Heybe</span>
+                    <span className="tracking-wide">{moduleLabel("backlog")}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
@@ -420,7 +420,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                     className={`text-sm font-light ${section === "journal" ? "bg-accent text-accent-foreground" : ""}`}
                   >
                     <FileText className="h-3.5 w-3.5" />
-                    <span className="tracking-wide">Günlük</span>
+                    <span className="tracking-wide">{moduleLabel("journal")}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
@@ -431,7 +431,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                     className={`text-sm font-light ${section === "habits" ? "bg-accent text-accent-foreground" : ""}`}
                   >
                     <Repeat className="h-3.5 w-3.5" />
-                    <span className="tracking-wide">Alışkanlıklar</span>
+                    <span className="tracking-wide">{moduleLabel("habits")}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
@@ -442,7 +442,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                     className="text-sm font-light"
                   >
                     <Clock className="h-3.5 w-3.5" />
-                    <span className="tracking-wide">Çalışma Geçmişi</span>
+                    <span className="tracking-wide">{moduleLabel("workHistory")}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
