@@ -17,6 +17,7 @@ export type UserSettings = {
   calculation_method: number;
   module_labels: Record<string, string>;
   startup_page: StartupPageSetting;
+  ui_scale: "normal" | "large" | "xlarge";
 };
 
 const DEFAULTS: UserSettings = {
@@ -29,6 +30,7 @@ const DEFAULTS: UserSettings = {
   calculation_method: 13,
   module_labels: {},
   startup_page: { type: "default" },
+  ui_scale: "normal",
 };
 
 const CACHE_KEY = "keikaku.userSettings.v1";
@@ -66,7 +68,7 @@ export const useUserSettings = () => {
     (async () => {
       const { data } = await supabase
         .from("user_settings")
-        .select("auto_prayer_times,location_permission,country,city,latitude,longitude,calculation_method,module_labels,startup_page")
+        .select("auto_prayer_times,location_permission,country,city,latitude,longitude,calculation_method,module_labels,startup_page,ui_scale")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -81,6 +83,7 @@ export const useUserSettings = () => {
           calculation_method: data.calculation_method,
           module_labels: (data as any).module_labels ?? {},
           startup_page: ((data as any).startup_page as StartupPageSetting) ?? { type: "default" },
+          ui_scale: ((data as any).ui_scale as UserSettings["ui_scale"]) ?? "normal",
         };
         setSettings(next);
         writeCache(next);
