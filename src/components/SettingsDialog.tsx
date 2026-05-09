@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Moon, Sun, Bell, BellOff } from "lucide-react";
+import { Moon, Sun, Bell, BellOff, Sprout, LayoutGrid, User, SlidersHorizontal } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,11 +18,21 @@ import { useProjects } from "@/hooks/useProjects";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
 };
+
+type SectionKey = "habits" | "modules" | "account" | "preferences";
+
+const SECTIONS: { key: SectionKey; label: string; jp: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { key: "habits", label: "Alışkanlık Ayarları", jp: "習慣", icon: Sprout },
+  { key: "modules", label: "Modül Tercihleri", jp: "区分", icon: LayoutGrid },
+  { key: "account", label: "Kullanıcı Bilgileri", jp: "個人", icon: User },
+  { key: "preferences", label: "Kullanım Tercihleri", jp: "設定", icon: SlidersHorizontal },
+];
 
 const SettingsDialog = ({ open, onOpenChange }: Props) => {
   const { theme, toggle: toggleTheme } = useTheme();
@@ -42,6 +52,7 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
     else if (v.startsWith("mod:")) setStartup({ type: "module", value: v.slice(4) as any });
     else if (v.startsWith("prj:")) setStartup({ type: "project", value: v.slice(4) });
   };
+  const [section, setSection] = useState<SectionKey>("habits");
   const [email, setEmail] = useState(user?.email || "");
   const [password, setPassword] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
@@ -99,217 +110,239 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-5 py-3 border-b border-border/60">
           <DialogTitle className="text-base font-light tracking-wide">設定 — Ayarlar</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5 pt-2">
-          {/* Tema */}
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-light">Karanlık tema</div>
-              <div className="text-[10px] text-muted-foreground tracking-wide">Yumuşak tonlarda gece modu</div>
-            </div>
-            <button
-              onClick={toggleTheme}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors"
-            >
-              {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-              <span className="text-xs tracking-wide">{theme === "dark" ? "Aydınlık" : "Karanlık"}</span>
-            </button>
-          </div>
-
-          <div className="border-t border-border/60" />
-
-          {/* Bildirimler */}
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-light">Bildirimler</div>
-              <div className="text-[10px] text-muted-foreground tracking-wide">
-                {notifPerm === "granted" && "Açık — Pomodoro bittiğinde haber verilir"}
-                {notifPerm === "default" && "Site arka planda olsa bile haber alın"}
-                {notifPerm === "denied" && "Engellendi — Tarayıcı ayarlarından açın"}
-                {notifPerm === "unsupported" && "Bu tarayıcı desteklemiyor"}
-              </div>
-            </div>
-            <button
-              onClick={requestNotif}
-              disabled={notifPerm === "unsupported"}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {notifPerm === "granted" ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
-              <span className="text-xs tracking-wide">
-                {notifPerm === "granted" ? "Açık" : notifPerm === "denied" ? "Engelli" : "Aç"}
-              </span>
-            </button>
-          </div>
-
-          <div className="border-t border-border/60" />
-
-          {/* Alışkanlıklar */}
-          <div className="space-y-2">
-            <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">習慣 — Alışkanlıklar</div>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-light">Bugün varsayılan filtresi</div>
-                <div className="text-[10px] text-muted-foreground tracking-wide">
-                  Sayfa açıldığında hangi alışkanlıklar gösterilsin
-                </div>
-              </div>
-              <div className="flex rounded-sm border border-border/60 overflow-hidden shrink-0">
+        <div className="flex flex-col sm:flex-row max-h-[75vh]">
+          {/* Sidebar menu */}
+          <nav className="sm:w-52 sm:border-r border-b sm:border-b-0 border-border/60 bg-muted/20 sm:py-3 py-2 px-2 flex sm:flex-col gap-1 overflow-x-auto sm:overflow-x-visible shrink-0">
+            {SECTIONS.map((s) => {
+              const Icon = s.icon;
+              const active = section === s.key;
+              return (
                 <button
-                  onClick={() => setHabitDefault("time")}
-                  className={`px-3 py-1.5 text-xs tracking-wide transition-colors ${
-                    habitDefault === "time" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/40"
-                  }`}
-                >Günün saati</button>
-                <button
-                  onClick={() => setHabitDefault("all")}
-                  className={`px-3 py-1.5 text-xs tracking-wide transition-colors border-l border-border/60 ${
-                    habitDefault === "all" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/40"
-                  }`}
-                >Tümü</button>
-              </div>
-            </div>
+                  key={s.key}
+                  onClick={() => setSection(s.key)}
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-sm text-left transition-colors shrink-0 sm:w-full",
+                    active ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <span className="text-xs tracking-wide whitespace-nowrap">{s.label}</span>
+                </button>
+              );
+            })}
+          </nav>
 
-            <div className="pt-2 space-y-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-light">Gün dilimleri</div>
-                  <div className="text-[10px] text-muted-foreground tracking-wide">
-                    Her dilimin başlangıç saati. Bir sonraki dilim, sıradakinin başlangıcına kadar sürer.
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto px-5 py-4">
+            {section === "habits" && (
+              <div className="space-y-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-light">Bugün varsayılan filtresi</div>
+                    <div className="text-[10px] text-muted-foreground tracking-wide">
+                      Sayfa açıldığında hangi alışkanlıklar gösterilsin
+                    </div>
+                  </div>
+                  <div className="flex rounded-sm border border-border/60 overflow-hidden shrink-0">
+                    <button
+                      onClick={() => setHabitDefault("time")}
+                      className={`px-3 py-1.5 text-xs tracking-wide transition-colors ${
+                        habitDefault === "time" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/40"
+                      }`}
+                    >Günün saati</button>
+                    <button
+                      onClick={() => setHabitDefault("all")}
+                      className={`px-3 py-1.5 text-xs tracking-wide transition-colors border-l border-border/60 ${
+                        habitDefault === "all" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/40"
+                      }`}
+                    >Tümü</button>
                   </div>
                 </div>
-                <button
-                  onClick={resetTod}
-                  className="text-[10px] tracking-wide text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Sıfırla
-                </button>
-              </div>
-              <div className="grid grid-cols-1 gap-1.5 pt-1">
-                {TIME_OF_DAY_KEYS.map((k) => {
-                  const opt = todOptions.find((o) => o.key === k)!;
-                  return (
-                    <div key={k} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/30 transition-colors">
-                      <span className="text-muted-foreground/70 text-xs w-4 text-center">{TIME_OF_DAY_LABELS[k].jp}</span>
-                      <span className="text-sm font-light w-24">{TIME_OF_DAY_LABELS[k].label}</span>
-                      <Input
-                        type="time"
-                        value={todStarts[k]}
-                        onChange={(e) => updateTod(k, e.target.value)}
-                        className="bg-transparent h-7 text-xs w-24 px-2"
-                      />
-                      <span className="text-[10px] text-muted-foreground tracking-wide ml-auto tabular-nums">
-                        {opt.range}
-                      </span>
+
+                <div className="border-t border-border/60" />
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-light">Gün dilimleri</div>
+                      <div className="text-[10px] text-muted-foreground tracking-wide">
+                        Her dilimin başlangıç saati. Sıradakine kadar sürer.
+                      </div>
                     </div>
-                  );
-                })}
+                    <button
+                      onClick={resetTod}
+                      className="text-[10px] tracking-wide text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Sıfırla
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 gap-1.5 pt-1">
+                    {TIME_OF_DAY_KEYS.map((k) => {
+                      const opt = todOptions.find((o) => o.key === k)!;
+                      return (
+                        <div key={k} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/30 transition-colors">
+                          <span className="text-muted-foreground/70 text-xs w-4 text-center">{TIME_OF_DAY_LABELS[k].jp}</span>
+                          <span className="text-sm font-light w-24">{TIME_OF_DAY_LABELS[k].label}</span>
+                          <Input
+                            type="time"
+                            value={todStarts[k]}
+                            onChange={(e) => updateTod(k, e.target.value)}
+                            className="bg-transparent h-7 text-xs w-24 px-2"
+                          />
+                          <span className="text-[10px] text-muted-foreground tracking-wide ml-auto tabular-nums">
+                            {opt.range}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
 
-          <div className="border-t border-border/60" />
+            {section === "modules" && (
+              <div className="space-y-2">
+                <div className="text-[10px] text-muted-foreground tracking-wide">
+                  Yan menüde hangi bölümler görünsün
+                </div>
+                <div className="grid grid-cols-1 gap-1.5 pt-1">
+                  {SIDEBAR_ITEM_ORDER.map((key) => (
+                    <label
+                      key={key}
+                      className="flex items-center gap-2.5 px-2 py-1.5 rounded-sm hover:bg-accent/40 transition-colors cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={sidebarPrefs[key]}
+                        onCheckedChange={(v) => setSidebarPref(key, v === true)}
+                      />
+                      <span className="text-sm font-light tracking-wide">{SIDEBAR_ITEM_LABELS[key]}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
-          {/* Tercihler — Sidebar görünürlüğü */}
-          <div className="space-y-2">
-            <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">設定 — Tercihler</div>
-            <div className="text-[10px] text-muted-foreground tracking-wide">
-              Yan menüde hangi bölümler görünsün
-            </div>
-            <div className="grid grid-cols-1 gap-1.5 pt-1">
-              {SIDEBAR_ITEM_ORDER.map((key) => (
-                <label
-                  key={key}
-                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-sm hover:bg-accent/40 transition-colors cursor-pointer"
-                >
-                  <Checkbox
-                    checked={sidebarPrefs[key]}
-                    onCheckedChange={(v) => setSidebarPref(key, v === true)}
-                  />
-                  <span className="text-sm font-light tracking-wide">{SIDEBAR_ITEM_LABELS[key]}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+            {section === "account" && (
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">E-posta</div>
+                  <div className="flex gap-2">
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="ornek@mail.com"
+                      className="bg-transparent h-8 text-sm"
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleEmail}
+                      disabled={savingEmail || email === user?.email || !email.trim()}
+                    >
+                      Güncelle
+                    </Button>
+                  </div>
+                </div>
 
-          <div className="border-t border-border/60" />
+                <div className="space-y-2">
+                  <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">Yeni şifre</div>
+                  <div className="flex gap-2">
+                    <Input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••"
+                      className="bg-transparent h-8 text-sm"
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handlePassword}
+                      disabled={savingPassword || password.length < 6}
+                    >
+                      Güncelle
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
-          {/* Açılış sayfası */}
-          <div className="space-y-2">
-            <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">起動 — Açılış sayfası</div>
-            <div className="text-[10px] text-muted-foreground tracking-wide">
-              Uygulama açıldığında hangi sayfaya gidilsin
-            </div>
-            <Select value={startupValue} onValueChange={handleStartupChange}>
-              <SelectTrigger className="h-9 text-sm font-light">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value="default">Varsayılan (ilk proje)</SelectItem>
-                {enabledModules.length > 0 && (
-                  <div className="px-2 pt-1.5 pb-0.5 text-[10px] text-muted-foreground tracking-[0.15em] uppercase">Modüller</div>
-                )}
-                {enabledModules.map((k) => (
-                  <SelectItem key={`mod:${k}`} value={`mod:${k}`}>{SIDEBAR_ITEM_LABELS[k]}</SelectItem>
-                ))}
-                {projects.length > 0 && (
-                  <div className="px-2 pt-1.5 pb-0.5 text-[10px] text-muted-foreground tracking-[0.15em] uppercase">Projeler</div>
-                )}
-                {projects.map((p) => (
-                  <SelectItem key={`prj:${p.id}`} value={`prj:${p.id}`}>{p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            {section === "preferences" && (
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-light">Karanlık tema</div>
+                    <div className="text-[10px] text-muted-foreground tracking-wide">Yumuşak tonlarda gece modu</div>
+                  </div>
+                  <button
+                    onClick={toggleTheme}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors"
+                  >
+                    {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                    <span className="text-xs tracking-wide">{theme === "dark" ? "Aydınlık" : "Karanlık"}</span>
+                  </button>
+                </div>
 
-          <div className="border-t border-border/60" />
+                <div className="border-t border-border/60" />
 
-          {/* E-posta */}
+                <div className="space-y-2">
+                  <div className="text-sm font-light">Açılış sayfası</div>
+                  <div className="text-[10px] text-muted-foreground tracking-wide">
+                    Uygulama açıldığında hangi sayfaya gidilsin
+                  </div>
+                  <Select value={startupValue} onValueChange={handleStartupChange}>
+                    <SelectTrigger className="h-9 text-sm font-light">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value="default">Varsayılan (ilk proje)</SelectItem>
+                      {enabledModules.length > 0 && (
+                        <div className="px-2 pt-1.5 pb-0.5 text-[10px] text-muted-foreground tracking-[0.15em] uppercase">Modüller</div>
+                      )}
+                      {enabledModules.map((k) => (
+                        <SelectItem key={`mod:${k}`} value={`mod:${k}`}>{SIDEBAR_ITEM_LABELS[k]}</SelectItem>
+                      ))}
+                      {projects.length > 0 && (
+                        <div className="px-2 pt-1.5 pb-0.5 text-[10px] text-muted-foreground tracking-[0.15em] uppercase">Projeler</div>
+                      )}
+                      {projects.map((p) => (
+                        <SelectItem key={`prj:${p.id}`} value={`prj:${p.id}`}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          <div className="space-y-2">
-            <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">E-posta</div>
-            <div className="flex gap-2">
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="ornek@mail.com"
-                className="bg-transparent h-8 text-sm"
-              />
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleEmail}
-                disabled={savingEmail || email === user?.email || !email.trim()}
-              >
-                Güncelle
-              </Button>
-            </div>
-          </div>
+                <div className="border-t border-border/60" />
 
-          {/* Şifre */}
-          <div className="space-y-2">
-            <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">Yeni şifre</div>
-            <div className="flex gap-2">
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••"
-                className="bg-transparent h-8 text-sm"
-              />
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handlePassword}
-                disabled={savingPassword || password.length < 6}
-              >
-                Güncelle
-              </Button>
-            </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-light">Bildirimler</div>
+                    <div className="text-[10px] text-muted-foreground tracking-wide">
+                      {notifPerm === "granted" && "Açık — Pomodoro bittiğinde haber verilir"}
+                      {notifPerm === "default" && "Site arka planda olsa bile haber alın"}
+                      {notifPerm === "denied" && "Engellendi — Tarayıcı ayarlarından açın"}
+                      {notifPerm === "unsupported" && "Bu tarayıcı desteklemiyor"}
+                    </div>
+                  </div>
+                  <button
+                    onClick={requestNotif}
+                    disabled={notifPerm === "unsupported"}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {notifPerm === "granted" ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
+                    <span className="text-xs tracking-wide">
+                      {notifPerm === "granted" ? "Açık" : notifPerm === "denied" ? "Engelli" : "Aç"}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
