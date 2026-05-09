@@ -49,6 +49,7 @@ const App = () => (
         <UndoProvider>
           <PomodoroProvider>
             <PageStateProvider>
+            <PrayerTimesSync />
             <Routes>
               <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
