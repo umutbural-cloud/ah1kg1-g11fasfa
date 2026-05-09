@@ -571,7 +571,7 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                 <div className="space-y-2">
                   <div className="text-sm font-light">Açılış sayfası</div>
                   <div className="text-[10px] text-muted-foreground tracking-wide">
-                    Uygulama açıldığında hangi sayfaya gidilsin
+                    Uygulama açıldığında hangi sayfaya gidilsin (tüm cihazlarda eşitlenir)
                   </div>
                   <Select value={startupValue} onValueChange={handleStartupChange}>
                     <SelectTrigger className="h-9 text-sm font-light">
