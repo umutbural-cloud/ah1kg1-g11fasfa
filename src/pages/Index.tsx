@@ -80,7 +80,7 @@ const Index = () => {
       const pvs = (def.enabled_views?.length ? def.enabled_views : ["table", "notes"]) as ViewKey[];
       setView(pvs[0]);
     }
-  }, [loading, projects, startup]);
+  }, [loading, settingsLoading, projects, startup]);
 
   // Keyboard shortcuts for undo/redo
   useEffect(() => {
