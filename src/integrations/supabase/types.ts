@@ -453,6 +453,7 @@ export type Database = {
           longitude: number | null
           module_labels: Json
           startup_page: Json
+          ui_scale: string
           updated_at: string
           user_id: string
         }
@@ -467,6 +468,7 @@ export type Database = {
           longitude?: number | null
           module_labels?: Json
           startup_page?: Json
+          ui_scale?: string
           updated_at?: string
           user_id: string
         }
@@ -481,6 +483,7 @@ export type Database = {
           longitude?: number | null
           module_labels?: Json
           startup_page?: Json
+          ui_scale?: string
           updated_at?: string
           user_id?: string
         }
