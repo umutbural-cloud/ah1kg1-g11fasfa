@@ -2,6 +2,11 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+export type StartupPageSetting =
+  | { type: "module"; value: "backlog" | "journal" | "habits" | "workHistory" | "pomodoro" }
+  | { type: "project"; value: string }
+  | { type: "default" };
+
 export type UserSettings = {
   auto_prayer_times: boolean;
   location_permission: boolean;
@@ -10,6 +15,8 @@ export type UserSettings = {
   latitude: number | null;
   longitude: number | null;
   calculation_method: number;
+  module_labels: Record<string, string>;
+  startup_page: StartupPageSetting;
 };
 
 const DEFAULTS: UserSettings = {
@@ -19,7 +26,9 @@ const DEFAULTS: UserSettings = {
   city: null,
   latitude: null,
   longitude: null,
-  calculation_method: 13, // Diyanet İşleri Başkanlığı
+  calculation_method: 13,
+  module_labels: {},
+  startup_page: { type: "default" },
 };
 
 const CACHE_KEY = "keikaku.userSettings.v1";
@@ -57,7 +66,7 @@ export const useUserSettings = () => {
     (async () => {
       const { data } = await supabase
         .from("user_settings")
-        .select("auto_prayer_times,location_permission,country,city,latitude,longitude,calculation_method")
+        .select("auto_prayer_times,location_permission,country,city,latitude,longitude,calculation_method,module_labels,startup_page")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -70,6 +79,8 @@ export const useUserSettings = () => {
           latitude: data.latitude,
           longitude: data.longitude,
           calculation_method: data.calculation_method,
+          module_labels: (data as any).module_labels ?? {},
+          startup_page: ((data as any).startup_page as StartupPageSetting) ?? { type: "default" },
         };
         setSettings(next);
         writeCache(next);
@@ -86,7 +97,7 @@ export const useUserSettings = () => {
     if (!user) return;
     await supabase
       .from("user_settings")
-      .upsert({ user_id: user.id, ...next }, { onConflict: "user_id" });
+      .upsert({ user_id: user.id, ...next } as any, { onConflict: "user_id" });
   }, [user?.id]);
 
   return { settings, update, loading };
