@@ -23,6 +23,7 @@ import { useModuleLabels } from "@/hooks/useModuleLabels";
 import { useStartupPage } from "@/hooks/useStartupPage";
 import { useProjects } from "@/hooks/useProjects";
 import { useUserSettings } from "@/hooks/useUserSettings";
+import { useUiScale } from "@/hooks/useUiScale";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { usePrayerTimes } from "@/hooks/usePrayerTimes";
 import { searchTurkeyCities, TURKEY_CITIES } from "@/lib/turkeyCities";
