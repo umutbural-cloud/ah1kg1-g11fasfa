@@ -441,6 +441,45 @@ export type Database = {
           },
         ]
       }
+      user_settings: {
+        Row: {
+          auto_prayer_times: boolean
+          calculation_method: number
+          city: string | null
+          country: string
+          created_at: string
+          latitude: number | null
+          location_permission: boolean
+          longitude: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_prayer_times?: boolean
+          calculation_method?: number
+          city?: string | null
+          country?: string
+          created_at?: string
+          latitude?: number | null
+          location_permission?: boolean
+          longitude?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_prayer_times?: boolean
+          calculation_method?: number
+          city?: string | null
+          country?: string
+          created_at?: string
+          latitude?: number | null
+          location_permission?: boolean
+          longitude?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

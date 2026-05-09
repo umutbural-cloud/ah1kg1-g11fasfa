@@ -31,7 +31,40 @@ export const DEFAULT_TIME_OF_DAY_STARTS: Record<TimeOfDayKey, string> = {
 const STORAGE_STARTS = "habits-time-of-day-starts";
 const STORAGE_LABELS = "habits-time-of-day-labels";
 const STORAGE_DISABLED = "habits-time-of-day-disabled";
+const STORAGE_AUTO = "habits-time-of-day-auto";
+const STORAGE_AUTO_STARTS = "habits-time-of-day-auto-starts";
 const EVENT = "time-of-day-ranges-changed";
+
+export const readAutoMode = (): boolean => {
+  try { return localStorage.getItem(STORAGE_AUTO) === "true"; } catch { return false; }
+};
+
+export const writeAutoMode = (v: boolean) => {
+  try { localStorage.setItem(STORAGE_AUTO, v ? "true" : "false"); } catch {}
+  window.dispatchEvent(new Event(EVENT));
+};
+
+export const readAutoStarts = (): Record<TimeOfDayKey, string> | null => {
+  try {
+    const raw = localStorage.getItem(STORAGE_AUTO_STARTS);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const out = { ...DEFAULT_TIME_OF_DAY_STARTS };
+    let any = false;
+    ALL_TIME_OF_DAY_KEYS.forEach((k) => {
+      if (isValidTime(parsed?.[k])) { out[k] = parsed[k]; any = true; }
+    });
+    return any ? out : null;
+  } catch { return null; }
+};
+
+export const readEffectiveStarts = (): Record<TimeOfDayKey, string> => {
+  if (readAutoMode()) {
+    const auto = readAutoStarts();
+    if (auto) return auto;
+  }
+  return readTimeOfDayStarts();
+};
 
 const isValidTime = (s: unknown): s is string =>
   typeof s === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
@@ -111,7 +144,7 @@ export type TimeOfDayOption = {
 };
 
 export const getTimeOfDayOptions = (
-  starts: Record<TimeOfDayKey, string> = readTimeOfDayStarts(),
+  starts: Record<TimeOfDayKey, string> = readEffectiveStarts(),
   labels: Record<TimeOfDayKey, string> = readTimeOfDayLabels(),
   disabled: TimeOfDayKey[] = readTimeOfDayDisabled(),
 ): TimeOfDayOption[] => {
@@ -164,15 +197,22 @@ export const useTimeOfDayRanges = () => {
   const [starts, setStarts] = useState<Record<TimeOfDayKey, string>>(readTimeOfDayStarts);
   const [labels, setLabels] = useState<Record<TimeOfDayKey, string>>(readTimeOfDayLabels);
   const [disabled, setDisabled] = useState<TimeOfDayKey[]>(readTimeOfDayDisabled);
+  const [auto, setAuto] = useState<boolean>(readAutoMode);
+  const [autoStarts, setAutoStarts] = useState<Record<TimeOfDayKey, string> | null>(readAutoStarts);
 
   useEffect(() => {
     const onChange = () => {
       setStarts(readTimeOfDayStarts());
       setLabels(readTimeOfDayLabels());
       setDisabled(readTimeOfDayDisabled());
+      setAuto(readAutoMode());
+      setAutoStarts(readAutoStarts());
     };
     const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_STARTS || e.key === STORAGE_LABELS || e.key === STORAGE_DISABLED) onChange();
+      if (
+        e.key === STORAGE_STARTS || e.key === STORAGE_LABELS || e.key === STORAGE_DISABLED ||
+        e.key === STORAGE_AUTO || e.key === STORAGE_AUTO_STARTS
+      ) onChange();
     };
     window.addEventListener(EVENT, onChange);
     window.addEventListener("storage", onStorage);
@@ -199,7 +239,6 @@ export const useTimeOfDayRanges = () => {
 
   const setEnabled = (key: TimeOfDayKey, enabled: boolean) => {
     const next = enabled ? disabled.filter((k) => k !== key) : Array.from(new Set([...disabled, key]));
-    // Don't allow disabling the last remaining slot
     if (!enabled && ALL_TIME_OF_DAY_KEYS.length - next.length === 0) return;
     setDisabled(next);
     persist(STORAGE_DISABLED, next);
@@ -220,6 +259,16 @@ export const useTimeOfDayRanges = () => {
     persist(STORAGE_DISABLED, []);
   };
 
-  const options = getTimeOfDayOptions(starts, labels, disabled);
-  return { starts, labels, disabled, options, update, rename, setEnabled, reset };
+  const setAutoMode = (v: boolean) => {
+    setAuto(v);
+    writeAutoMode(v);
+  };
+
+  const effectiveStarts = auto && autoStarts ? autoStarts : starts;
+  const options = getTimeOfDayOptions(effectiveStarts, labels, disabled);
+  return {
+    starts, labels, disabled, options,
+    auto, autoStarts, effectiveStarts,
+    update, rename, setEnabled, reset, setAutoMode,
+  };
 };

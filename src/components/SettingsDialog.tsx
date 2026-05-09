@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Moon, Sun, Bell, BellOff, Sprout, LayoutGrid, User, SlidersHorizontal, Trash2, RotateCcw, Plus } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Moon, Sun, Bell, BellOff, Sprout, LayoutGrid, User, SlidersHorizontal, Trash2, RotateCcw, Plus, Sunrise, MapPin, Search, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useHabitTodayDefault } from "@/hooks/useHabitSettings";
@@ -20,6 +21,10 @@ import {
 } from "@/hooks/useSidebarPreferences";
 import { useStartupPage } from "@/hooks/useStartupPage";
 import { useProjects } from "@/hooks/useProjects";
+import { useUserSettings } from "@/hooks/useUserSettings";
+import { useUserLocation } from "@/hooks/useUserLocation";
+import { usePrayerTimes } from "@/hooks/usePrayerTimes";
+import { searchTurkeyCities, TURKEY_CITIES } from "@/lib/turkeyCities";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -52,11 +57,18 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
     labels: todLabels,
     disabled: todDisabled,
     options: todOptions,
+    auto: todAuto,
     update: updateTod,
     rename: renameTod,
     setEnabled: setTodEnabled,
     reset: resetTod,
+    setAutoMode: setTodAutoMode,
   } = useTimeOfDayRanges();
+  const { settings: userSettings, update: updateUserSettings } = useUserSettings();
+  const { request: requestGeo, loading: geoLoading } = useUserLocation();
+  const prayerQuery = usePrayerTimes();
+  const [citySearch, setCitySearch] = useState("");
+  const cityResults = useMemo(() => searchTurkeyCities(citySearch).slice(0, 30), [citySearch]);
   const { prefs: sidebarPrefs, setItem: setSidebarPref } = useSidebarPreferences();
   const { startup, setStartup } = useStartupPage();
   const { projects } = useProjects();
@@ -206,9 +218,18 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-sm font-light">Gün dilimleri</div>
+                      <div className="text-sm font-light flex items-center gap-2">
+                        Gün dilimleri
+                        {todAuto && (
+                          <span className="text-[9px] tracking-[0.15em] uppercase px-1.5 py-0.5 rounded-sm bg-accent/60 text-muted-foreground">
+                            Otomatik
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] text-muted-foreground tracking-wide">
-                        Adı düzenleyin, başlangıç saatini değiştirin veya dilimi kaldırın.
+                        {todAuto
+                          ? "Saatler güneşin konumuna göre belirleniyor."
+                          : "Adı düzenleyin, başlangıç saatini değiştirin veya dilimi kaldırın."}
                       </div>
                     </div>
                     <button
@@ -266,9 +287,9 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                           <div className="flex items-center gap-2 pl-6">
                             <Input
                               type="time"
-                              value={todStarts[k]}
+                              value={todAuto && opt ? opt.range.split("–")[0] : todStarts[k]}
                               onChange={(e) => updateTod(k, e.target.value)}
-                              disabled={!isEnabled}
+                              disabled={!isEnabled || todAuto}
                               className="bg-transparent h-7 text-xs w-28 px-2"
                             />
                             <span className="text-[10px] text-muted-foreground tracking-wide tabular-nums ml-auto">
@@ -279,6 +300,156 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                       );
                     })}
                   </div>
+                </div>
+
+                <div className="border-t border-border/60" />
+
+                {/* Sun-position based time system */}
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex items-start gap-2">
+                      <Sunrise className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                      <div>
+                        <div className="text-sm font-light">Güneşin Konumuna Göre Belirle</div>
+                        <div className="text-[10px] text-muted-foreground tracking-wide leading-relaxed">
+                          Gün dilimlerinin başlangıç saatlerini namaz vakitlerine göre her gün otomatik ayarlar.
+                          <br />
+                          Sabah · İmsak / Öğle / İkindi / Akşam / Yatsı.
+                        </div>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={todAuto}
+                      onCheckedChange={async (v) => {
+                        setTodAutoMode(v);
+                        await updateUserSettings({ auto_prayer_times: v });
+                        if (v && !userSettings.city && userSettings.latitude == null) {
+                          toast("Konum veya şehir seçin");
+                        }
+                      }}
+                      className="shrink-0"
+                    />
+                  </div>
+
+                  {todAuto && (
+                    <div className="space-y-3 pl-6 animate-in fade-in slide-in-from-top-1 duration-300">
+                      {/* Current city / status */}
+                      <div className="flex items-center gap-2 text-xs">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        <span className="font-light tracking-wide">
+                          {userSettings.city
+                            ? userSettings.city
+                            : userSettings.latitude != null
+                              ? `${userSettings.latitude.toFixed(2)}°, ${userSettings.longitude?.toFixed(2)}°`
+                              : "Konum belirtilmedi"}
+                        </span>
+                        {prayerQuery.isFetching && (
+                          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground ml-auto" />
+                        )}
+                      </div>
+
+                      {prayerQuery.data && (
+                        <div className="text-[10px] text-muted-foreground tracking-wide tabular-nums grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-1">
+                          {ALL_TIME_OF_DAY_KEYS.map((k) => (
+                            <div key={k} className="flex justify-between gap-2">
+                              <span>{todLabels[k]}</span>
+                              <span>{prayerQuery.data!.starts[k]}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {prayerQuery.error && (
+                        <div className="text-[10px] text-amber-600 dark:text-amber-400 tracking-wide">
+                          Vakit bilgisi alınamadı, son kayıtlı veriler kullanılıyor.
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={geoLoading}
+                          onClick={async () => {
+                            const pos = await requestGeo();
+                            if (pos) {
+                              await updateUserSettings({
+                                latitude: pos.latitude,
+                                longitude: pos.longitude,
+                                location_permission: true,
+                                city: null,
+                              });
+                              toast.success("Konum güncellendi");
+                            } else {
+                              await updateUserSettings({ location_permission: false });
+                              toast("Konum izni verilmedi, şehir seçebilirsiniz.");
+                            }
+                          }}
+                          className="h-8 text-xs gap-1.5"
+                        >
+                          {geoLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <MapPin className="h-3 w-3" />}
+                          Konumu Güncelle
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => prayerQuery.refetch()}
+                          className="h-8 text-xs gap-1.5"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Vakitleri Yenile
+                        </Button>
+                      </div>
+
+                      {/* City picker */}
+                      <div className="space-y-2 pt-1">
+                        <div className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase">
+                          Şehir Seç (Türkiye)
+                        </div>
+                        <div className="relative">
+                          <Search className="h-3 w-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            value={citySearch}
+                            onChange={(e) => setCitySearch(e.target.value)}
+                            placeholder="Şehir ara..."
+                            className="bg-transparent h-8 text-xs pl-7"
+                          />
+                        </div>
+                        <div className="max-h-44 overflow-y-auto rounded-sm border border-border/40 bg-card/30">
+                          {(citySearch ? cityResults : TURKEY_CITIES).map((c) => {
+                            const active = userSettings.city === c.name;
+                            return (
+                              <button
+                                key={c.ascii}
+                                onClick={async () => {
+                                  await updateUserSettings({
+                                    city: c.name,
+                                    country: "Turkey",
+                                    latitude: c.lat,
+                                    longitude: c.lng,
+                                  });
+                                  toast.success(`${c.name} seçildi`);
+                                }}
+                                className={cn(
+                                  "w-full text-left px-3 py-1.5 text-xs tracking-wide transition-colors",
+                                  active
+                                    ? "bg-accent text-foreground"
+                                    : "text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+                                )}
+                              >
+                                {c.name}
+                              </button>
+                            );
+                          })}
+                          {citySearch && cityResults.length === 0 && (
+                            <div className="px-3 py-3 text-[10px] text-muted-foreground tracking-wide text-center">
+                              Sonuç bulunamadı
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

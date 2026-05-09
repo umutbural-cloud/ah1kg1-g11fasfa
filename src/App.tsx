@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { UndoProvider } from "@/hooks/useUndo";
 import { PomodoroProvider } from "@/hooks/usePomodoro";
 import { PageStateProvider } from "@/hooks/usePageState";
+import { PrayerTimesSync } from "@/components/PrayerTimesSync";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Pomodoro from "./pages/Pomodoro";
@@ -48,6 +49,7 @@ const App = () => (
         <UndoProvider>
           <PomodoroProvider>
             <PageStateProvider>
+            <PrayerTimesSync />
             <Routes>
               <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
