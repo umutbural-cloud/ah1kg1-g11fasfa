@@ -153,7 +153,7 @@ const HabitDetailDialog = ({ open, habit, onClose, onSave, onDelete }: Props) =>
               <SelectTrigger className="h-9 text-sm mt-1"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="any">Herhangi</SelectItem>
-                {TIME_OF_DAY_OPTIONS.map((o) => (
+                {timeOfDayOptions.map((o) => (
                   <SelectItem key={o.key} value={o.key}>{o.label} <span className="text-muted-foreground/70">({o.range})</span></SelectItem>
                 ))}
               </SelectContent>
