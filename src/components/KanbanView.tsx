@@ -262,6 +262,7 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
               onCreateTask={handleCreate}
               onUpdateTask={updateTask}
               onDeleteTask={deleteTask}
+              onOpenTask={(t) => setOpenTaskId(t.id)}
             />
           ))}
         </div>
