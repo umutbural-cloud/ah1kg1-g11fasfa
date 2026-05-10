@@ -186,6 +186,7 @@ const TableView = ({ projectId }: { projectId: string }) => {
                       onUpdate={updateTask}
                       onDelete={deleteTask}
                       onToggleHidden={(id, hidden) => updateTask(id, { hidden })}
+                      onOpen={(t) => setOpenTaskId(t.id)}
                     />
                   ))}
                 </TableBody>
