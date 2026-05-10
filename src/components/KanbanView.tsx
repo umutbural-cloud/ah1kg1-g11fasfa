@@ -287,6 +287,14 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      <TaskDetailDialog
+        task={openTask}
+        open={!!openTask}
+        onOpenChange={(v) => { if (!v) setOpenTaskId(null); }}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+      />
     </div>
   );
 };
