@@ -27,7 +27,7 @@ type Props = {
 const HabitDetailDialog = ({ open, habit, onClose, onSave, onDelete }: Props) => {
   const [draft, setDraft] = useState<Partial<Habit>>({});
   const { categories } = useHabitCategories();
-
+  const { options: timeOfDayOptions } = useTimeOfDayRanges();
   useEffect(() => {
     if (habit) setDraft({
       title: habit.title,
