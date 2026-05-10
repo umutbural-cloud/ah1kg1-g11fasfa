@@ -187,6 +187,8 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
   const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+  const openTask = openTaskId ? tasks.find((t) => t.id === openTaskId) ?? null : null;
 
   const handleCreate = async (title: string, status: TaskStatus) => {
     await createTask({ title, status });
