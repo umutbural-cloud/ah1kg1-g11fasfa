@@ -26,6 +26,7 @@ import { useUserSettings } from "@/hooks/useUserSettings";
 import { useUiScale } from "@/hooks/useUiScale";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { usePrayerTimes } from "@/hooks/usePrayerTimes";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { searchTurkeyCities, TURKEY_CITIES } from "@/lib/turkeyCities";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
