@@ -17,6 +17,12 @@ export type UserSettings = {
   calculation_method: number;
   module_labels: Record<string, string>;
   startup_page: StartupPageSetting;
+  notify_habits: boolean;
+  notify_tasks: boolean;
+  notify_pomodoro: boolean;
+  quiet_hours_start: string | null;
+  quiet_hours_end: string | null;
+  timezone: string;
 };
 
 const DEFAULTS: UserSettings = {
@@ -29,6 +35,12 @@ const DEFAULTS: UserSettings = {
   calculation_method: 13,
   module_labels: {},
   startup_page: { type: "default" },
+  notify_habits: true,
+  notify_tasks: true,
+  notify_pomodoro: true,
+  quiet_hours_start: null,
+  quiet_hours_end: null,
+  timezone: "Europe/Istanbul",
 };
 
 const CACHE_KEY = "keikaku.userSettings.v1";
