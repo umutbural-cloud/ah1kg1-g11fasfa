@@ -56,6 +56,7 @@ const App = () => (
               <PageStateProvider>
               <PrayerTimesSync />
               <UiScaleSync />
+              <AutoPrayerSync />
               <Routes>
                 <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
                 <Route path="/reset-password" element={<ResetPassword />} />
