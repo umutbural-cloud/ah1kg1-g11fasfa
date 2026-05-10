@@ -35,46 +35,18 @@ const NEXT_STATUS: Record<TaskStatus, TaskStatus | null> = {
   done: null,
 };
 
-const SortableCard = ({ task, onUpdate, onDelete }: {
+const SortableCard = ({ task, onUpdate, onDelete, onOpen }: {
   task: Task;
   onUpdate: (id: string, updates: Partial<Task>) => void;
   onDelete: (id: string) => void;
+  onOpen: (task: Task) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
-  const [editing, setEditing] = useState(false);
-  const [title, setTitle] = useState(task.title);
-  const [description, setDescription] = useState(task.description || "");
-  const [startDate, setStartDate] = useState(task.start_date || "");
-  const [endDate, setEndDate] = useState(task.end_date || "");
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  };
-
-  const openEditor = () => {
-    setTitle(task.title);
-    setDescription(task.description || "");
-    setStartDate(task.start_date || "");
-    setEndDate(task.end_date || "");
-    setEditing(true);
-  };
-
-  const handleSave = () => {
-    if (!title.trim()) return;
-    onUpdate(task.id, {
-      title: title.trim(),
-      description: description.trim() || null,
-      start_date: startDate || null,
-      end_date: endDate || null,
-    });
-    setEditing(false);
-  };
-
-  const handleDelete = () => {
-    onDelete(task.id);
-    setEditing(false);
   };
 
   const handleAdvance = (e: React.MouseEvent) => {
@@ -84,83 +56,54 @@ const SortableCard = ({ task, onUpdate, onDelete }: {
   };
 
   const canAdvance = NEXT_STATUS[task.status] !== null;
+  const timeLabel = task.start_time
+    ? `${task.start_time.slice(0, 5)}${task.end_time ? `–${task.end_time.slice(0, 5)}` : ""}`
+    : null;
 
   return (
-    <>
-      <div
-        ref={setNodeRef}
-        style={style}
-        onClick={openEditor}
-        className="group border border-border/60 rounded-sm p-3 bg-card/50 hover:bg-card transition-colors cursor-pointer"
-      >
-        <div className="flex items-start gap-2">
-          <button
-            {...attributes}
-            {...listeners}
-            onClick={(e) => e.stopPropagation()}
-            className="cursor-grab active:cursor-grabbing"
-          >
-            <GripVertical className="h-3.5 w-3.5 mt-0.5 text-muted-foreground/40 shrink-0" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-light truncate">{task.title}</p>
-            {task.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.description}</p>}
-            {task.start_date && (
-              <p className="text-[10px] text-muted-foreground mt-1.5">
-                {task.start_date}{task.end_date && ` → ${task.end_date}`}
-              </p>
-            )}
-          </div>
-          {canAdvance && (
-            <button
-              onClick={handleAdvance}
-              title="Sonraki aşamaya geçir"
-              className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground shrink-0 p-1 -m-1"
-            >
-              <ArrowRight className="h-4 w-4" />
-            </button>
+    <div
+      ref={setNodeRef}
+      style={style}
+      onClick={() => onOpen(task)}
+      className="group border border-border/60 rounded-sm p-3 bg-card/50 hover:bg-card transition-colors cursor-pointer"
+    >
+      <div className="flex items-start gap-2">
+        <button
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+          className="cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical className="h-3.5 w-3.5 mt-0.5 text-muted-foreground/40 shrink-0" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-light truncate">{task.title}</p>
+          {task.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.description}</p>}
+          {(task.start_date || timeLabel) && (
+            <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1.5">
+              {task.start_date && (
+                <span>{task.start_date}{task.end_date && task.end_date !== task.start_date && ` → ${task.end_date}`}</span>
+              )}
+              {timeLabel && (
+                <span className="flex items-center gap-0.5">
+                  <Clock className="h-2.5 w-2.5" />
+                  {timeLabel}
+                </span>
+              )}
+            </p>
           )}
         </div>
+        {canAdvance && (
+          <button
+            onClick={handleAdvance}
+            title="Sonraki aşamaya geçir"
+            className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground shrink-0 p-1 -m-1"
+          >
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        )}
       </div>
-
-      <Dialog open={editing} onOpenChange={setEditing}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-base font-light tracking-wide">Görevi Düzenle</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 pt-2">
-            <div>
-              <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Başlık</div>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Başlık..." className="bg-transparent" autoFocus />
-            </div>
-            <div>
-              <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Açıklama</div>
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Açıklama..." className="bg-transparent min-h-[80px] resize-none" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Başlangıç</div>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="bg-transparent" />
-              </div>
-              <div>
-                <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Bitiş</div>
-                <Input type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEndDate(e.target.value)} className="bg-transparent" />
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="flex sm:justify-between gap-2">
-            <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive hover:bg-destructive/10">
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-              Sil
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>İptal</Button>
-              <Button size="sm" onClick={handleSave}>Kaydet</Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    </div>
   );
 };
 
