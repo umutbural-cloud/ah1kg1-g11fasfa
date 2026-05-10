@@ -105,6 +105,8 @@ const TableView = ({ projectId }: { projectId: string }) => {
   const [newTitle, setNewTitle] = useState("");
   const [showDone, setShowDone] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+  const openTask = openTaskId ? tasks.find((t) => t.id === openTaskId) ?? null : null;
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
