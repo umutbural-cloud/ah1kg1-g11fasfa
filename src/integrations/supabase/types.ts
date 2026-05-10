@@ -370,6 +370,102 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          device_label: string | null
+          endpoint: string
+          id: string
+          last_seen_at: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          device_label?: string | null
+          endpoint: string
+          id?: string
+          last_seen_at?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          device_label?: string | null
+          endpoint?: string
+          id?: string
+          last_seen_at?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reminders: {
+        Row: {
+          absolute_time: string | null
+          body: string | null
+          created_at: string
+          days_of_week: number[]
+          enabled: boolean
+          id: string
+          last_sent_at: string | null
+          last_sent_for_date: string | null
+          offset_minutes: number
+          slot_key: string | null
+          target_id: string | null
+          target_key: string | null
+          target_type: string
+          title: string | null
+          trigger_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          absolute_time?: string | null
+          body?: string | null
+          created_at?: string
+          days_of_week?: number[]
+          enabled?: boolean
+          id?: string
+          last_sent_at?: string | null
+          last_sent_for_date?: string | null
+          offset_minutes?: number
+          slot_key?: string | null
+          target_id?: string | null
+          target_key?: string | null
+          target_type: string
+          title?: string | null
+          trigger_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          absolute_time?: string | null
+          body?: string | null
+          created_at?: string
+          days_of_week?: number[]
+          enabled?: boolean
+          id?: string
+          last_sent_at?: string | null
+          last_sent_for_date?: string | null
+          offset_minutes?: number
+          slot_key?: string | null
+          target_id?: string | null
+          target_key?: string | null
+          target_type?: string
+          title?: string | null
+          trigger_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           color: string
@@ -385,6 +481,7 @@ export type Database = {
           parent_block_id: string | null
           position: number
           project_id: string
+          reminder_minutes_before: number | null
           start_date: string | null
           start_time: string | null
           status: Database["public"]["Enums"]["task_status"]
@@ -405,6 +502,7 @@ export type Database = {
           parent_block_id?: string | null
           position?: number
           project_id: string
+          reminder_minutes_before?: number | null
           start_date?: string | null
           start_time?: string | null
           status?: Database["public"]["Enums"]["task_status"]
@@ -425,6 +523,7 @@ export type Database = {
           parent_block_id?: string | null
           position?: number
           project_id?: string
+          reminder_minutes_before?: number | null
           start_date?: string | null
           start_time?: string | null
           status?: Database["public"]["Enums"]["task_status"]
@@ -452,7 +551,13 @@ export type Database = {
           location_permission: boolean
           longitude: number | null
           module_labels: Json
+          notify_habits: boolean
+          notify_pomodoro: boolean
+          notify_tasks: boolean
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
           startup_page: Json
+          timezone: string
           ui_scale: string
           updated_at: string
           user_id: string
@@ -467,7 +572,13 @@ export type Database = {
           location_permission?: boolean
           longitude?: number | null
           module_labels?: Json
+          notify_habits?: boolean
+          notify_pomodoro?: boolean
+          notify_tasks?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           startup_page?: Json
+          timezone?: string
           ui_scale?: string
           updated_at?: string
           user_id: string
@@ -482,7 +593,13 @@ export type Database = {
           location_permission?: boolean
           longitude?: number | null
           module_labels?: Json
+          notify_habits?: boolean
+          notify_pomodoro?: boolean
+          notify_tasks?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           startup_page?: Json
+          timezone?: string
           ui_scale?: string
           updated_at?: string
           user_id?: string
