@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { Plus, Trash2, GripVertical, ArrowRight } from "lucide-react";
+import { Plus, GripVertical, ArrowRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useTasks, Task, TaskStatus } from "@/hooks/useTasks";
+import TaskDetailDialog from "./TaskDetailDialog";
 import {
   DndContext,
   PointerSensor,
