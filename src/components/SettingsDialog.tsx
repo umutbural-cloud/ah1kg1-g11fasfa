@@ -642,27 +642,104 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
 
                 <div className="border-t border-border/60" />
 
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-light">Bildirimler</div>
-                    <div className="text-[10px] text-muted-foreground tracking-wide">
-                      {notifPerm === "granted" && "Açık — Pomodoro bittiğinde haber verilir"}
-                      {notifPerm === "default" && "Site arka planda olsa bile haber alın"}
-                      {notifPerm === "denied" && "Engellendi — Tarayıcı ayarlarından açın"}
-                      {notifPerm === "unsupported" && "Bu tarayıcı desteklemiyor"}
-                    </div>
-                  </div>
-                  <button
-                    onClick={requestNotif}
-                    disabled={notifPerm === "unsupported"}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border/60 hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                  >
-                    {notifPerm === "granted" ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
-                    <span className="text-xs tracking-wide">
-                      {notifPerm === "granted" ? "Açık" : notifPerm === "denied" ? "Engelli" : "Aç"}
-                    </span>
-                  </button>
-                </div>
+                <NotificationsPanel />
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const NotificationsPanel = () => {
+  const { settings, update } = useUserSettings();
+  const push = usePushSubscription();
+
+  const togglePush = async () => {
+    try {
+      if (push.subscribed) await push.unsubscribe();
+      else await push.subscribe();
+    } catch (e: any) {
+      toast.error(e?.message ?? "İşlem başarısız");
+    }
+  };
+
+  return (
+    <>
+      <div className="border-t border-border/60" />
+      <div className="space-y-3">
+        <div className="text-sm font-light">Bildirimler</div>
+        <div className="text-[10px] text-muted-foreground tracking-wide leading-relaxed">
+          {push.inPreview
+            ? "Bildirimler yalnızca yayınlanmış adresinizde çalışır (preview iframe değil)."
+            : push.supported
+              ? "Bu cihazda push bildirimleri aç — uygulama kapalıyken bile hatırlatıcılar gelir."
+              : "Bu tarayıcı push bildirimlerini desteklemiyor."}
+        </div>
+
+        <div className="flex items-center justify-between gap-3 px-2.5 py-2 rounded-sm border border-border/40 bg-card/40">
+          <div className="min-w-0">
+            <div className="text-xs font-light flex items-center gap-2">
+              {push.subscribed ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
+              {push.subscribed ? "Bu cihazda açık" : "Bu cihazda kapalı"}
+            </div>
+            <div className="text-[10px] text-muted-foreground tracking-wide">
+              {push.permission === "denied" ? "Tarayıcı engellendi — site izinlerinden açın." : null}
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={togglePush}
+            disabled={push.busy || !push.supported}
+            className="shrink-0 h-8 text-xs"
+          >
+            {push.busy ? "..." : push.subscribed ? "Kapat" : "Aç"}
+          </Button>
+        </div>
+
+        <div className="space-y-2 pt-1">
+          {[
+            { key: "notify_habits" as const, label: "Alışkanlık hatırlatıcıları" },
+            { key: "notify_tasks" as const, label: "Görev hatırlatıcıları" },
+            { key: "notify_pomodoro" as const, label: "Pomodoro bildirimleri" },
+          ].map((row) => (
+            <div key={row.key} className="flex items-center justify-between gap-3">
+              <div className="text-xs font-light">{row.label}</div>
+              <Switch
+                checked={settings[row.key]}
+                onCheckedChange={(v) => update({ [row.key]: v } as any)}
+                className="shrink-0"
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="border-t border-border/40" />
+
+        <div className="space-y-1">
+          <div className="text-xs font-light">Sessiz saatler</div>
+          <div className="text-[10px] text-muted-foreground tracking-wide">
+            Bu aralıkta bildirim gönderilmez. Boş bırakırsan tüm gün açıktır.
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <Input
+              type="time"
+              value={settings.quiet_hours_start ?? ""}
+              onChange={(e) => update({ quiet_hours_start: e.target.value || null })}
+              className="bg-transparent h-8 text-xs w-28"
+            />
+            <span className="text-[10px] text-muted-foreground">—</span>
+            <Input
+              type="time"
+              value={settings.quiet_hours_end ?? ""}
+              onChange={(e) => update({ quiet_hours_end: e.target.value || null })}
+              className="bg-transparent h-8 text-xs w-28"
+            />
+          </div>
+        </div>
+      </div>
               </div>
             )}
           </div>
