@@ -9,6 +9,7 @@ import { PomodoroProvider } from "@/hooks/usePomodoro";
 import { PageStateProvider } from "@/hooks/usePageState";
 import { PrayerTimesSync } from "@/components/PrayerTimesSync";
 import { UiScaleSync } from "@/components/UiScaleSync";
+import { AutoPrayerSync } from "@/components/AutoPrayerSync";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -55,6 +56,7 @@ const App = () => (
               <PageStateProvider>
               <PrayerTimesSync />
               <UiScaleSync />
+              <AutoPrayerSync />
               <Routes>
                 <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
                 <Route path="/reset-password" element={<ResetPassword />} />
