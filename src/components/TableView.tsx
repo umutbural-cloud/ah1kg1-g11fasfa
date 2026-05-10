@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, GripVertical, EyeOff, Eye, ChevronDown, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { Plus, Trash2, GripVertical, EyeOff, Eye, ChevronDown, ChevronRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useTasks, Task } from "@/hooks/useTasks";
 import { format, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
+import TaskDetailDialog from "./TaskDetailDialog";
 import {
   DndContext,
   PointerSensor,
