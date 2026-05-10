@@ -278,6 +278,14 @@ const TableView = ({ projectId }: { projectId: string }) => {
           )}
         </div>
       )}
+
+      <TaskDetailDialog
+        task={openTask}
+        open={!!openTask}
+        onOpenChange={(v) => { if (!v) setOpenTaskId(null); }}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+      />
     </div>
   );
 };
