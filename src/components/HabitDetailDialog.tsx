@@ -169,6 +169,10 @@ const HabitDetailDialog = ({ open, habit, onClose, onSave, onDelete }: Props) =>
               className="bg-transparent text-sm mt-1"
             />
           </div>
+
+          <div className="border-t border-border/60 pt-3">
+            <ReminderEditor target_type="habit" target_id={habit.id} defaultTitle={habit.title} />
+          </div>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
