@@ -672,7 +672,7 @@ const NotificationsPanel = () => {
         <div className="text-sm font-light">Bildirimler</div>
         <div className="text-[10px] text-muted-foreground tracking-wide leading-relaxed">
           {push.inPreview
-            ? "Bildirimler yalnızca yayınlanmış adresinizde çalışır (preview iframe değil)."
+            ? "Push bildirimleri Lovable preview içinde çalışmaz. Lütfen yayınlanan HTTPS adresinde normal Chrome sekmesinde test edin."
             : push.supported
               ? "Bu cihazda push bildirimleri aç — uygulama kapalıyken bile hatırlatıcılar gelir."
               : "Bu tarayıcı push bildirimlerini desteklemiyor."}
