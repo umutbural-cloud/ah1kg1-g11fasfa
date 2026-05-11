@@ -6,8 +6,15 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import webpush from "npm:web-push@3.6.7";
 
-const PUBLIC = (Deno.env.get("VAPID_PUBLIC_KEY") || Deno.env.get("VAPID_GENEL_ANAHTAR") || "").trim();
-const PRIVATE = (Deno.env.get("VAPID_PRIVATE_KEY") || Deno.env.get("VAPID_OZEL_ANAHTAR") || Deno.env.get("VAPID_ÖZEL_ANAHTAR") || "").trim();
+const isLikelyVapidPublicKey = (key: string) => /^B[A-Za-z0-9_-]{80,90}$/.test(key);
+const isLikelyVapidPrivateKey = (key: string) => /^[A-Za-z0-9_-]{40,50}$/.test(key);
+
+const PUBLIC = [Deno.env.get("VAPID_PUBLIC_KEY"), Deno.env.get("VAPID_GENEL_ANAHTAR")]
+  .map((value) => value?.trim() ?? "")
+  .find(isLikelyVapidPublicKey) ?? "";
+const PRIVATE = [Deno.env.get("VAPID_PRIVATE_KEY"), Deno.env.get("VAPID_OZEL_ANAHTAR"), Deno.env.get("VAPID_ÖZEL_ANAHTAR")]
+  .map((value) => value?.trim() ?? "")
+  .find(isLikelyVapidPrivateKey) ?? "";
 const SUBJECT = (Deno.env.get("VAPID_SUBJECT") || Deno.env.get("VAPID_KONU") || "mailto:noreply@keikaku.app").trim();
 
 if (PUBLIC && PRIVATE) {
