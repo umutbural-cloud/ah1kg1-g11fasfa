@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     if (!isService) {
       // user-triggered: validate JWT & only allow sending to self
       if (!auth.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       const supabase = createClient(
         Deno.env.get("SUPABASE_URL")!,
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
       );
       const { data, error } = await supabase.auth.getClaims(auth.replace("Bearer ", ""));
       if (error || !data?.claims?.sub) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       userId = data.claims.sub as string;
     }
@@ -111,6 +111,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e?.message ?? "Server error" }), { status: 500, headers: corsHeaders });
+    console.error("[Push] Send function failed", e?.message ?? String(e));
+    return new Response(JSON.stringify({ error: e?.message ?? "Server error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
