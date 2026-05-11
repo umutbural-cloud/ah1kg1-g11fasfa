@@ -93,7 +93,8 @@ const getSlotStarts = async (userSettings: any): Promise<Record<string, number>>
 };
 
 const sendPush = async (userId: string, payload: { title: string; body: string; url?: string; tag?: string }) => {
-  await fetch(`${SUPABASE_URL}/functions/v1/push-send`, {
+  console.log("[Push] Scheduler invoking push-send", userId);
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/push-send`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -101,12 +102,18 @@ const sendPush = async (userId: string, payload: { title: string; body: string; 
     },
     body: JSON.stringify({ user_id: userId, ...payload }),
   });
+  if (!response.ok) {
+    const text = await response.text();
+    console.error("[Push] Scheduler push-send failed", response.status, text);
+    throw new Error(`push-send failed: ${response.status}`);
+  }
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    console.log("[Push] Reminder scheduler run started");
     const now = new Date();
     const today = now.toISOString().slice(0, 10);
 
@@ -117,6 +124,7 @@ Deno.serve(async (req) => {
       .eq("enabled", true);
     if (error) throw error;
     if (!reminders?.length) {
+      console.log("[Push] Reminder scheduler found no enabled reminders");
       return new Response(JSON.stringify({ ok: true, processed: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -207,6 +215,7 @@ Deno.serve(async (req) => {
       sent++;
     }
 
+    console.log("[Push] Reminder scheduler completed", { processed: reminders.length, sent, skipped });
     return new Response(JSON.stringify({ ok: true, processed: reminders.length, sent, skipped }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
