@@ -159,6 +159,7 @@ export const usePushSubscription = () => {
     if (!pushSupported) return;
     setBusy(true);
     try {
+      console.log("[Push] Unsubscribe requested");
       const reg = await navigator.serviceWorker.getRegistration(SW_PATH);
       const sub = reg ? await reg.pushManager.getSubscription() : null;
       if (sub) {
@@ -166,14 +167,18 @@ export const usePushSubscription = () => {
         await sub.unsubscribe();
         await supabase.functions.invoke("push-subscribe", { body: { action: "unsubscribe", endpoint } });
       }
+      console.log("[Push] Unsubscribed");
       setSubscribed(false);
+    } catch (err) {
+      console.error("[Push] Unsubscribe failed", err);
+      throw err instanceof Error ? err : new Error("Bildirim aboneliği kapatılamadı");
     } finally { setBusy(false); }
   }, []);
 
   return {
     permission, subscribed, busy,
-    supported: pushSupported && !isInIframe && !isPreviewHost,
-    inPreview: isInIframe || isPreviewHost,
+    supported: pushSupported && !pushDisabledInPreview,
+    inPreview: pushDisabledInPreview,
     subscribe, unsubscribe, refresh: refreshState,
   };
 };
