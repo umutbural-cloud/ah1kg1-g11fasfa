@@ -8,7 +8,8 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+      console.error("[Push] Subscribe unauthorized: missing bearer token");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const token = authHeader.replace("Bearer ", "");
 
@@ -19,7 +20,8 @@ Deno.serve(async (req) => {
     );
     const { data: claims, error: claimsErr } = await supabase.auth.getClaims(token);
     if (claimsErr || !claims?.claims?.sub) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+      console.error("[Push] Subscribe unauthorized: invalid token", claimsErr?.message);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const userId = claims.claims.sub as string;
 
@@ -34,8 +36,9 @@ Deno.serve(async (req) => {
     if (action === "unsubscribe") {
       const endpoint = String(body?.endpoint ?? "");
       if (!endpoint) {
-        return new Response(JSON.stringify({ error: "endpoint required" }), { status: 400, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: "endpoint required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+      console.log("[Push] Removing subscription", endpoint.slice(0, 32));
       await admin.from("push_subscriptions").delete().eq("user_id", userId).eq("endpoint", endpoint);
       return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -48,9 +51,11 @@ Deno.serve(async (req) => {
     const userAgent = req.headers.get("user-agent") ?? null;
 
     if (!endpoint || !p256dh || !auth) {
-      return new Response(JSON.stringify({ error: "invalid subscription" }), { status: 400, headers: corsHeaders });
+      console.error("[Push] Invalid subscription payload");
+      return new Response(JSON.stringify({ error: "invalid subscription" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    console.log("[Push] Saving subscription", endpoint.slice(0, 32));
     const { error } = await admin.from("push_subscriptions").upsert({
       user_id: userId,
       endpoint,
@@ -62,12 +67,15 @@ Deno.serve(async (req) => {
     }, { onConflict: "endpoint" });
 
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
+      console.error("[Push] Subscription save failed", error.message);
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    console.log("[Push] Subscription saved");
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e?.message ?? "Server error" }), { status: 500, headers: corsHeaders });
+    console.error("[Push] Subscribe function failed", e?.message ?? String(e));
+    return new Response(JSON.stringify({ error: e?.message ?? "Server error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

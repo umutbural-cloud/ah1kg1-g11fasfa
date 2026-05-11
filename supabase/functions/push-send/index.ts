@@ -6,11 +6,22 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import webpush from "npm:web-push@3.6.7";
 
-const PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY")!;
-const PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:noreply@keikaku.app";
+const isLikelyVapidPublicKey = (key: string) => /^B[A-Za-z0-9_-]{80,90}$/.test(key);
+const isLikelyVapidPrivateKey = (key: string) => /^[A-Za-z0-9_-]{40,50}$/.test(key);
 
-webpush.setVapidDetails(SUBJECT, PUBLIC, PRIVATE);
+const PUBLIC = [Deno.env.get("VAPID_PUBLIC_KEY"), Deno.env.get("VAPID_GENEL_ANAHTAR")]
+  .map((value) => value?.trim() ?? "")
+  .find(isLikelyVapidPublicKey) ?? "";
+const PRIVATE = [Deno.env.get("VAPID_PRIVATE_KEY"), Deno.env.get("VAPID_OZEL_ANAHTAR"), Deno.env.get("VAPID_ÖZEL_ANAHTAR")]
+  .map((value) => value?.trim() ?? "")
+  .find(isLikelyVapidPrivateKey) ?? "";
+const SUBJECT = (Deno.env.get("VAPID_SUBJECT") || Deno.env.get("VAPID_KONU") || "mailto:noreply@keikaku.app").trim();
+
+if (PUBLIC && PRIVATE) {
+  webpush.setVapidDetails(SUBJECT, PUBLIC, PRIVATE);
+} else {
+  console.error("[Push] VAPID key pair is not configured. Please use standard secret names: VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY");
+}
 
 type Payload = {
   title: string;
@@ -21,13 +32,16 @@ type Payload = {
 
 const sendToSubscription = async (sub: { endpoint: string; p256dh: string; auth: string }, payload: Payload) => {
   try {
+    console.log("[Push] Sending notification to subscription", sub.endpoint.slice(0, 32));
     await webpush.sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
       JSON.stringify(payload),
       { TTL: 60 * 60 },
     );
+    console.log("[Push] Notification sent");
     return { ok: true };
   } catch (e: any) {
+    console.error("[Push] Notification send failed", e?.statusCode, e?.message ?? String(e));
     return { ok: false, statusCode: e?.statusCode, error: e?.message ?? String(e) };
   }
 };
@@ -36,6 +50,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    if (!PUBLIC || !PRIVATE) {
+      return new Response(JSON.stringify({ error: "VAPID key pair is not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const auth = req.headers.get("Authorization") ?? "";
     const isService = auth === `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`;
 
@@ -48,7 +69,7 @@ Deno.serve(async (req) => {
     if (!isService) {
       // user-triggered: validate JWT & only allow sending to self
       if (!auth.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       const supabase = createClient(
         Deno.env.get("SUPABASE_URL")!,
@@ -57,7 +78,7 @@ Deno.serve(async (req) => {
       );
       const { data, error } = await supabase.auth.getClaims(auth.replace("Bearer ", ""));
       if (error || !data?.claims?.sub) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       userId = data.claims.sub as string;
     }
@@ -87,7 +108,7 @@ Deno.serve(async (req) => {
       if (r.ok) {
         sent++;
       } else if (r.statusCode === 404 || r.statusCode === 410) {
-        // subscription expired/gone — clean up
+        console.log("[Push] Subscription expired, deleting", s.endpoint.slice(0, 32));
         await admin.from("push_subscriptions").delete().eq("endpoint", s.endpoint);
         removed++;
       }
@@ -97,6 +118,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e?.message ?? "Server error" }), { status: 500, headers: corsHeaders });
+    console.error("[Push] Send function failed", e?.message ?? String(e));
+    return new Response(JSON.stringify({ error: e?.message ?? "Server error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
