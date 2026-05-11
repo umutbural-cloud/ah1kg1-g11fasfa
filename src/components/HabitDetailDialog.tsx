@@ -6,9 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import HabitIconPicker from "./HabitIconPicker";
-import ReminderEditor from "./ReminderEditor";
 import type { Habit, FrequencyType } from "@/hooks/useHabits";
-import { useTimeOfDayRanges, type TimeOfDay } from "@/lib/timeOfDay";
+import { TIME_OF_DAY_OPTIONS, type TimeOfDay } from "@/lib/timeOfDay";
 import { useHabitCategories, colorHex } from "@/hooks/useHabitCategories";
 
 const WEEK_DAYS = [
@@ -27,7 +26,7 @@ type Props = {
 const HabitDetailDialog = ({ open, habit, onClose, onSave, onDelete }: Props) => {
   const [draft, setDraft] = useState<Partial<Habit>>({});
   const { categories } = useHabitCategories();
-  const { options: timeOfDayOptions } = useTimeOfDayRanges();
+
   useEffect(() => {
     if (habit) setDraft({
       title: habit.title,
@@ -153,7 +152,7 @@ const HabitDetailDialog = ({ open, habit, onClose, onSave, onDelete }: Props) =>
               <SelectTrigger className="h-9 text-sm mt-1"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="any">Herhangi</SelectItem>
-                {timeOfDayOptions.map((o) => (
+                {TIME_OF_DAY_OPTIONS.map((o) => (
                   <SelectItem key={o.key} value={o.key}>{o.label} <span className="text-muted-foreground/70">({o.range})</span></SelectItem>
                 ))}
               </SelectContent>
@@ -168,10 +167,6 @@ const HabitDetailDialog = ({ open, habit, onClose, onSave, onDelete }: Props) =>
               rows={2}
               className="bg-transparent text-sm mt-1"
             />
-          </div>
-
-          <div className="border-t border-border/60 pt-3">
-            <ReminderEditor target_type="habit" target_id={habit.id} defaultTitle={habit.title} />
           </div>
         </div>
 

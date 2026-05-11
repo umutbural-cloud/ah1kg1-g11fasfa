@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Trash2, GripVertical, EyeOff, Eye, ChevronDown, ChevronRight, Clock } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Trash2, GripVertical, EyeOff, Eye, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -7,7 +7,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useTasks, Task } from "@/hooks/useTasks";
 import { format, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
-import TaskDetailDialog from "./TaskDetailDialog";
 import {
   DndContext,
   PointerSensor,
@@ -24,12 +23,11 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-const SortableRow = ({ task, onUpdate, onDelete, onToggleHidden, onOpen }: {
+const SortableRow = ({ task, onUpdate, onDelete, onToggleHidden }: {
   task: Task;
   onUpdate: (id: string, updates: Partial<Task>) => void;
   onDelete: (id: string) => void;
   onToggleHidden: (id: string, hidden: boolean) => void;
-  onOpen: (task: Task) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
   const style = {
@@ -38,14 +36,25 @@ const SortableRow = ({ task, onUpdate, onDelete, onToggleHidden, onOpen }: {
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const dateLabel = task.start_date
-    ? task.end_date && task.end_date !== task.start_date
-      ? `${format(parseISO(task.start_date), "d MMM", { locale: tr })} → ${format(parseISO(task.end_date), "d MMM", { locale: tr })}`
-      : format(parseISO(task.start_date), "d MMM", { locale: tr })
-    : null;
-  const timeLabel = task.start_time
-    ? `${task.start_time.slice(0, 5)}${task.end_time ? `–${task.end_time.slice(0, 5)}` : ""}`
-    : null;
+  // Local title state — prevents cursor-jump and dropped chars while typing
+  const [title, setTitle] = useState(task.title);
+  const focusedRef = useRef(false);
+  const debounceRef = useRef<number | null>(null);
+
+  // Sync from upstream only when input is not focused (avoids overwriting user input mid-typing)
+  useEffect(() => {
+    if (!focusedRef.current) setTitle(task.title);
+  }, [task.title]);
+
+  const flush = (val: string) => {
+    if (val !== task.title) onUpdate(task.id, { title: val });
+  };
+
+  const handleChange = (v: string) => {
+    setTitle(v);
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => flush(v), 500);
+  };
 
   return (
     <TableRow ref={setNodeRef} style={style} className="group">
@@ -61,23 +70,17 @@ const SortableRow = ({ task, onUpdate, onDelete, onToggleHidden, onOpen }: {
         />
       </TableCell>
       <TableCell className="text-sm font-light px-1 sm:px-2 py-1">
-        <button
-          onClick={() => onOpen(task)}
-          className="w-full text-left flex items-center gap-2 min-h-[28px] hover:text-foreground transition-colors"
-        >
-          <span className="truncate flex-1">{task.title || <span className="text-muted-foreground/60 italic">başlıksız</span>}</span>
-          {(dateLabel || timeLabel) && (
-            <span className="hidden sm:flex items-center gap-1.5 text-[10px] text-muted-foreground/80 tracking-wide whitespace-nowrap">
-              {dateLabel}
-              {timeLabel && (
-                <span className="flex items-center gap-0.5">
-                  <Clock className="h-2.5 w-2.5" />
-                  {timeLabel}
-                </span>
-              )}
-            </span>
-          )}
-        </button>
+        <Input
+          value={title}
+          onFocus={() => { focusedRef.current = true; }}
+          onBlur={() => {
+            focusedRef.current = false;
+            if (debounceRef.current) { window.clearTimeout(debounceRef.current); debounceRef.current = null; }
+            flush(title);
+          }}
+          onChange={(e) => handleChange(e.target.value)}
+          className="bg-transparent border-none p-0 h-7 text-sm font-light focus-visible:ring-0"
+        />
       </TableCell>
       <TableCell className="w-14 sm:w-16 px-1 sm:px-2 py-1 text-right">
         <div className="flex items-center justify-end gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
@@ -105,8 +108,6 @@ const TableView = ({ projectId }: { projectId: string }) => {
   const [newTitle, setNewTitle] = useState("");
   const [showDone, setShowDone] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
-  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
-  const openTask = openTaskId ? tasks.find((t) => t.id === openTaskId) ?? null : null;
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -186,7 +187,6 @@ const TableView = ({ projectId }: { projectId: string }) => {
                       onUpdate={updateTask}
                       onDelete={deleteTask}
                       onToggleHidden={(id, hidden) => updateTask(id, { hidden })}
-                      onOpen={(t) => setOpenTaskId(t.id)}
                     />
                   ))}
                 </TableBody>
@@ -278,14 +278,6 @@ const TableView = ({ projectId }: { projectId: string }) => {
           )}
         </div>
       )}
-
-      <TaskDetailDialog
-        task={openTask}
-        open={!!openTask}
-        onOpenChange={(v) => { if (!v) setOpenTaskId(null); }}
-        onUpdate={updateTask}
-        onDelete={deleteTask}
-      />
     </div>
   );
 };

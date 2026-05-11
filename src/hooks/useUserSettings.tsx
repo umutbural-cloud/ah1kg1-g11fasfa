@@ -17,12 +17,6 @@ export type UserSettings = {
   calculation_method: number;
   module_labels: Record<string, string>;
   startup_page: StartupPageSetting;
-  notify_habits: boolean;
-  notify_tasks: boolean;
-  notify_pomodoro: boolean;
-  quiet_hours_start: string | null;
-  quiet_hours_end: string | null;
-  timezone: string;
 };
 
 const DEFAULTS: UserSettings = {
@@ -35,12 +29,6 @@ const DEFAULTS: UserSettings = {
   calculation_method: 13,
   module_labels: {},
   startup_page: { type: "default" },
-  notify_habits: true,
-  notify_tasks: true,
-  notify_pomodoro: true,
-  quiet_hours_start: null,
-  quiet_hours_end: null,
-  timezone: "Europe/Istanbul",
 };
 
 const CACHE_KEY = "keikaku.userSettings.v1";
@@ -78,28 +66,22 @@ export const useUserSettings = () => {
     (async () => {
       const { data } = await supabase
         .from("user_settings")
-        .select("*")
+        .select("auto_prayer_times,location_permission,country,city,latitude,longitude,calculation_method,module_labels,startup_page")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
       if (data) {
-        const d = data as any;
         const next: UserSettings = {
-          auto_prayer_times: d.auto_prayer_times,
-          location_permission: d.location_permission,
-          country: d.country,
-          city: d.city,
-          latitude: d.latitude,
-          longitude: d.longitude,
-          calculation_method: d.calculation_method,
-          module_labels: d.module_labels ?? {},
-          startup_page: (d.startup_page as StartupPageSetting) ?? { type: "default" },
-          notify_habits: d.notify_habits ?? true,
-          notify_tasks: d.notify_tasks ?? true,
-          notify_pomodoro: d.notify_pomodoro ?? true,
-          quiet_hours_start: d.quiet_hours_start ?? null,
-          quiet_hours_end: d.quiet_hours_end ?? null,
-          timezone: d.timezone ?? "Europe/Istanbul",
+          auto_prayer_times: data.auto_prayer_times,
+          location_permission: data.location_permission,
+          country: data.country,
+          city: data.city,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          calculation_method: data.calculation_method,
+          module_labels: (data as any).module_labels ?? {},
+          startup_page: ((data as any).startup_page as StartupPageSetting) ?? { type: "default" },
+          
         };
         setSettings(next);
         writeCache(next);

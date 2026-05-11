@@ -126,9 +126,6 @@ const CalendarView = ({ projectId }: { projectId: string }) => {
                     key={t.id}
                     className="text-[10px] font-light truncate px-1 py-0.5 mb-0.5 rounded-sm bg-foreground/5 border border-border/30"
                   >
-                    {t.start_time && (
-                      <span className="text-muted-foreground tabular-nums mr-1">{t.start_time.slice(0, 5)}</span>
-                    )}
                     {t.title}
                   </div>
                 ))}
