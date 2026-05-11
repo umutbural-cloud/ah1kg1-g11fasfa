@@ -55,11 +55,11 @@ const fetchPublicKey = async (): Promise<string> => {
     if (!publicKey) throw new Error("VAPID anahtarı alınamadı");
     console.log("[Push] VAPID key received:", publicKey.slice(0, 10));
     cachedPublicKey = publicKey;
+    return publicKey;
   } catch (err) {
     console.error("[Push] VAPID key fetch failed", err);
     throw err instanceof Error ? err : new Error("VAPID anahtarı alınamadı");
   }
-  return cachedPublicKey;
 };
 
 export const usePushSubscription = () => {
