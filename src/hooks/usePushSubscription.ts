@@ -71,44 +71,74 @@ export const usePushSubscription = () => {
 
   // Service worker is harmless to register because it does NOT cache — but skip in preview iframe.
   const registerSw = useCallback(async (): Promise<ServiceWorkerRegistration | null> => {
-    if (!pushSupported) return null;
-    if (isInIframe || isPreviewHost) return null;
-    return await navigator.serviceWorker.register(SW_PATH, { scope: "/" });
+    if (!pushSupported) throw new Error("Tarayıcınız push bildirimlerini desteklemiyor");
+    if (pushDisabledInPreview) {
+      console.log("[Push] Service worker registration skipped in preview");
+      throw new Error("Push bildirimleri preview ortamında devre dışı");
+    }
+    try {
+      console.log("[Push] Registering service worker", SW_PATH);
+      const registration = await navigator.serviceWorker.register(SW_PATH, { scope: "/" });
+      await navigator.serviceWorker.ready;
+      console.log("[Push] Service worker ready", registration.scope);
+      return registration;
+    } catch (err) {
+      console.error("[Push] Service worker registration failed", err);
+      throw new Error("Service worker kaydı başarısız");
+    }
   }, []);
 
   const refreshState = useCallback(async () => {
-    if (!pushSupported || isInIframe || isPreviewHost) return;
+    if (!pushSupported) {
+      console.log("[Push] Unsupported browser");
+      return;
+    }
+    if (pushDisabledInPreview) {
+      console.log("[Push] State refresh skipped in preview");
+      return;
+    }
     setPermission(Notification.permission);
     try {
       const reg = await navigator.serviceWorker.getRegistration(SW_PATH);
       const sub = reg ? await reg.pushManager.getSubscription() : null;
       setSubscribed(!!sub);
-    } catch { setSubscribed(false); }
+      console.log("[Push] Subscription state", !!sub);
+    } catch (err) {
+      console.error("[Push] Subscription state refresh failed", err);
+      setSubscribed(false);
+    }
   }, []);
 
   useEffect(() => { refreshState(); }, [refreshState]);
 
   const subscribe = useCallback(async () => {
-    if (!pushSupported) throw new Error("Tarayıcı bildirimleri desteklemiyor");
-    if (isInIframe || isPreviewHost) {
-      throw new Error("Bildirimler sadece yayınlanmış adresinizde çalışır (preview iframe değil)");
+    if (!pushSupported) throw new Error("Tarayıcınız push bildirimlerini desteklemiyor");
+    if (pushDisabledInPreview) {
+      console.log("[Push] Subscribe blocked in preview");
+      throw new Error("Push bildirimleri Lovable preview içinde çalışmaz. Lütfen yayınlanan HTTPS adresinde normal Chrome sekmesinde test edin.");
     }
     setBusy(true);
     try {
+      console.log("[Push] Requesting notification permission");
       const perm = await Notification.requestPermission();
       setPermission(perm);
       if (perm !== "granted") throw new Error("Bildirim izni verilmedi");
 
-      const reg = (await registerSw()) ?? (await navigator.serviceWorker.ready);
+      const reg = await registerSw();
       const publicKey = await fetchPublicKey();
+      if (!publicKey) throw new Error("VAPID anahtarı alınamadı");
       let sub = await reg.pushManager.getSubscription();
       if (!sub) {
+        console.log("[Push] Creating browser push subscription");
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(publicKey),
         });
+      } else {
+        console.log("[Push] Existing browser push subscription found");
       }
 
+      console.log("[Push] Saving subscription");
       const { error } = await supabase.functions.invoke("push-subscribe", {
         body: {
           subscription: sub.toJSON(),
@@ -116,7 +146,12 @@ export const usePushSubscription = () => {
         },
       });
       if (error) throw error;
+      console.log("[Push] Subscription saved");
       setSubscribed(true);
+    } catch (err) {
+      console.error("[Push] Subscribe failed", err);
+      if (err instanceof Error) throw err;
+      throw new Error("Bildirim aboneliği oluşturulamadı");
     } finally { setBusy(false); }
   }, [registerSw]);
 
