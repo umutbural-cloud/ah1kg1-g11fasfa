@@ -448,6 +448,17 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+              {prefs.retreat && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={onSelectRetreat}
+                    className={`text-sm font-light ${section === "retreat" ? "bg-accent text-accent-foreground" : ""}`}
+                  >
+                    <Wind className="h-3.5 w-3.5" />
+                    <span className="tracking-wide">{moduleLabel("retreat")}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                 <Popover open={newModuleOpen} onOpenChange={setNewModuleOpen}>
                   <PopoverTrigger asChild>
