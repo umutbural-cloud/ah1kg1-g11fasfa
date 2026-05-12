@@ -262,10 +262,11 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
             <KanbanColumn
               key={col.key}
               column={col}
-              tasks={tasks.filter((t) => t.status === col.key)}
+              tasks={topLevel.filter((t) => t.status === col.key)}
               onCreateTask={handleCreate}
               onUpdateTask={updateTask}
-              onDeleteTask={deleteTask}
+              onOpen={setEditTask}
+              categoryDotOf={categoryDotOf}
             />
           ))}
         </div>
@@ -290,6 +291,13 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      <TaskEditDialog
+        task={editTask}
+        projectId={projectId}
+        open={!!editTask}
+        onOpenChange={(o) => !o && setEditTask(null)}
+      />
     </div>
   );
 };
