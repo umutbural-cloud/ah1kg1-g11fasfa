@@ -161,7 +161,7 @@ const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onOpen, categ
         )}
         <SortableContext items={visibleTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           {visibleTasks.map((task) => (
-            <SortableCard key={task.id} task={task} onUpdate={onUpdateTask} onDelete={onDeleteTask} />
+            <SortableCard key={task.id} task={task} onUpdate={onUpdateTask} onOpen={onOpen} categoryDot={categoryDotOf(task)} />
           ))}
         </SortableContext>
         {isDoneCol && hiddenCount > 0 && (
