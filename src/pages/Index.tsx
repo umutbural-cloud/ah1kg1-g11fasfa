@@ -303,6 +303,7 @@ const Index = () => {
               <JournalView key={journalDate} date={journalDate} onDateChange={setJournalDate} />
             )}
             {section === "habits" && <HabitsView />}
+            {section === "retreat" && <InzivaView />}
             {section === "project" && (
               !selectedProject ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
