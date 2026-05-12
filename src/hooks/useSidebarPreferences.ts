@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export type SidebarItemKey = "backlog" | "journal" | "habits" | "workHistory" | "pomodoro";
+export type SidebarItemKey = "backlog" | "journal" | "habits" | "workHistory" | "pomodoro" | "retreat";
 
 export const SIDEBAR_ITEM_LABELS: Record<SidebarItemKey, string> = {
   backlog: "Heybe",
@@ -8,6 +8,7 @@ export const SIDEBAR_ITEM_LABELS: Record<SidebarItemKey, string> = {
   habits: "Alışkanlıklar",
   workHistory: "Çalışma Geçmişi",
   pomodoro: "Pomodoro",
+  retreat: "İnziva",
 };
 
 export const SIDEBAR_ITEM_ORDER: SidebarItemKey[] = [
@@ -16,6 +17,7 @@ export const SIDEBAR_ITEM_ORDER: SidebarItemKey[] = [
   "habits",
   "workHistory",
   "pomodoro",
+  "retreat",
 ];
 
 const DEFAULT_PREFS: Record<SidebarItemKey, boolean> = {
@@ -24,6 +26,7 @@ const DEFAULT_PREFS: Record<SidebarItemKey, boolean> = {
   habits: true,
   workHistory: true,
   pomodoro: true,
+  retreat: true,
 };
 
 export type CustomModuleTarget = "backlog" | "journal" | "habits" | "workHistory";
