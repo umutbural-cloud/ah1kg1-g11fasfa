@@ -69,7 +69,7 @@ const TaskEditDialog = ({ task, projectId, open, onOpenChange }: Props) => {
   };
 
   const handleSendToBacklog = async () => {
-    await createBacklog({ title: task.title, description: task.description ?? undefined as any });
+    await createBacklog({ title: task.title } as any);
     await deleteTask(task.id);
     toast.success("Heybeye gönderildi");
     onOpenChange(false);
