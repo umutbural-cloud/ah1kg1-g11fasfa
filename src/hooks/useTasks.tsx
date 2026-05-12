@@ -27,6 +27,7 @@ export type Task = {
   color: TaskColor;
   kind: TaskKind;
   parent_block_id: string | null;
+  category_id: string | null;
 };
 
 export const useTasks = (projectId: string | null) => {
