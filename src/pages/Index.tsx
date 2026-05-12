@@ -12,6 +12,7 @@ import JournalView from "@/components/JournalView";
 import BacklogView from "@/components/BacklogView";
 import TrashView from "@/components/TrashView";
 import HabitsView from "@/components/HabitsView";
+import InzivaView from "@/components/InzivaView";
 import { useProjects } from "@/hooks/useProjects";
 import { ViewKey } from "@/hooks/useProjectViews";
 import { useUndo } from "@/hooks/useUndo";
@@ -148,6 +149,7 @@ const Index = () => {
           onSelectTrash={() => setSection("trash")}
           onSelectJournal={() => setSection("journal")}
           onSelectHabits={() => setSection("habits")}
+          onSelectRetreat={() => setSection("retreat")}
         />
 
         <div className="flex-1 flex flex-col min-w-0">
@@ -301,6 +303,7 @@ const Index = () => {
               <JournalView key={journalDate} date={journalDate} onDateChange={setJournalDate} />
             )}
             {section === "habits" && <HabitsView />}
+            {section === "retreat" && <InzivaView />}
             {section === "project" && (
               !selectedProject ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">

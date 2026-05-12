@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Plus, Trash2, GripVertical, ArrowRight } from "lucide-react";
+import { Plus, GripVertical, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useTasks, Task, TaskStatus } from "@/hooks/useTasks";
+import { usePomodoroCategories } from "@/hooks/usePomodoroCategories";
+import { colorHex } from "@/hooks/useHabitCategories";
+import TaskEditDialog from "./TaskEditDialog";
 import {
   DndContext,
   PointerSensor,
@@ -36,46 +37,18 @@ const NEXT_STATUS: Record<TaskStatus, TaskStatus | null> = {
   done: null,
 };
 
-const SortableCard = ({ task, onUpdate, onDelete }: {
+const SortableCard = ({ task, onUpdate, onOpen, categoryDot }: {
   task: Task;
   onUpdate: (id: string, updates: Partial<Task>) => void;
-  onDelete: (id: string) => void;
+  onOpen: (task: Task) => void;
+  categoryDot?: string;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
-  const [editing, setEditing] = useState(false);
-  const [title, setTitle] = useState(task.title);
-  const [description, setDescription] = useState(task.description || "");
-  const [startDate, setStartDate] = useState(task.start_date || "");
-  const [endDate, setEndDate] = useState(task.end_date || "");
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  };
-
-  const openEditor = () => {
-    setTitle(task.title);
-    setDescription(task.description || "");
-    setStartDate(task.start_date || "");
-    setEndDate(task.end_date || "");
-    setEditing(true);
-  };
-
-  const handleSave = () => {
-    if (!title.trim()) return;
-    onUpdate(task.id, {
-      title: title.trim(),
-      description: description.trim() || null,
-      start_date: startDate || null,
-      end_date: endDate || null,
-    });
-    setEditing(false);
-  };
-
-  const handleDelete = () => {
-    onDelete(task.id);
-    setEditing(false);
   };
 
   const handleAdvance = (e: React.MouseEvent) => {
@@ -87,90 +60,55 @@ const SortableCard = ({ task, onUpdate, onDelete }: {
   const canAdvance = NEXT_STATUS[task.status] !== null;
 
   return (
-    <>
-      <div
-        ref={setNodeRef}
-        style={style}
-        onClick={openEditor}
-        className="group border border-border/60 rounded-sm p-3 bg-card/50 hover:bg-card transition-colors cursor-pointer"
-      >
-        <div className="flex items-start gap-2">
-          <button
-            {...attributes}
-            {...listeners}
-            onClick={(e) => e.stopPropagation()}
-            className="cursor-grab active:cursor-grabbing"
-          >
-            <GripVertical className="h-3.5 w-3.5 mt-0.5 text-muted-foreground/40 shrink-0" />
-          </button>
-          <div className="flex-1 min-w-0">
+    <div
+      ref={setNodeRef}
+      style={style}
+      onClick={() => onOpen(task)}
+      className="group border border-border/60 rounded-sm p-3 bg-card/50 hover:bg-card transition-colors cursor-pointer"
+    >
+      <div className="flex items-start gap-2">
+        <button
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+          className="cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical className="h-3.5 w-3.5 mt-0.5 text-muted-foreground/40 shrink-0" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            {categoryDot && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: categoryDot }} />}
             <p className="text-sm font-light truncate">{task.title}</p>
-            {task.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.description}</p>}
-            {task.start_date && (
-              <p className="text-[10px] text-muted-foreground mt-1.5">
-                {task.start_date}{task.end_date && ` → ${task.end_date}`}
-              </p>
-            )}
           </div>
-          {canAdvance && (
-            <button
-              onClick={handleAdvance}
-              title="Sonraki aşamaya geçir"
-              className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground shrink-0 p-1 -m-1"
-            >
-              <ArrowRight className="h-4 w-4" />
-            </button>
+          {task.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.description}</p>}
+          {(task.start_date || task.start_time) && (
+            <p className="text-[10px] text-muted-foreground mt-1.5">
+              {task.start_date}{task.end_date && task.end_date !== task.start_date && ` → ${task.end_date}`}
+              {task.start_time && ` · ${task.start_time.slice(0, 5)}${task.end_time ? `–${task.end_time.slice(0, 5)}` : ""}`}
+            </p>
           )}
         </div>
+        {canAdvance && (
+          <button
+            onClick={handleAdvance}
+            title="Sonraki aşamaya geçir"
+            className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground shrink-0 p-1 -m-1"
+          >
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        )}
       </div>
-
-      <Dialog open={editing} onOpenChange={setEditing}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-base font-light tracking-wide">Görevi Düzenle</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 pt-2">
-            <div>
-              <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Başlık</div>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Başlık..." className="bg-transparent" autoFocus />
-            </div>
-            <div>
-              <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Açıklama</div>
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Açıklama..." className="bg-transparent min-h-[80px] resize-none" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Başlangıç</div>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="bg-transparent" />
-              </div>
-              <div>
-                <div className="text-[10px] text-muted-foreground mb-1 tracking-wide">Bitiş</div>
-                <Input type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEndDate(e.target.value)} className="bg-transparent" />
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="flex sm:justify-between gap-2">
-            <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive hover:bg-destructive/10">
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-              Sil
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>İptal</Button>
-              <Button size="sm" onClick={handleSave}>Kaydet</Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    </div>
   );
 };
 
-const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onDeleteTask }: {
+const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onOpen, categoryDotOf }: {
   column: (typeof COLUMNS)[0];
   tasks: Task[];
   onCreateTask: (title: string, status: TaskStatus) => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
-  onDeleteTask: (id: string) => void;
+  onOpen: (task: Task) => void;
+  categoryDotOf: (t: Task) => string | undefined;
 }) => {
   const [newTitle, setNewTitle] = useState("");
   const [isAdding, setIsAdding] = useState(false);
@@ -223,7 +161,7 @@ const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onDeleteTask 
         )}
         <SortableContext items={visibleTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           {visibleTasks.map((task) => (
-            <SortableCard key={task.id} task={task} onUpdate={onUpdateTask} onDelete={onDeleteTask} />
+            <SortableCard key={task.id} task={task} onUpdate={onUpdateTask} onOpen={onOpen} categoryDot={categoryDotOf(task)} />
           ))}
         </SortableContext>
         {isDoneCol && hiddenCount > 0 && (
@@ -240,10 +178,21 @@ const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onDeleteTask 
 };
 
 const KanbanView = ({ projectId }: { projectId: string }) => {
-  const { tasks, loading, createTask, updateTask, deleteTask, reorderTasks } = useTasks(projectId);
+  const { tasks, loading, createTask, updateTask, reorderTasks } = useTasks(projectId);
+  const { categories } = usePomodoroCategories();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [editTask, setEditTask] = useState<Task | null>(null);
   const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
+
+  const categoryDotOf = (t: Task) => {
+    const cid = (t as any).category_id;
+    if (!cid) return undefined;
+    const c = categories.find((x) => x.id === cid);
+    return c ? colorHex(c.color) : undefined;
+  };
+
+  const topLevel = tasks.filter((t) => !t.parent_block_id);
 
   const handleCreate = async (title: string, status: TaskStatus) => {
     await createTask({ title, status });
@@ -313,10 +262,11 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
             <KanbanColumn
               key={col.key}
               column={col}
-              tasks={tasks.filter((t) => t.status === col.key)}
+              tasks={topLevel.filter((t) => t.status === col.key)}
               onCreateTask={handleCreate}
               onUpdateTask={updateTask}
-              onDeleteTask={deleteTask}
+              onOpen={setEditTask}
+              categoryDotOf={categoryDotOf}
             />
           ))}
         </div>
@@ -341,6 +291,13 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      <TaskEditDialog
+        task={editTask}
+        projectId={projectId}
+        open={!!editTask}
+        onOpenChange={(o) => !o && setEditTask(null)}
+      />
     </div>
   );
 };

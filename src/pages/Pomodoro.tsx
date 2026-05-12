@@ -251,6 +251,7 @@ const Pomodoro = () => {
           onSelectTrash={() => { setSection("trash"); navigate("/"); }}
           onSelectJournal={() => { setSection("journal"); navigate("/"); }}
           onSelectHabits={() => { setSection("habits"); navigate("/"); }}
+          onSelectRetreat={() => { setSection("retreat"); navigate("/"); }}
         />
 
         <div className="flex-1 flex flex-col min-w-0">

@@ -468,6 +468,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          category_id: string | null
           color: string
           completed_at: string | null
           created_at: string
@@ -489,6 +490,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category_id?: string | null
           color?: string
           completed_at?: string | null
           created_at?: string
@@ -510,6 +512,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category_id?: string | null
           color?: string
           completed_at?: string | null
           created_at?: string

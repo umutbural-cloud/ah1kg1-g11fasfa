@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, LogOut, ChevronRight, ChevronUp, ChevronDown, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash, Settings, Repeat, Check, Clock } from "lucide-react";
+import { Plus, Trash2, LogOut, ChevronRight, ChevronUp, ChevronDown, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash, Settings, Repeat, Check, Clock, Wind } from "lucide-react";
 import { useSidebarPreferences } from "@/hooks/useSidebarPreferences";
 import { useModuleLabels } from "@/hooks/useModuleLabels";
 import { HABIT_ICON_GROUPS, getHabitIcon } from "@/lib/habitIcons";
@@ -39,7 +39,7 @@ const VIEW_META: Record<ViewKey, { label: string; jp: string; icon: any }> = {
 };
 const ALL_VIEW_KEYS: ViewKey[] = ["notes", "table", "gantt", "kanban", "calendar"];
 
-export type Section = "project" | "backlog" | "trash" | "journal" | "habits";
+export type Section = "project" | "backlog" | "trash" | "journal" | "habits" | "retreat";
 
 type Props = {
   projects: Project[];
@@ -54,6 +54,7 @@ type Props = {
   onSelectTrash: () => void;
   onSelectJournal: () => void;
   onSelectHabits: () => void;
+  onSelectRetreat: () => void;
 };
 
 export const ProjectIconPicker = ({
@@ -352,7 +353,7 @@ const ProjectItem = ({
   );
 };
 
-const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onCreate, onDelete, onUpdateProject, onSelectBacklog, onSelectTrash, onSelectJournal, onSelectHabits }: Props) => {
+const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onCreate, onDelete, onUpdateProject, onSelectBacklog, onSelectTrash, onSelectJournal, onSelectHabits, onSelectRetreat }: Props) => {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const { prefs, setItem } = useSidebarPreferences();
@@ -364,12 +365,13 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [newModuleOpen, setNewModuleOpen] = useState(false);
 
-  const MODULE_OPTIONS: { key: "backlog" | "journal" | "habits" | "workHistory" | "pomodoro"; label: string; icon: any }[] = [
+  const MODULE_OPTIONS: { key: "backlog" | "journal" | "habits" | "workHistory" | "pomodoro" | "retreat"; label: string; icon: any }[] = [
     { key: "backlog", label: moduleLabel("backlog"), icon: Package },
     { key: "journal", label: moduleLabel("journal"), icon: FileText },
     { key: "habits", label: moduleLabel("habits"), icon: Repeat },
     { key: "workHistory", label: moduleLabel("workHistory"), icon: Clock },
     { key: "pomodoro", label: moduleLabel("pomodoro"), icon: Clock },
+    { key: "retreat", label: moduleLabel("retreat"), icon: Wind },
   ];
   const hiddenModules = MODULE_OPTIONS.filter((m) => !prefs[m.key]);
 
@@ -443,6 +445,17 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
                   >
                     <Clock className="h-3.5 w-3.5" />
                     <span className="tracking-wide">{moduleLabel("workHistory")}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+              {prefs.retreat && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={onSelectRetreat}
+                    className={`text-sm font-light ${section === "retreat" ? "bg-accent text-accent-foreground" : ""}`}
+                  >
+                    <Wind className="h-3.5 w-3.5" />
+                    <span className="tracking-wide">{moduleLabel("retreat")}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
