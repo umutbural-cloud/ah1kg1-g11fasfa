@@ -92,6 +92,29 @@ export const useTasks = (projectId: string | null) => {
     const { data, error } = await supabase.from("tasks").update(updates as any).eq("id", id).select().single();
     if (!error && data) {
       setTasks((prev) => prev.map((t) => (t.id === id ? (data as Task) : t)));
+
+      // Auto-create pomodoro session when task moves to "done" with same-day time range
+      const task = data as Task;
+      const becameDone = before && before.status !== "done" && task.status === "done";
+      if (becameDone && user && task.start_date && task.end_date && task.start_date === task.end_date && task.start_time && task.end_time) {
+        try {
+          const startISO = new Date(`${task.start_date}T${task.start_time}`).toISOString();
+          const endISO = new Date(`${task.end_date}T${task.end_time}`).toISOString();
+          const dur = Math.max(0, Math.round((new Date(endISO).getTime() - new Date(startISO).getTime()) / 1000));
+          if (dur > 0) {
+            await supabase.from("pomodoro_sessions").insert({
+              user_id: user.id,
+              started_at: startISO,
+              ended_at: endISO,
+              duration_seconds: dur,
+              kind: "work",
+              category_id: (task as any).category_id || null,
+              note: task.title,
+            } as any);
+          }
+        } catch {}
+      }
+
       if (before) {
         const beforeSnap: any = {};
         Object.keys(updates).forEach((k) => { beforeSnap[k] = (before as any)[k]; });
