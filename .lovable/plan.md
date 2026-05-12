@@ -1,72 +1,96 @@
-## Alışkanlıklar Modülü
+## Genel Bakış
 
-Tabloların altındaki alışkanlıklar bölümünü kaldırıp, sidebar'da "Günlük" altında yer alan bağımsız bir "Alışkanlıklar" (習慣) modülü oluşturacağız. Modül kendi içinde 4 alt görünüm barındıracak: **Bugün**, **Master**, **İstatistik** ve alışkanlığa tıklayınca açılan **Detay** dialog'u.
+Görev yönetim akışında tutarsızlıkları gideren büyük bir güncelleme. Yedi farklı iyileştirme bir arada uygulanacak: tablodan tıklanan görev için düzenleme ekranı, kategori sistemi, saat aralıkları, otomatik çalışma geçmişi, heybeye geri gönderme, gelişmiş tablo görünümü, alt görevler ve yeni "İnziva" modülü.
 
-### 1. Veri Modeli (Migration)
+---
 
-`habits` tablosunu yeni alanlarla genişleteceğiz (mevcut veriler korunur):
+## 1. Görev Düzenleme Ekranı (Yeni `TaskEditDialog`)
 
-- `frequency_type` text — `daily` | `weekdays` | `weekly` | `monthly` (default: `daily`)
-- `frequency_days` int[] — haftanın günleri (0=Paz..6=Cmt) ya da ayın günleri
-- `time_of_day` text — `morning` | `afternoon` | `evening` | `night` | `any` (default: `any`)
-- `icon` text — Lucide ikon adı (default: `circle`)
-- `description` text — opsiyonel açıklama
-- `project_id` nullable yapılacak (artık projeye bağlı değil; mevcut kayıtlar varsayılan projede kalır ama UI proje bağı göstermeyecek)
+`src/components/TaskEditDialog.tsx` adında merkezi bir dialog oluşturulacak. Hem Kanban hem Tablo görünümünden açılabilecek.
 
-Günün dilimi sınırları kodda sabit:
-- Sabah: 04:00–12:00
-- Öğleden Sonra: 12:01–18:00
-- Akşam: 18:01–22:00
-- Gece: 22:01–04:00
+İçeriği:
+- **Başlık + açıklama** (mevcut alanlar)
+- **Kategori seçici** — Pomodoro'daki `pomodoro_categories` sistemi yeniden kullanılacak. Görev tablosuna `category_id` kolonu eklenecek.
+- **Başlangıç & bitiş tarihi** (zaten var)
+- **Başlangıç & bitiş saati** (zaten var, UI'a düzgün ekleneceğiz)
+- **Renk seçici** (mevcut)
+- **"Heybeye geri gönder"** — küçük ikincil aksiyon. Görevi siler ve `backlog_tasks` içine taşır.
+- **"Sil"** aksiyonu
 
-### 2. Sidebar Entegrasyonu
+Tablo satırına tıklanınca bu dialog açılacak (input'a tıklamayı düzenleme moduna ayırırız; satıra tıklayınca dialog).
 
-`AppSidebar.tsx` ve `Section` tipi: `"habits"` eklenecek. "Günlük" satırının hemen altına **Alışkanlıklar** (習慣) menü ögesi gelecek. `usePageState` ve `Index.tsx` route'lanacak.
+---
 
-### 3. Yeni Sayfa: `HabitsView` (`src/components/HabitsView.tsx`)
+## 2. Otomatik Çalışma Geçmişi
 
-Üst kısımda 3 sekme: **Bugün** · **Master** · **İstatistik**.
+Aynı gün başlayıp biten ve hem `start_time` hem `end_time` set edilmiş görevler için, görev "done" olarak işaretlenince otomatik bir `pomodoro_sessions` kaydı oluşturulacak (kind: 'work', süre = end-start, kategori = görev kategorisi, note = görev başlığı).
 
-#### a) Bugün sekmesi (varsayılan)
-- Günün dilimi filtreleri: **Tümü · Sabah · Öğleden Sonra · Akşam · Gece** (şu anki dilim varsayılan seçili).
-- Liste sade tablo: ikon · isim · son 7 günün durumu (boş daire ○ / dolu daire ●, en sağda bugün) · bugün için tıklama checkbox'ı.
-- Yalnızca o günün sıklığına uygun alışkanlıklar gösterilir (haftanın günü/ay günü filtresi).
-- Satıra tıklama → Detay dialog'u.
+Bu mantık `useTasks.updateTask` içine eklenecek (status: 'todo' → 'done' geçişinde).
 
-#### b) Master sekmesi (planlama)
-- Heybe tarzı tablo: İkon · Ad · Sıklık · Günün Dilimi · işlemler (sil).
-- "+ Yeni alışkanlık" satırı; inline düzenleme (ad, sıklık dropdown, dilim dropdown, ikon picker).
+---
 
-#### c) İstatistik sekmesi
-- Üstte zaman aralığı seçici: **Hafta · Ay · Yıl**.
-- Her alışkanlık için: tamamlanma oranı %, en uzun seri, toplam tamamlama, basit heatmap/bar.
-- `habit_completions`'tan client-side aggregate.
+## 3. Tablo Görünümü Geliştirmeleri
 
-### 4. Detay/Düzenleme Dialog'u
+`TableView.tsx` üzerine:
+- Yeni görev input'unun yanına **filtre dropdown'u**: Durum (Hepsi / Aktif / Tamamlanan) ve Kategori (Hepsi / her kategori).
+- Filtreler client-side uygulanacak.
+- Satıra tıklayınca düzenleme dialog'u (madde 1).
 
-Hem Bugün hem Master sekmesinden açılır. Düzenlenebilir alanlar: ad, ikon, sıklık (tip + günler), günün dilimi, açıklama. "Kaydet" / "İptal" butonları (auto-save değil).
+---
 
-### 5. İkon Arşivi (`src/lib/habitIcons.ts`)
+## 4. Alt Görevler
 
-Lucide'den ~60 anlamlı ikondan oluşan, tematik gruplanmış (Sağlık, Spor, Çalışma, Kişisel, Yemek, Uyku, Sosyal, Yaratıcılık, Evrensel) zengin liste. Picker grid + grup başlıkları + arama. Tüm ikonlar `text-muted-foreground` ile gri tonlamalı render edilecek.
+`tasks` tablosunda `parent_block_id` zaten var — bunu `parent_task_id` semantiği için yeniden kullanacağız (zaten timebox altındaki görevler için kullanılıyor; aynı alan alt görev için de iş görür).
 
-### 6. Mevcut Yerden Kaldırma
+UI:
+- Tablo satırının solunda küçük bir genişlet/daralt oku (alt görevler varsa).
+- Düzenleme dialog'unda "+ Alt görev ekle" butonu ile yeni alt görevler eklenebilir.
+- Alt görevler tabloda parent altında girintili gösterilir.
 
-`TableView.tsx` içindeki `HabitsSection` render'ı kaldırılacak. `HabitsSection.tsx` dosyası silinecek (yerini `HabitsView` alıyor). `Index.tsx`'te `showHabits` prop'u kalkacak.
+---
 
-### 7. Hook
+## 5. Sidebar Yeni Modül: "İnziva"
 
-`useHabits.tsx` projeye bağlılıktan ayrılacak: `useHabits()` artık kullanıcının tüm alışkanlıklarını çeker. Yeni alanlar (`frequency_type`, `frequency_days`, `time_of_day`, `icon`, `description`) CRUD'a dahil edilecek. `getCompletionsRange(start, end)` yardımcısı eklenecek (son 7 gün ve istatistik için).
+`src/pages/Inziva.tsx` (veya `Index.tsx` içinde yeni view) — modül key: `retreat`, varsayılan etiket "İnziva", japonca aksent "隠".
 
-### Teknik Detaylar
+Davranış:
+- Tek `<textarea>` (sade, geniş, premium görünüm).
+- Yazı **yalnızca React state**'te; localStorage/server'a hiç yazılmaz.
+- Boş satır (paragraf sonu = `\n\n`) tespit edildiğinde, 10 saniye sonra o paragraf otomatik silinir.
+- Sayfa kapatılınca / değiştirilince tüm içerik kaybolur.
+- Üstte küçük açıklama: "Bu alanda yazdıklarınız hiçbir yere kaydedilmez."
 
-- Günün dilimini hesaplama: `Date().getHours()` ile `morning/afternoon/evening/night` map'i.
-- Sıklık match'i (bir alışkanlık X gününde gösterilir mi?): `daily` → her zaman; `weekdays` → `frequency_days` içinde gün varsa; `weekly` → haftanın o günü `frequency_days`'te; `monthly` → ayın günü `frequency_days`'te.
-- Son 7 gün serisi: tek sorguda `habit_completions` `completion_date >= today-6` çekilip `Map<habit_id, Set<date>>` ile render edilecek.
+`AppSidebar.tsx` ve `useModuleLabels.ts` içine yeni modül anahtarı eklenir.
 
-### Etkilenen / Yeni Dosyalar
+---
 
-- **Migration**: `habits` tablosuna alanlar, `project_id` nullable.
-- **Yeni**: `src/components/HabitsView.tsx`, `src/components/HabitsBoard.tsx` (Master tablosu), `src/components/HabitsToday.tsx`, `src/components/HabitsStats.tsx`, `src/components/HabitDetailDialog.tsx`, `src/components/HabitIconPicker.tsx`, `src/lib/habitIcons.ts`, `src/lib/timeOfDay.ts`.
-- **Düzenlenecek**: `src/hooks/useHabits.tsx`, `src/hooks/usePageState.tsx`, `src/components/AppSidebar.tsx`, `src/pages/Index.tsx`, `src/components/TableView.tsx`.
-- **Silinecek**: `src/components/HabitsSection.tsx`.
+## 6. Database Değişiklikleri
+
+Tek migration:
+- `tasks` tablosuna `category_id UUID NULL` kolonu (pomodoro_categories'e mantıksal referans).
+- Index: `idx_tasks_parent_block_id`, `idx_tasks_category_id`.
+
+---
+
+## Teknik Detaylar (özet)
+
+**Yeni dosyalar:**
+- `src/components/TaskEditDialog.tsx`
+- `src/components/InzivaView.tsx` (Index.tsx içinden render)
+- migration dosyası
+
+**Düzenlenecek dosyalar:**
+- `src/components/TableView.tsx` — tıklama, filtre, alt görev satırları
+- `src/components/KanbanView.tsx` — TaskEditDialog kullanımı
+- `src/hooks/useTasks.tsx` — category_id desteği, otomatik pomodoro session, alt görev helper'ları, heybeye geri gönderme
+- `src/hooks/useBacklog.tsx` — görev → heybe taşıma fonksiyonu
+- `src/hooks/useModuleLabels.ts` — yeni "retreat" anahtarı
+- `src/components/AppSidebar.tsx` — sidebar item
+- `src/pages/Index.tsx` — yeni view rendering
+- `src/integrations/supabase/types.ts` — otomatik
+
+---
+
+## Tasarım Tutarlılığı
+
+Tüm yeni UI Washi tema tokenları, Noto Sans/Serif JP, tracking-wide, ince border'lar ve mevcut sade etkileşim hissi ile uyumlu olacak. İnziva için japonca aksent "隠 — İnziva" kullanılacak.
