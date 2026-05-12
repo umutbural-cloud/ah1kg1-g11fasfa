@@ -102,12 +102,13 @@ const SortableCard = ({ task, onUpdate, onOpen, categoryDot }: {
   );
 };
 
-const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onDeleteTask }: {
+const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onOpen, categoryDotOf }: {
   column: (typeof COLUMNS)[0];
   tasks: Task[];
   onCreateTask: (title: string, status: TaskStatus) => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
-  onDeleteTask: (id: string) => void;
+  onOpen: (task: Task) => void;
+  categoryDotOf: (t: Task) => string | undefined;
 }) => {
   const [newTitle, setNewTitle] = useState("");
   const [isAdding, setIsAdding] = useState(false);
