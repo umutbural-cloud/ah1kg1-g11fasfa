@@ -178,10 +178,21 @@ const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onOpen, categ
 };
 
 const KanbanView = ({ projectId }: { projectId: string }) => {
-  const { tasks, loading, createTask, updateTask, deleteTask, reorderTasks } = useTasks(projectId);
+  const { tasks, loading, createTask, updateTask, reorderTasks } = useTasks(projectId);
+  const { categories } = usePomodoroCategories();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [editTask, setEditTask] = useState<Task | null>(null);
   const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
+
+  const categoryDotOf = (t: Task) => {
+    const cid = (t as any).category_id;
+    if (!cid) return undefined;
+    const c = categories.find((x) => x.id === cid);
+    return c ? colorHex(c.color) : undefined;
+  };
+
+  const topLevel = tasks.filter((t) => !t.parent_block_id);
 
   const handleCreate = async (title: string, status: TaskStatus) => {
     await createTask({ title, status });
