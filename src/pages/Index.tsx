@@ -12,6 +12,7 @@ import JournalView from "@/components/JournalView";
 import BacklogView from "@/components/BacklogView";
 import TrashView from "@/components/TrashView";
 import HabitsView from "@/components/HabitsView";
+import InzivaView from "@/components/InzivaView";
 import { useProjects } from "@/hooks/useProjects";
 import { ViewKey } from "@/hooks/useProjectViews";
 import { useUndo } from "@/hooks/useUndo";
