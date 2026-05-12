@@ -353,7 +353,7 @@ const ProjectItem = ({
   );
 };
 
-const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onCreate, onDelete, onUpdateProject, onSelectBacklog, onSelectTrash, onSelectJournal, onSelectHabits }: Props) => {
+const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onCreate, onDelete, onUpdateProject, onSelectBacklog, onSelectTrash, onSelectJournal, onSelectHabits, onSelectRetreat }: Props) => {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const { prefs, setItem } = useSidebarPreferences();
@@ -365,12 +365,13 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [newModuleOpen, setNewModuleOpen] = useState(false);
 
-  const MODULE_OPTIONS: { key: "backlog" | "journal" | "habits" | "workHistory" | "pomodoro"; label: string; icon: any }[] = [
+  const MODULE_OPTIONS: { key: "backlog" | "journal" | "habits" | "workHistory" | "pomodoro" | "retreat"; label: string; icon: any }[] = [
     { key: "backlog", label: moduleLabel("backlog"), icon: Package },
     { key: "journal", label: moduleLabel("journal"), icon: FileText },
     { key: "habits", label: moduleLabel("habits"), icon: Repeat },
     { key: "workHistory", label: moduleLabel("workHistory"), icon: Clock },
     { key: "pomodoro", label: moduleLabel("pomodoro"), icon: Clock },
+    { key: "retreat", label: moduleLabel("retreat"), icon: Wind },
   ];
   const hiddenModules = MODULE_OPTIONS.filter((m) => !prefs[m.key]);
 
