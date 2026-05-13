@@ -7,7 +7,7 @@ import { Play, Pause, RotateCcw } from "lucide-react";
  * Kullanıcı yazmayı bıraktıktan 5 saniye sonra paragraflar yumuşakça solup kaybolur.
  */
 
-const IDLE_MS = 5_000;
+const IDLE_MS = 3_000;
 const FADE_DURATION_MS = 1_500;
 
 type Line = {
