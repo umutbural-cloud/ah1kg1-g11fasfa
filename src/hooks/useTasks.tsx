@@ -144,6 +144,7 @@ export const useTasks = (projectId: string | null) => {
   const deleteTask = async (id: string) => {
     const before = tasks.find((t) => t.id === id);
     if (!before) return;
+    await supabase.from("pomodoro_sessions").delete().eq("task_id", id);
     await supabase.from("tasks").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     setTasks((prev) => prev.filter((t) => t.id !== id));
     push({
