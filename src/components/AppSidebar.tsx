@@ -39,7 +39,7 @@ const VIEW_META: Record<ViewKey, { label: string; jp: string; icon: any }> = {
 };
 const ALL_VIEW_KEYS: ViewKey[] = ["notes", "table", "gantt", "kanban", "calendar"];
 
-export type Section = "project" | "backlog" | "trash" | "journal" | "habits" | "retreat";
+export type Section = "project" | "backlog" | "trash" | "journal" | "habits" | "retreat" | "quickNotes";
 
 type Props = {
   projects: Project[];

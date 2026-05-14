@@ -20,6 +20,8 @@ export const PageStateProvider = ({ children }: { children: ReactNode }) => {
   const [section, setSection] = useState<Section>("project");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [view, setView] = useState<ViewKey>("table");
+  // section "quickNotes" allowed via Section type
+
   const [journalDate, setJournalDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
 
   return (
