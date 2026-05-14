@@ -5,6 +5,8 @@ import { useUndo } from "./useUndo";
 
 export type ViewKey = "notes" | "table" | "gantt" | "kanban" | "calendar";
 
+export type ProjectKind = "project" | "knowledge";
+
 export type Project = {
   id: string;
   name: string;
@@ -17,9 +19,11 @@ export type Project = {
   enabled_views: ViewKey[];
   deleted_at: string | null;
   is_default?: boolean;
+  kind: ProjectKind;
 };
 
 const DEFAULT_VIEWS: ViewKey[] = ["table", "notes"];
+const KNOWLEDGE_VIEWS: ViewKey[] = ["notes"];
 
 export const useProjects = () => {
   const { user } = useAuth();
@@ -37,6 +41,7 @@ export const useProjects = () => {
     const normalized = ((data as any[]) || []).map((p) => ({
       ...p,
       enabled_views: Array.isArray(p.enabled_views) ? p.enabled_views : DEFAULT_VIEWS,
+      kind: p.kind || "project",
     })) as Project[];
     // Default proje en üstte
     normalized.sort((a, b) => Number(!!b.is_default) - Number(!!a.is_default));
@@ -46,16 +51,17 @@ export const useProjects = () => {
 
   useEffect(() => { fetchProjects(); }, [user]);
 
-  const createProject = async (name: string, parentId?: string) => {
+  const createProject = async (name: string, parentId?: string, kind: ProjectKind = "project") => {
     if (!user) return null;
-    const insertData: any = { name, user_id: user.id, enabled_views: DEFAULT_VIEWS };
+    const views = kind === "knowledge" ? KNOWLEDGE_VIEWS : DEFAULT_VIEWS;
+    const insertData: any = { name, user_id: user.id, enabled_views: views, kind };
     if (parentId) insertData.parent_id = parentId;
     const { data, error } = await supabase.from("projects").insert(insertData).select().single();
     if (!error && data) {
-      const created = { ...data, enabled_views: (data as any).enabled_views || DEFAULT_VIEWS } as Project;
+      const created = { ...data, enabled_views: (data as any).enabled_views || views, kind: (data as any).kind || "project" } as Project;
       setProjects((prev) => [...prev, created]);
       push({
-        label: "Proje eklendi",
+        label: kind === "knowledge" ? "Defter eklendi" : "Proje eklendi",
         undo: async () => {
           await supabase.from("projects").update({ deleted_at: new Date().toISOString() }).eq("id", created.id);
           setProjects((prev) => prev.filter((p) => p.id !== created.id));

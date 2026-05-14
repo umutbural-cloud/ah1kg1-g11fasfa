@@ -398,6 +398,7 @@ const WorkHistory = () => {
           onSelectJournal={() => { setSection("journal"); navigate("/"); }}
           onSelectHabits={() => { setSection("habits"); navigate("/"); }}
           onSelectRetreat={() => { setSection("retreat"); navigate("/"); }}
+          onSelectQuickNotes={() => { setSection("quickNotes"); navigate("/"); }}
         />
 
         <div className="flex-1 flex flex-col min-w-0">

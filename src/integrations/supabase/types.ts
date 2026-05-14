@@ -333,6 +333,7 @@ export type Database = {
           icon_color: string | null
           id: string
           is_default: boolean
+          kind: string
           name: string
           parent_id: string | null
           user_id: string
@@ -346,6 +347,7 @@ export type Database = {
           icon_color?: string | null
           id?: string
           is_default?: boolean
+          kind?: string
           name: string
           parent_id?: string | null
           user_id: string
@@ -359,6 +361,7 @@ export type Database = {
           icon_color?: string | null
           id?: string
           is_default?: boolean
+          kind?: string
           name?: string
           parent_id?: string | null
           user_id?: string
@@ -405,6 +408,39 @@ export type Database = {
           last_seen_at?: string
           p256dh?: string
           user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quick_notes: {
+        Row: {
+          color: string
+          content: string
+          created_at: string
+          id: string
+          pinned: boolean
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          content?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          content?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          position?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
