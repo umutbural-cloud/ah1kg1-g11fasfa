@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, LogOut, ChevronRight, ChevronUp, ChevronDown, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash, Settings, Repeat, Check, Clock, Wind } from "lucide-react";
+import { Plus, Trash2, LogOut, ChevronRight, ChevronUp, ChevronDown, Pencil, FileText, Table as TableIcon, GanttChart, Kanban, Calendar, X, Package, Trash, Settings, Repeat, Check, Clock, Wind, BookOpen, StickyNote } from "lucide-react";
 import { useSidebarPreferences } from "@/hooks/useSidebarPreferences";
 import { useModuleLabels } from "@/hooks/useModuleLabels";
 import { HABIT_ICON_GROUPS, getHabitIcon } from "@/lib/habitIcons";
@@ -47,7 +47,7 @@ type Props = {
   selectedView: ViewKey;
   section: Section;
   onSelect: (id: string, view?: ViewKey) => void;
-  onCreate: (name: string, parentId?: string) => void;
+  onCreate: (name: string, parentId?: string, kind?: "project" | "knowledge") => void;
   onDelete: (id: string) => void;
   onUpdateProject: (id: string, updates: { name?: string; emoji?: string; icon?: string | null; icon_color?: string | null; enabled_views?: ViewKey[] }) => void;
   onSelectBacklog: () => void;
@@ -55,6 +55,7 @@ type Props = {
   onSelectJournal: () => void;
   onSelectHabits: () => void;
   onSelectRetreat: () => void;
+  onSelectQuickNotes: () => void;
 };
 
 export const ProjectIconPicker = ({
