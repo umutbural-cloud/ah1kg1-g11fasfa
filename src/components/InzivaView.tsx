@@ -8,7 +8,7 @@ import { Play, Pause, RotateCcw } from "lucide-react";
  */
 
 const IDLE_MS = 3_000;
-const FADE_DURATION_MS = 1_500;
+const FADE_DURATION_MS = 3_000;
 
 type Line = {
   id: number;
@@ -150,7 +150,7 @@ const InzivaView = () => {
 
       const newId = nextId;
       setNextId((n) => n + 1);
-      setLines((prev) => [...prev, { id: newId, text: "", fading: false }]);
+      setLines((prev) => [{ id: newId, text: "", fading: false }, ...prev]);
       setActiveId(newId);
     } else if (e.key === "Backspace") {
       const sel = window.getSelection();
@@ -158,11 +158,11 @@ const InzivaView = () => {
       const range = sel.getRangeAt(0);
       if (range.startOffset === 0 && range.endOffset === 0) {
         const currentIdx = lines.findIndex((l) => l.id === activeId);
-        if (currentIdx > 0) {
+        if (currentIdx < lines.length - 1) {
           e.preventDefault();
-          const prevId = lines[currentIdx - 1].id;
+          const nextLineId = lines[currentIdx + 1].id;
           setLines((prev) => prev.filter((l) => l.id !== activeId));
-          setActiveId(prevId);
+          setActiveId(nextLineId);
         }
       }
     }
@@ -271,7 +271,7 @@ const InzivaView = () => {
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             className={`outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground/40 mb-4 last:mb-0 text-base font-light leading-relaxed tracking-wide transition-opacity ease-out ${
-              line.fading ? "opacity-0 duration-[1500ms]" : "opacity-100 duration-300"
+              line.fading ? "opacity-0 duration-[3000ms]" : "opacity-100 duration-300"
             }`}
             data-placeholder={line.id === activeId ? "Sadece yaz..." : undefined}
           />
