@@ -140,9 +140,10 @@ const SortableCard = ({ task, subtasks, onUpdate, onOpen, categoryDot }: {
   );
 };
 
-const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onOpen, categoryDotOf }: {
+const KanbanColumn = ({ column, tasks, subtasksOf, onCreateTask, onUpdateTask, onOpen, categoryDotOf }: {
   column: (typeof COLUMNS)[0];
   tasks: Task[];
+  subtasksOf: (id: string) => Task[];
   onCreateTask: (title: string, status: TaskStatus) => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
   onOpen: (task: Task) => void;
@@ -199,7 +200,7 @@ const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onOpen, categ
         )}
         <SortableContext items={visibleTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           {visibleTasks.map((task) => (
-            <SortableCard key={task.id} task={task} onUpdate={onUpdateTask} onOpen={onOpen} categoryDot={categoryDotOf(task)} />
+            <SortableCard key={task.id} task={task} subtasks={subtasksOf(task.id)} onUpdate={onUpdateTask} onOpen={onOpen} categoryDot={categoryDotOf(task)} />
           ))}
         </SortableContext>
         {isDoneCol && hiddenCount > 0 && (
@@ -231,6 +232,7 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
   };
 
   const topLevel = tasks.filter((t) => !t.parent_block_id);
+  const subtasksOf = (parentId: string) => tasks.filter((t) => t.parent_block_id === parentId);
 
   const handleCreate = async (title: string, status: TaskStatus) => {
     await createTask({ title, status });
@@ -301,6 +303,7 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
               key={col.key}
               column={col}
               tasks={topLevel.filter((t) => t.status === col.key)}
+              subtasksOf={subtasksOf}
               onCreateTask={handleCreate}
               onUpdateTask={updateTask}
               onOpen={setEditTask}
