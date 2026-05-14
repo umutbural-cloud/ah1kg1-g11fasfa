@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Plus, GripVertical, ArrowRight } from "lucide-react";
+import { Plus, GripVertical, ArrowRight, ChevronDown, ChevronRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTasks, Task, TaskStatus } from "@/hooks/useTasks";
@@ -37,13 +38,15 @@ const NEXT_STATUS: Record<TaskStatus, TaskStatus | null> = {
   done: null,
 };
 
-const SortableCard = ({ task, onUpdate, onOpen, categoryDot }: {
+const SortableCard = ({ task, subtasks, onUpdate, onOpen, categoryDot }: {
   task: Task;
+  subtasks: Task[];
   onUpdate: (id: string, updates: Partial<Task>) => void;
   onOpen: (task: Task) => void;
   categoryDot?: string;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
+  const [expanded, setExpanded] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -58,6 +61,7 @@ const SortableCard = ({ task, onUpdate, onOpen, categoryDot }: {
   };
 
   const canAdvance = NEXT_STATUS[task.status] !== null;
+  const doneCount = subtasks.filter((s) => s.status === "done").length;
 
   return (
     <div
@@ -77,8 +81,22 @@ const SortableCard = ({ task, onUpdate, onOpen, categoryDot }: {
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
+            {subtasks.length > 0 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+                className="text-muted-foreground/60 hover:text-foreground shrink-0"
+                title={expanded ? "Alt görevleri gizle" : "Alt görevleri göster"}
+              >
+                {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              </button>
+            )}
             {categoryDot && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: categoryDot }} />}
             <p className="text-sm font-light truncate">{task.title}</p>
+            {subtasks.length > 0 && (
+              <span className="text-[10px] text-muted-foreground/60 shrink-0 ml-1">
+                {doneCount}/{subtasks.length}
+              </span>
+            )}
           </div>
           {task.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.description}</p>}
           {(task.start_date || task.start_time) && (
@@ -86,6 +104,26 @@ const SortableCard = ({ task, onUpdate, onOpen, categoryDot }: {
               {task.start_date}{task.end_date && task.end_date !== task.start_date && ` → ${task.end_date}`}
               {task.start_time && ` · ${task.start_time.slice(0, 5)}${task.end_time ? `–${task.end_time.slice(0, 5)}` : ""}`}
             </p>
+          )}
+          {expanded && subtasks.length > 0 && (
+            <div className="mt-2 pl-1 space-y-1 border-l border-border/60">
+              {subtasks.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-center gap-2 pl-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Checkbox
+                    checked={s.status === "done"}
+                    onCheckedChange={(c) => onUpdate(s.id, { status: c ? "done" : "todo" })}
+                    className="h-3 w-3"
+                  />
+                  <span className={`text-xs font-light flex-1 truncate ${s.status === "done" ? "line-through text-muted-foreground" : ""}`}>
+                    {s.title}
+                  </span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
         {canAdvance && (
@@ -102,9 +140,10 @@ const SortableCard = ({ task, onUpdate, onOpen, categoryDot }: {
   );
 };
 
-const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onOpen, categoryDotOf }: {
+const KanbanColumn = ({ column, tasks, subtasksOf, onCreateTask, onUpdateTask, onOpen, categoryDotOf }: {
   column: (typeof COLUMNS)[0];
   tasks: Task[];
+  subtasksOf: (id: string) => Task[];
   onCreateTask: (title: string, status: TaskStatus) => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
   onOpen: (task: Task) => void;
@@ -161,7 +200,7 @@ const KanbanColumn = ({ column, tasks, onCreateTask, onUpdateTask, onOpen, categ
         )}
         <SortableContext items={visibleTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           {visibleTasks.map((task) => (
-            <SortableCard key={task.id} task={task} onUpdate={onUpdateTask} onOpen={onOpen} categoryDot={categoryDotOf(task)} />
+            <SortableCard key={task.id} task={task} subtasks={subtasksOf(task.id)} onUpdate={onUpdateTask} onOpen={onOpen} categoryDot={categoryDotOf(task)} />
           ))}
         </SortableContext>
         {isDoneCol && hiddenCount > 0 && (
@@ -193,6 +232,7 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
   };
 
   const topLevel = tasks.filter((t) => !t.parent_block_id);
+  const subtasksOf = (parentId: string) => tasks.filter((t) => t.parent_block_id === parentId);
 
   const handleCreate = async (title: string, status: TaskStatus) => {
     await createTask({ title, status });
@@ -263,6 +303,7 @@ const KanbanView = ({ projectId }: { projectId: string }) => {
               key={col.key}
               column={col}
               tasks={topLevel.filter((t) => t.status === col.key)}
+              subtasksOf={subtasksOf}
               onCreateTask={handleCreate}
               onUpdateTask={updateTask}
               onOpen={setEditTask}
