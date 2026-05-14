@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Plus, Trash2, GripVertical, EyeOff, Eye, ChevronDown, ChevronRight, Filter, Check } from "lucide-react";
+import { Plus, Trash2, GripVertical, EyeOff, Eye, ChevronDown, ChevronRight, Filter, Check, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -108,8 +108,15 @@ const SortableRow = ({ task, subtasks, onUpdate, onDelete, onToggleHidden, onOpe
             )}
           </div>
         </TableCell>
-        <TableCell className="w-14 sm:w-16 px-1 sm:px-2 py-1 text-right" onClick={(e) => e.stopPropagation()}>
+        <TableCell className="w-20 sm:w-24 px-1 sm:px-2 py-1 text-right" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-end gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => onOpen(task)}
+              className="text-muted-foreground hover:text-foreground p-1"
+              title="Düzenle"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
             <button
               onClick={() => onToggleHidden(task.id, !task.hidden)}
               className="text-muted-foreground hover:text-foreground p-1"
@@ -120,6 +127,7 @@ const SortableRow = ({ task, subtasks, onUpdate, onDelete, onToggleHidden, onOpe
             <button
               onClick={() => onDelete(task.id)}
               className="text-muted-foreground hover:text-destructive p-1"
+              title="Sil"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -320,7 +328,7 @@ const TableView = ({ projectId }: { projectId: string }) => {
                 <TableHead className="w-8"></TableHead>
                 <TableHead className="w-10"></TableHead>
                 <TableHead className="text-xs font-light tracking-wide">Başlık</TableHead>
-                <TableHead className="w-16"></TableHead>
+                <TableHead className="w-24"></TableHead>
               </TableRow>
             </TableHeader>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
