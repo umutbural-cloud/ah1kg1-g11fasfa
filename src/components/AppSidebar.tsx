@@ -39,15 +39,16 @@ const VIEW_META: Record<ViewKey, { label: string; jp: string; icon: any }> = {
 };
 const ALL_VIEW_KEYS: ViewKey[] = ["notes", "table", "gantt", "kanban", "calendar"];
 
-export type Section = "project" | "backlog" | "trash" | "journal" | "habits" | "retreat" | "quickNotes";
+export type Section = "project" | "backlog" | "trash" | "journal" | "habits" | "retreat" | "notebook";
 
 type Props = {
   projects: Project[];
   selectedId: string | null;
   selectedView: ViewKey;
   section: Section;
+  selectedNotebookId: string | null;
   onSelect: (id: string, view?: ViewKey) => void;
-  onCreate: (name: string, parentId?: string, kind?: "project" | "knowledge") => void;
+  onCreate: (name: string, parentId?: string) => void;
   onDelete: (id: string) => void;
   onUpdateProject: (id: string, updates: { name?: string; emoji?: string; icon?: string | null; icon_color?: string | null; enabled_views?: ViewKey[] }) => void;
   onSelectBacklog: () => void;
@@ -55,7 +56,7 @@ type Props = {
   onSelectJournal: () => void;
   onSelectHabits: () => void;
   onSelectRetreat: () => void;
-  onSelectQuickNotes: () => void;
+  onSelectNotebook: (notebookId: string) => void;
 };
 
 export const ProjectIconPicker = ({
