@@ -679,84 +679,10 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, selectedNoteb
             知 Bilgi Merkezi
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {rootKnowledge.map((project) => (
-                <div key={project.id}>
-                  <KnowledgeItem
-                    project={project}
-                    children={getChildren(project.id)}
-                    selectedId={selectedId}
-                    section={section}
-                    onSelect={onSelect}
-                    onDelete={onDelete}
-                    onUpdateProject={onUpdateProject}
-                    onAddSub={handleAddKnowledgeSub}
-                  />
-                  {addingKnowledgeParentId === project.id && (
-                    <SidebarMenuItem>
-                      <div className="flex gap-1 px-2 py-1" style={{ paddingLeft: "32px" }}>
-                        <Input
-                          value={knowledgeSubName}
-                          onChange={(e) => setKnowledgeSubName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleCreateKnowledgeSub();
-                            if (e.key === "Escape") setAddingKnowledgeParentId(null);
-                          }}
-                          autoFocus
-                          placeholder="Alt defter adı..."
-                          className="h-7 text-xs bg-transparent"
-                        />
-                      </div>
-                    </SidebarMenuItem>
-                  )}
-                </div>
-              ))}
-
-              {showKnowledgeInput ? (
-                <SidebarMenuItem>
-                  <div className="flex gap-1 px-2 py-1">
-                    <Input
-                      value={newKnowledgeName}
-                      onChange={(e) => setNewKnowledgeName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleCreateKnowledge();
-                        if (e.key === "Escape") setShowKnowledgeInput(false);
-                      }}
-                      autoFocus
-                      placeholder="Defter adı..."
-                      className="h-7 text-xs bg-transparent"
-                    />
-                  </div>
-                </SidebarMenuItem>
-              ) : (
-                <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => setShowKnowledgeInput(true)} className="text-xs text-muted-foreground">
-                    <Plus className="h-3.5 w-3.5 mr-2" />
-                    Yeni Defter
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Anlık Notlar */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">
-            付箋 Anlık Notlar
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={onSelectQuickNotes}
-                  className={`text-sm font-light ${section === "quickNotes" ? "bg-accent text-accent-foreground" : ""}`}
-                >
-                  <StickyNote className="h-3.5 w-3.5" />
-                  <span className="tracking-wide">Anlık Notlar</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
+            <NotebookSidebarTree
+              selectedNotebookId={section === "notebook" ? selectedNotebookId : null}
+              onSelectNotebook={onSelectNotebook}
+            />
           </SidebarGroupContent>
         </SidebarGroup>
 
