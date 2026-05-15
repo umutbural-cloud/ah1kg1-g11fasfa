@@ -27,6 +27,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Project } from "@/hooks/useProjects";
 import type { ViewKey } from "@/hooks/useProjectViews";
 import PomodoroSidebarWidget from "./PomodoroSidebarWidget";
+import NotebookSidebarTree from "@/features/knowledge/components/NotebookSidebarTree";
 
 
 
@@ -39,15 +40,16 @@ const VIEW_META: Record<ViewKey, { label: string; jp: string; icon: any }> = {
 };
 const ALL_VIEW_KEYS: ViewKey[] = ["notes", "table", "gantt", "kanban", "calendar"];
 
-export type Section = "project" | "backlog" | "trash" | "journal" | "habits" | "retreat" | "quickNotes";
+export type Section = "project" | "backlog" | "trash" | "journal" | "habits" | "retreat" | "notebook";
 
 type Props = {
   projects: Project[];
   selectedId: string | null;
   selectedView: ViewKey;
   section: Section;
+  selectedNotebookId: string | null;
   onSelect: (id: string, view?: ViewKey) => void;
-  onCreate: (name: string, parentId?: string, kind?: "project" | "knowledge") => void;
+  onCreate: (name: string, parentId?: string) => void;
   onDelete: (id: string) => void;
   onUpdateProject: (id: string, updates: { name?: string; emoji?: string; icon?: string | null; icon_color?: string | null; enabled_views?: ViewKey[] }) => void;
   onSelectBacklog: () => void;
@@ -55,7 +57,7 @@ type Props = {
   onSelectJournal: () => void;
   onSelectHabits: () => void;
   onSelectRetreat: () => void;
-  onSelectQuickNotes: () => void;
+  onSelectNotebook: (notebookId: string) => void;
 };
 
 export const ProjectIconPicker = ({
@@ -463,7 +465,7 @@ const KnowledgeItem = ({
   );
 };
 
-const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onCreate, onDelete, onUpdateProject, onSelectBacklog, onSelectTrash, onSelectJournal, onSelectHabits, onSelectRetreat, onSelectQuickNotes }: Props) => {
+const AppSidebar = ({ projects, selectedId, selectedView, section, selectedNotebookId, onSelect, onCreate, onDelete, onUpdateProject, onSelectBacklog, onSelectTrash, onSelectJournal, onSelectHabits, onSelectRetreat, onSelectNotebook }: Props) => {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const { prefs, setItem } = useSidebarPreferences();
@@ -474,12 +476,6 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
   const [subName, setSubName] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [newModuleOpen, setNewModuleOpen] = useState(false);
-
-  // Bilgi Merkezi
-  const [showKnowledgeInput, setShowKnowledgeInput] = useState(false);
-  const [newKnowledgeName, setNewKnowledgeName] = useState("");
-  const [addingKnowledgeParentId, setAddingKnowledgeParentId] = useState<string | null>(null);
-  const [knowledgeSubName, setKnowledgeSubName] = useState("");
 
   const MODULE_OPTIONS: { key: "backlog" | "journal" | "habits" | "workHistory" | "pomodoro" | "retreat"; label: string; icon: any }[] = [
     { key: "backlog", label: moduleLabel("backlog"), icon: Package },
@@ -493,7 +489,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
 
   const handleCreate = () => {
     if (!newName.trim()) return;
-    onCreate(newName.trim(), undefined, "project");
+    onCreate(newName.trim(), undefined);
     setNewName("");
     setShowInput(false);
   };
@@ -505,33 +501,13 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
 
   const handleCreateSub = () => {
     if (!subName.trim() || !addingParentId) return;
-    onCreate(subName.trim(), addingParentId, "project");
+    onCreate(subName.trim(), addingParentId);
     setSubName("");
     setAddingParentId(null);
   };
 
-  const handleCreateKnowledge = () => {
-    if (!newKnowledgeName.trim()) return;
-    onCreate(newKnowledgeName.trim(), undefined, "knowledge");
-    setNewKnowledgeName("");
-    setShowKnowledgeInput(false);
-  };
-
-  const handleAddKnowledgeSub = (parentId: string) => {
-    setAddingKnowledgeParentId(parentId);
-    setKnowledgeSubName("");
-  };
-
-  const handleCreateKnowledgeSub = () => {
-    if (!knowledgeSubName.trim() || !addingKnowledgeParentId) return;
-    onCreate(knowledgeSubName.trim(), addingKnowledgeParentId, "knowledge");
-    setKnowledgeSubName("");
-    setAddingKnowledgeParentId(null);
-  };
-
   const projectKind = (p: Project) => (p as any).kind || "project";
   const rootProjects = projects.filter((p) => !p.parent_id && projectKind(p) === "project");
-  const rootKnowledge = projects.filter((p) => !p.parent_id && projectKind(p) === "knowledge");
   const getChildren = (parentId: string) => projects.filter((p) => p.parent_id === parentId);
 
   return (
@@ -704,84 +680,10 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
             知 Bilgi Merkezi
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {rootKnowledge.map((project) => (
-                <div key={project.id}>
-                  <KnowledgeItem
-                    project={project}
-                    children={getChildren(project.id)}
-                    selectedId={selectedId}
-                    section={section}
-                    onSelect={onSelect}
-                    onDelete={onDelete}
-                    onUpdateProject={onUpdateProject}
-                    onAddSub={handleAddKnowledgeSub}
-                  />
-                  {addingKnowledgeParentId === project.id && (
-                    <SidebarMenuItem>
-                      <div className="flex gap-1 px-2 py-1" style={{ paddingLeft: "32px" }}>
-                        <Input
-                          value={knowledgeSubName}
-                          onChange={(e) => setKnowledgeSubName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleCreateKnowledgeSub();
-                            if (e.key === "Escape") setAddingKnowledgeParentId(null);
-                          }}
-                          autoFocus
-                          placeholder="Alt defter adı..."
-                          className="h-7 text-xs bg-transparent"
-                        />
-                      </div>
-                    </SidebarMenuItem>
-                  )}
-                </div>
-              ))}
-
-              {showKnowledgeInput ? (
-                <SidebarMenuItem>
-                  <div className="flex gap-1 px-2 py-1">
-                    <Input
-                      value={newKnowledgeName}
-                      onChange={(e) => setNewKnowledgeName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleCreateKnowledge();
-                        if (e.key === "Escape") setShowKnowledgeInput(false);
-                      }}
-                      autoFocus
-                      placeholder="Defter adı..."
-                      className="h-7 text-xs bg-transparent"
-                    />
-                  </div>
-                </SidebarMenuItem>
-              ) : (
-                <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => setShowKnowledgeInput(true)} className="text-xs text-muted-foreground">
-                    <Plus className="h-3.5 w-3.5 mr-2" />
-                    Yeni Defter
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Anlık Notlar */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-light">
-            付箋 Anlık Notlar
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={onSelectQuickNotes}
-                  className={`text-sm font-light ${section === "quickNotes" ? "bg-accent text-accent-foreground" : ""}`}
-                >
-                  <StickyNote className="h-3.5 w-3.5" />
-                  <span className="tracking-wide">Anlık Notlar</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
+            <NotebookSidebarTree
+              selectedNotebookId={section === "notebook" ? selectedNotebookId : null}
+              onSelectNotebook={onSelectNotebook}
+            />
           </SidebarGroupContent>
         </SidebarGroup>
 

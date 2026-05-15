@@ -13,7 +13,7 @@ import BacklogView from "@/components/BacklogView";
 import TrashView from "@/components/TrashView";
 import HabitsView from "@/components/HabitsView";
 import InzivaView from "@/components/InzivaView";
-import QuickNotesView from "@/components/QuickNotesView";
+import NotebookView from "@/features/knowledge/components/NotebookView";
 import { useProjects } from "@/hooks/useProjects";
 import { ViewKey } from "@/hooks/useProjectViews";
 import { useUndo } from "@/hooks/useUndo";
@@ -38,7 +38,7 @@ const Index = () => {
   const { projects, loading, createProject, updateProject, deleteProject } = useProjects();
   const { undo, redo, canUndo, canRedo } = useUndo();
   const { theme, toggle: toggleTheme } = useTheme();
-  const { section, selectedProjectId, view, journalDate, setSection, setSelectedProjectId, setView, setJournalDate } = usePageState();
+  const { section, selectedProjectId, view, journalDate, selectedNotebookId, setSection, setSelectedProjectId, setView, setJournalDate, setSelectedNotebookId } = usePageState();
   const { startup } = useStartupPage();
   const { loading: settingsLoading } = useUserSettings();
   const navigate = useNavigate();
@@ -142,6 +142,7 @@ const Index = () => {
           selectedId={selectedProjectId}
           selectedView={view}
           section={section}
+          selectedNotebookId={selectedNotebookId}
           onSelect={handleSelect}
           onCreate={handleCreate}
           onDelete={handleDelete}
@@ -151,7 +152,7 @@ const Index = () => {
           onSelectJournal={() => setSection("journal")}
           onSelectHabits={() => setSection("habits")}
           onSelectRetreat={() => setSection("retreat")}
-          onSelectQuickNotes={() => setSection("quickNotes")}
+          onSelectNotebook={(id) => { setSelectedNotebookId(id); setSection("notebook"); }}
         />
 
         <div className="flex-1 flex flex-col min-w-0">
@@ -306,7 +307,7 @@ const Index = () => {
             )}
             {section === "habits" && <HabitsView />}
             {section === "retreat" && <InzivaView />}
-            {section === "quickNotes" && <QuickNotesView />}
+            {section === "notebook" && selectedNotebookId && <NotebookView notebookId={selectedNotebookId} />}
             {section === "project" && (
               !selectedProject ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">

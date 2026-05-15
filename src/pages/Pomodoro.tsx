@@ -36,7 +36,7 @@ const Pomodoro = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { projects, createProject, updateProject, deleteProject } = useProjects();
-  const { section, selectedProjectId, view, setSection, setSelectedProjectId, setView } = usePageState();
+  const { section, selectedProjectId, view, selectedNotebookId, setSection, setSelectedProjectId, setView, setSelectedNotebookId } = usePageState();
   const { theme, toggle: toggleTheme } = useTheme();
   const { remainingSec, phase, kind, setDuration, start, pause, resume, complete, reset, skipBreak } = usePomodoro();
   const { categories, create: createCategory, update: updateCategory, remove: removeCategory } = usePomodoroCategories();
@@ -243,6 +243,7 @@ const Pomodoro = () => {
           selectedId={selectedProjectId}
           selectedView={view}
           section={section}
+          selectedNotebookId={selectedNotebookId}
           onSelect={handleSidebarSelect}
           onCreate={handleSidebarCreate}
           onDelete={handleSidebarDelete}
@@ -252,7 +253,7 @@ const Pomodoro = () => {
           onSelectJournal={() => { setSection("journal"); navigate("/"); }}
           onSelectHabits={() => { setSection("habits"); navigate("/"); }}
           onSelectRetreat={() => { setSection("retreat"); navigate("/"); }}
-          onSelectQuickNotes={() => { setSection("quickNotes"); navigate("/"); }}
+          onSelectNotebook={(id) => { setSelectedNotebookId(id); setSection("notebook"); navigate("/"); }}
         />
 
         <div className="flex-1 flex flex-col min-w-0">
