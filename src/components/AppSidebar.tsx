@@ -27,6 +27,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Project } from "@/hooks/useProjects";
 import type { ViewKey } from "@/hooks/useProjectViews";
 import PomodoroSidebarWidget from "./PomodoroSidebarWidget";
+import NotebookSidebarTree from "@/features/knowledge/components/NotebookSidebarTree";
 
 
 
