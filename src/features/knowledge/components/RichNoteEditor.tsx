@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useEditor, EditorContent, BubbleMenu } from "@tiptap/react";
+import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
@@ -89,7 +89,7 @@ const RichNoteEditor = ({ value, onChange, placeholder, titleValue, onTitleChang
         style={{ fontFamily: '"Noto Serif JP", serif' }}
       />
 
-      <BubbleMenu editor={editor} className="flex items-center gap-0.5 rounded-sm border border-border/60 bg-popover shadow-md px-1 py-0.5">
+      <div className="sticky top-0 z-10 -mx-6 sm:-mx-12 px-6 sm:px-12 py-1 mb-3 flex flex-wrap items-center gap-0.5 bg-background/80 backdrop-blur-sm border-b border-border/40 opacity-60 hover:opacity-100 focus-within:opacity-100 transition-opacity">
         <TbBtn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive("heading", { level: 1 })} title="H1"><Heading1 className="h-3.5 w-3.5" /></TbBtn>
         <TbBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive("heading", { level: 2 })} title="H2"><Heading2 className="h-3.5 w-3.5" /></TbBtn>
         <TbBtn onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive("heading", { level: 3 })} title="H3"><Heading3 className="h-3.5 w-3.5" /></TbBtn>
@@ -104,7 +104,7 @@ const RichNoteEditor = ({ value, onChange, placeholder, titleValue, onTitleChang
         <TbBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")} title="Alıntı"><Quote className="h-3.5 w-3.5" /></TbBtn>
         <TbBtn onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive("codeBlock")} title="Kod bloğu"><Code2 className="h-3.5 w-3.5" /></TbBtn>
         <TbBtn onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Tablo"><TableIcon className="h-3.5 w-3.5" /></TbBtn>
-      </BubbleMenu>
+      </div>
 
       <EditorContent editor={editor} />
     </div>
