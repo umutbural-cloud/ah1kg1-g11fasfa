@@ -36,7 +36,7 @@ const Pomodoro = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { projects, createProject, updateProject, deleteProject } = useProjects();
-  const { section, selectedProjectId, view, setSection, setSelectedProjectId, setView } = usePageState();
+  const { section, selectedProjectId, view, selectedNotebookId, setSection, setSelectedProjectId, setView, setSelectedNotebookId } = usePageState();
   const { theme, toggle: toggleTheme } = useTheme();
   const { remainingSec, phase, kind, setDuration, start, pause, resume, complete, reset, skipBreak } = usePomodoro();
   const { categories, create: createCategory, update: updateCategory, remove: removeCategory } = usePomodoroCategories();

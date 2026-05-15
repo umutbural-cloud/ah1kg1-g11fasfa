@@ -38,7 +38,7 @@ const Index = () => {
   const { projects, loading, createProject, updateProject, deleteProject } = useProjects();
   const { undo, redo, canUndo, canRedo } = useUndo();
   const { theme, toggle: toggleTheme } = useTheme();
-  const { section, selectedProjectId, view, journalDate, setSection, setSelectedProjectId, setView, setJournalDate } = usePageState();
+  const { section, selectedProjectId, view, journalDate, selectedNotebookId, setSection, setSelectedProjectId, setView, setJournalDate, setSelectedNotebookId } = usePageState();
   const { startup } = useStartupPage();
   const { loading: settingsLoading } = useUserSettings();
   const navigate = useNavigate();
