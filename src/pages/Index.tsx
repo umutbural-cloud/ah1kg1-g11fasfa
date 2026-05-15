@@ -142,6 +142,7 @@ const Index = () => {
           selectedId={selectedProjectId}
           selectedView={view}
           section={section}
+          selectedNotebookId={selectedNotebookId}
           onSelect={handleSelect}
           onCreate={handleCreate}
           onDelete={handleDelete}
@@ -151,7 +152,7 @@ const Index = () => {
           onSelectJournal={() => setSection("journal")}
           onSelectHabits={() => setSection("habits")}
           onSelectRetreat={() => setSection("retreat")}
-          onSelectQuickNotes={() => setSection("quickNotes")}
+          onSelectNotebook={(id) => { setSelectedNotebookId(id); setSection("notebook"); }}
         />
 
         <div className="flex-1 flex flex-col min-w-0">
