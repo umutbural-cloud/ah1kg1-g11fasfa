@@ -13,7 +13,7 @@ import BacklogView from "@/components/BacklogView";
 import TrashView from "@/components/TrashView";
 import HabitsView from "@/components/HabitsView";
 import InzivaView from "@/components/InzivaView";
-import QuickNotesView from "@/components/QuickNotesView";
+import NotebookView from "@/features/knowledge/components/NotebookView";
 import { useProjects } from "@/hooks/useProjects";
 import { ViewKey } from "@/hooks/useProjectViews";
 import { useUndo } from "@/hooks/useUndo";
@@ -307,7 +307,7 @@ const Index = () => {
             )}
             {section === "habits" && <HabitsView />}
             {section === "retreat" && <InzivaView />}
-            {section === "quickNotes" && <QuickNotesView />}
+            {section === "notebook" && selectedNotebookId && <NotebookView notebookId={selectedNotebookId} />}
             {section === "project" && (
               !selectedProject ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
