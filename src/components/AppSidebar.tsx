@@ -464,7 +464,7 @@ const KnowledgeItem = ({
   );
 };
 
-const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onCreate, onDelete, onUpdateProject, onSelectBacklog, onSelectTrash, onSelectJournal, onSelectHabits, onSelectRetreat, onSelectQuickNotes }: Props) => {
+const AppSidebar = ({ projects, selectedId, selectedView, section, selectedNotebookId, onSelect, onCreate, onDelete, onUpdateProject, onSelectBacklog, onSelectTrash, onSelectJournal, onSelectHabits, onSelectRetreat, onSelectNotebook }: Props) => {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const { prefs, setItem } = useSidebarPreferences();
@@ -475,12 +475,6 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
   const [subName, setSubName] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [newModuleOpen, setNewModuleOpen] = useState(false);
-
-  // Bilgi Merkezi
-  const [showKnowledgeInput, setShowKnowledgeInput] = useState(false);
-  const [newKnowledgeName, setNewKnowledgeName] = useState("");
-  const [addingKnowledgeParentId, setAddingKnowledgeParentId] = useState<string | null>(null);
-  const [knowledgeSubName, setKnowledgeSubName] = useState("");
 
   const MODULE_OPTIONS: { key: "backlog" | "journal" | "habits" | "workHistory" | "pomodoro" | "retreat"; label: string; icon: any }[] = [
     { key: "backlog", label: moduleLabel("backlog"), icon: Package },
@@ -494,7 +488,7 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
 
   const handleCreate = () => {
     if (!newName.trim()) return;
-    onCreate(newName.trim(), undefined, "project");
+    onCreate(newName.trim(), undefined);
     setNewName("");
     setShowInput(false);
   };
@@ -506,33 +500,13 @@ const AppSidebar = ({ projects, selectedId, selectedView, section, onSelect, onC
 
   const handleCreateSub = () => {
     if (!subName.trim() || !addingParentId) return;
-    onCreate(subName.trim(), addingParentId, "project");
+    onCreate(subName.trim(), addingParentId);
     setSubName("");
     setAddingParentId(null);
   };
 
-  const handleCreateKnowledge = () => {
-    if (!newKnowledgeName.trim()) return;
-    onCreate(newKnowledgeName.trim(), undefined, "knowledge");
-    setNewKnowledgeName("");
-    setShowKnowledgeInput(false);
-  };
-
-  const handleAddKnowledgeSub = (parentId: string) => {
-    setAddingKnowledgeParentId(parentId);
-    setKnowledgeSubName("");
-  };
-
-  const handleCreateKnowledgeSub = () => {
-    if (!knowledgeSubName.trim() || !addingKnowledgeParentId) return;
-    onCreate(knowledgeSubName.trim(), addingKnowledgeParentId, "knowledge");
-    setKnowledgeSubName("");
-    setAddingKnowledgeParentId(null);
-  };
-
   const projectKind = (p: Project) => (p as any).kind || "project";
   const rootProjects = projects.filter((p) => !p.parent_id && projectKind(p) === "project");
-  const rootKnowledge = projects.filter((p) => !p.parent_id && projectKind(p) === "knowledge");
   const getChildren = (parentId: string) => projects.filter((p) => p.parent_id === parentId);
 
   return (
