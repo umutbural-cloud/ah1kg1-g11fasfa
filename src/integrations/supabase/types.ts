@@ -202,6 +202,116 @@ export type Database = {
         }
         Relationships: []
       }
+      notebook_notes: {
+        Row: {
+          color: string
+          content: Json
+          created_at: string
+          deleted_at: string | null
+          id: string
+          notebook_id: string
+          parent_note_id: string | null
+          pinned: boolean
+          position: number
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          content?: Json
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          notebook_id: string
+          parent_note_id?: string | null
+          pinned?: boolean
+          position?: number
+          title?: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          content?: Json
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          notebook_id?: string
+          parent_note_id?: string | null
+          pinned?: boolean
+          position?: number
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_notes_notebook_id_fkey"
+            columns: ["notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notebook_notes_parent_note_id_fkey"
+            columns: ["parent_note_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notebooks: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          icon: string | null
+          icon_color: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          icon?: string | null
+          icon_color?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          icon?: string | null
+          icon_color?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          position?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebooks_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           content: string
