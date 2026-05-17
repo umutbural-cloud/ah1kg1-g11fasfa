@@ -24,6 +24,7 @@ export type Database = {
           id: string
           position: number
           priority: Database["public"]["Enums"]["priority_level"]
+          stable_export_id: string
           title: string
           updated_at: string
           urgency: Database["public"]["Enums"]["urgency_level"]
@@ -38,6 +39,7 @@ export type Database = {
           id?: string
           position?: number
           priority?: Database["public"]["Enums"]["priority_level"]
+          stable_export_id?: string
           title: string
           updated_at?: string
           urgency?: Database["public"]["Enums"]["urgency_level"]
@@ -52,6 +54,7 @@ export type Database = {
           id?: string
           position?: number
           priority?: Database["public"]["Enums"]["priority_level"]
+          stable_export_id?: string
           title?: string
           updated_at?: string
           urgency?: Database["public"]["Enums"]["urgency_level"]
@@ -66,6 +69,7 @@ export type Database = {
           id: string
           name: string
           position: number
+          stable_export_id: string
           updated_at: string
           user_id: string
         }
@@ -75,6 +79,7 @@ export type Database = {
           id?: string
           name: string
           position?: number
+          stable_export_id?: string
           updated_at?: string
           user_id: string
         }
@@ -84,6 +89,7 @@ export type Database = {
           id?: string
           name?: string
           position?: number
+          stable_export_id?: string
           updated_at?: string
           user_id?: string
         }
@@ -95,6 +101,7 @@ export type Database = {
           completion_date: string
           habit_id: string
           id: string
+          stable_export_id: string
           user_id: string
         }
         Insert: {
@@ -102,6 +109,7 @@ export type Database = {
           completion_date: string
           habit_id: string
           id?: string
+          stable_export_id?: string
           user_id: string
         }
         Update: {
@@ -109,6 +117,7 @@ export type Database = {
           completion_date?: string
           habit_id?: string
           id?: string
+          stable_export_id?: string
           user_id?: string
         }
         Relationships: [
@@ -134,6 +143,7 @@ export type Database = {
           id: string
           position: number
           project_id: string | null
+          stable_export_id: string
           time_of_day: string
           title: string
           user_id: string
@@ -150,6 +160,7 @@ export type Database = {
           id?: string
           position?: number
           project_id?: string | null
+          stable_export_id?: string
           time_of_day?: string
           title: string
           user_id: string
@@ -166,6 +177,7 @@ export type Database = {
           id?: string
           position?: number
           project_id?: string | null
+          stable_export_id?: string
           time_of_day?: string
           title?: string
           user_id?: string
@@ -179,6 +191,7 @@ export type Database = {
           deleted_at: string | null
           entry_date: string
           id: string
+          stable_export_id: string
           updated_at: string
           user_id: string
         }
@@ -188,6 +201,7 @@ export type Database = {
           deleted_at?: string | null
           entry_date: string
           id?: string
+          stable_export_id?: string
           updated_at?: string
           user_id: string
         }
@@ -197,6 +211,7 @@ export type Database = {
           deleted_at?: string | null
           entry_date?: string
           id?: string
+          stable_export_id?: string
           updated_at?: string
           user_id?: string
         }
@@ -213,6 +228,7 @@ export type Database = {
           parent_note_id: string | null
           pinned: boolean
           position: number
+          stable_export_id: string
           title: string
           type: string
           updated_at: string
@@ -228,6 +244,7 @@ export type Database = {
           parent_note_id?: string | null
           pinned?: boolean
           position?: number
+          stable_export_id?: string
           title?: string
           type: string
           updated_at?: string
@@ -243,6 +260,7 @@ export type Database = {
           parent_note_id?: string | null
           pinned?: boolean
           position?: number
+          stable_export_id?: string
           title?: string
           type?: string
           updated_at?: string
@@ -275,6 +293,7 @@ export type Database = {
           name: string
           parent_id: string | null
           position: number
+          stable_export_id: string
           updated_at: string
           user_id: string
         }
@@ -287,6 +306,7 @@ export type Database = {
           name: string
           parent_id?: string | null
           position?: number
+          stable_export_id?: string
           updated_at?: string
           user_id: string
         }
@@ -299,6 +319,7 @@ export type Database = {
           name?: string
           parent_id?: string | null
           position?: number
+          stable_export_id?: string
           updated_at?: string
           user_id?: string
         }
@@ -319,6 +340,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           project_id: string
+          stable_export_id: string
           title: string
           updated_at: string
           user_id: string
@@ -329,6 +351,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           project_id: string
+          stable_export_id?: string
           title?: string
           updated_at?: string
           user_id: string
@@ -339,6 +362,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           project_id?: string
+          stable_export_id?: string
           title?: string
           updated_at?: string
           user_id?: string
@@ -360,6 +384,7 @@ export type Database = {
           id: string
           name: string
           position: number
+          stable_export_id: string
           updated_at: string
           user_id: string
         }
@@ -369,6 +394,7 @@ export type Database = {
           id?: string
           name: string
           position?: number
+          stable_export_id?: string
           updated_at?: string
           user_id: string
         }
@@ -378,6 +404,7 @@ export type Database = {
           id?: string
           name?: string
           position?: number
+          stable_export_id?: string
           updated_at?: string
           user_id?: string
         }
@@ -392,6 +419,7 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["pomodoro_kind"]
           note: string | null
+          stable_export_id: string
           started_at: string
           task_id: string | null
           updated_at: string
@@ -405,6 +433,7 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["pomodoro_kind"]
           note?: string | null
+          stable_export_id?: string
           started_at: string
           task_id?: string | null
           updated_at?: string
@@ -418,6 +447,7 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["pomodoro_kind"]
           note?: string | null
+          stable_export_id?: string
           started_at?: string
           task_id?: string | null
           updated_at?: string
@@ -446,6 +476,7 @@ export type Database = {
           kind: string
           name: string
           parent_id: string | null
+          stable_export_id: string
           user_id: string
         }
         Insert: {
@@ -460,6 +491,7 @@ export type Database = {
           kind?: string
           name: string
           parent_id?: string | null
+          stable_export_id?: string
           user_id: string
         }
         Update: {
@@ -474,6 +506,7 @@ export type Database = {
           kind?: string
           name?: string
           parent_id?: string | null
+          stable_export_id?: string
           user_id?: string
         }
         Relationships: [
@@ -530,6 +563,7 @@ export type Database = {
           id: string
           pinned: boolean
           position: number
+          stable_export_id: string
           updated_at: string
           user_id: string
         }
@@ -540,6 +574,7 @@ export type Database = {
           id?: string
           pinned?: boolean
           position?: number
+          stable_export_id?: string
           updated_at?: string
           user_id: string
         }
@@ -550,6 +585,7 @@ export type Database = {
           id?: string
           pinned?: boolean
           position?: number
+          stable_export_id?: string
           updated_at?: string
           user_id?: string
         }
@@ -632,6 +668,7 @@ export type Database = {
           position: number
           project_id: string
           reminder_minutes_before: number | null
+          stable_export_id: string
           start_date: string | null
           start_time: string | null
           status: Database["public"]["Enums"]["task_status"]
@@ -654,6 +691,7 @@ export type Database = {
           position?: number
           project_id: string
           reminder_minutes_before?: number | null
+          stable_export_id?: string
           start_date?: string | null
           start_time?: string | null
           status?: Database["public"]["Enums"]["task_status"]
@@ -676,6 +714,7 @@ export type Database = {
           position?: number
           project_id?: string
           reminder_minutes_before?: number | null
+          stable_export_id?: string
           start_date?: string | null
           start_time?: string | null
           status?: Database["public"]["Enums"]["task_status"]
