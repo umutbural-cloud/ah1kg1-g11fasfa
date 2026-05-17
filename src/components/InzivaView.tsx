@@ -116,27 +116,28 @@ const InzivaView = () => {
     }
   }, [getActiveEl]);
 
-  const cancelAllFades = () => {
-    fadeTimers.current.forEach((tid) => clearTimeout(tid));
-    fadeTimers.current.clear();
-    setLines((prev) => prev.map((l) => (l.fading ? { ...l, fading: false } : l)));
-  };
+  const cancelFadeFor = useCallback((id: number) => {
+    const tid = fadeTimers.current.get(id);
+    if (tid) {
+      clearTimeout(tid);
+      fadeTimers.current.delete(id);
+    }
+    setLines((prev) => prev.map((l) => (l.id === id && l.fading ? { ...l, fading: false } : l)));
+  }, []);
 
   const handleInput = () => {
     setLastTyped(Date.now());
     const active = getActiveEl();
     if (!active) return;
     const text = active.innerText || "";
-
+    // Only mutate the active line. Other lines must keep their current fading
+    // state so that already-fading paragraphs complete their disappearance
+    // instead of snapping back to full opacity when the user types again.
     setLines((prev) =>
-      prev.map((l) => {
-        if (l.id === activeId) return { ...l, text, fading: false };
-        if (l.fading) return { ...l, fading: false };
-        return l;
-      })
+      prev.map((l) => (l.id === activeId ? { ...l, text, fading: false } : l))
     );
-    cancelAllFades();
   };
+
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     setLastTyped(Date.now());
@@ -266,7 +267,7 @@ const InzivaView = () => {
             onFocus={() => {
               setActiveId(line.id);
               setLastTyped(Date.now());
-              cancelAllFades();
+              cancelFadeFor(line.id);
             }}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
