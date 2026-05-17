@@ -549,6 +549,10 @@ const SettingsDialog = ({ open, onOpenChange }: Props) => {
                     </Button>
                   </div>
                 </div>
+
+                <div className="border-t border-border/60" />
+
+                <DataPortabilityPanel />
               </div>
             )}
 
