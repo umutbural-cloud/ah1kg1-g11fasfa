@@ -267,7 +267,7 @@ const InzivaView = () => {
             onFocus={() => {
               setActiveId(line.id);
               setLastTyped(Date.now());
-              cancelAllFades();
+              cancelFadeFor(line.id);
             }}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
