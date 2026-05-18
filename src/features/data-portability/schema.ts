@@ -8,8 +8,6 @@ export type TableName =
   | "projects"
   | "habit_categories"
   | "pomodoro_categories"
-  | "notebooks"
-  | "notebook_notes"
   | "notes"
   | "tasks"
   | "habits"
@@ -17,6 +15,10 @@ export type TableName =
   | "pomodoro_sessions"
   | "backlog_tasks"
   | "journal_entries"
+  // Bilgi merkezi tabloları — yeni importer henüz desteklemiyor,
+  // import sırasında dahil edilir ama export'ta tutulmaz.
+  | "notebooks"
+  | "notebook_notes"
   | "quick_notes";
 
 export type TableSpec = {
@@ -25,13 +27,12 @@ export type TableSpec = {
   fk: Partial<Record<string, TableName>>;
 };
 
+// Tables included in the export file (clean format).
 // Order matters: parents before children.
-export const TABLES: TableSpec[] = [
+export const EXPORT_TABLES: TableSpec[] = [
   { name: "projects", fk: { parent_id: "projects" } },
   { name: "habit_categories", fk: {} },
   { name: "pomodoro_categories", fk: {} },
-  { name: "notebooks", fk: { parent_id: "notebooks" } },
-  { name: "notebook_notes", fk: { notebook_id: "notebooks", parent_note_id: "notebook_notes" } },
   { name: "notes", fk: { project_id: "projects" } },
   { name: "tasks", fk: { project_id: "projects", parent_block_id: "tasks", category_id: "pomodoro_categories" } },
   { name: "habits", fk: { project_id: "projects", category_id: "habit_categories" } },
@@ -39,6 +40,14 @@ export const TABLES: TableSpec[] = [
   { name: "pomodoro_sessions", fk: { task_id: "tasks", category_id: "pomodoro_categories" } },
   { name: "backlog_tasks", fk: {} },
   { name: "journal_entries", fk: {} },
+];
+
+// Tables the importer is willing to read (superset, for backwards compatibility
+// with older exports that contained knowledge-center data).
+export const TABLES: TableSpec[] = [
+  ...EXPORT_TABLES,
+  { name: "notebooks", fk: { parent_id: "notebooks" } },
+  { name: "notebook_notes", fk: { notebook_id: "notebooks", parent_note_id: "notebook_notes" } },
   { name: "quick_notes", fk: {} },
 ];
 
