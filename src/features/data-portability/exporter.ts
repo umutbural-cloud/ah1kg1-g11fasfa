@@ -13,23 +13,43 @@ function cleanRow(row: any): any {
   return out;
 }
 
+// Fetch ALL rows for a user from a table, paginating past the 1000-row default cap.
+async function fetchAll(table: string, userId: string): Promise<any[]> {
+  const PAGE = 1000;
+  const all: any[] = [];
+  let from = 0;
+  // Hard safety cap to avoid infinite loops on misconfigured tables.
+  for (let i = 0; i < 1000; i++) {
+    const { data, error } = await supabase
+      .from(table as any)
+      .select("*")
+      .eq("user_id", userId)
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`${table}: ${error.message}`);
+    const rows = data || [];
+    all.push(...rows);
+    if (rows.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
+
 // Pull all rows for the current user across whitelisted, importer-supported tables.
+// Knowledge Center tables (notebooks / notebook_notes / quick_notes) are intentionally
+// NOT exported — neither in `data` nor in `counts`.
 export async function exportUserData(userId: string): Promise<ExportFile> {
-  const data: Record<string, any[]> = {};
+  const data: Record<string, any> = {};
   const counts: Record<string, number> = {};
 
   for (const t of EXPORT_TABLES) {
-    const { data: rows, error } = await supabase
-      .from(t.name as any)
-      .select("*")
-      .eq("user_id", userId);
-    if (error) throw new Error(`${t.name}: ${error.message}`);
-    const cleaned = (rows || []).map(cleanRow);
+    const rows = await fetchAll(t.name, userId);
+    const cleaned = rows.map(cleanRow);
     data[t.name] = cleaned;
     counts[t.name] = cleaned.length;
   }
 
-  // user_settings: single row, strip user_id, only include if it exists.
+  // user_settings: single row per user. Always include the key so the consumer
+  // can distinguish "no settings yet" (null) from "missing field" (undefined).
   const { data: settings, error: settingsErr } = await supabase
     .from("user_settings")
     .select("*")
@@ -37,22 +57,22 @@ export async function exportUserData(userId: string): Promise<ExportFile> {
     .maybeSingle();
   if (settingsErr) throw new Error(`user_settings: ${settingsErr.message}`);
 
-  const file: ExportFile = {
+  data.user_settings = settings ? cleanRow(settings) : null;
+  counts.user_settings = settings ? 1 : 0;
+
+  // Helpful debug breadcrumb in dev consoles; harmless in production builds.
+  // eslint-disable-next-line no-console
+  console.info("[Keikaku export] counts:", counts);
+
+  return {
     app_name: APP_NAME,
-    schema_version: SCHEMA_VERSION, // number
+    schema_version: SCHEMA_VERSION,
     exported_at: new Date().toISOString(),
     export_id: crypto.randomUUID(),
-    user_data_only: true, // boolean
-    data: { ...data },
-    counts: { ...counts },
+    user_data_only: true,
+    data,
+    counts,
   };
-
-  if (settings) {
-    (file.data as any).user_settings = cleanRow(settings);
-    file.counts["user_settings"] = 1;
-  }
-
-  return file;
 }
 
 export function downloadExport(file: ExportFile) {
